@@ -11,7 +11,9 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SubmittedRouteImport } from './routes/submitted'
 import { Route as SubmitMissionRouteImport } from './routes/submit-mission'
+import { Route as SimulationsRouteImport } from './routes/simulations'
 import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as MyRouteImport } from './routes/my'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as CheckoutRouteImport } from './routes/checkout'
@@ -46,9 +48,19 @@ const SubmitMissionRoute = SubmitMissionRouteImport.update({
   path: '/submit-mission',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SimulationsRoute = SimulationsRouteImport.update({
+  id: '/simulations',
+  path: '/simulations',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MyRoute = MyRouteImport.update({
@@ -175,7 +187,9 @@ export interface FileRoutesByFullPath {
   '/checkout': typeof CheckoutRoute
   '/login': typeof LoginRoute
   '/my': typeof MyRouteWithChildren
+  '/onboarding': typeof OnboardingRoute
   '/pricing': typeof PricingRoute
+  '/simulations': typeof SimulationsRoute
   '/submit-mission': typeof SubmitMissionRoute
   '/submitted': typeof SubmittedRoute
   '/admin/feedback': typeof AdminFeedbackRoute
@@ -202,7 +216,9 @@ export interface FileRoutesByTo {
   '/checkout': typeof CheckoutRoute
   '/login': typeof LoginRoute
   '/my': typeof MyRouteWithChildren
+  '/onboarding': typeof OnboardingRoute
   '/pricing': typeof PricingRoute
+  '/simulations': typeof SimulationsRoute
   '/submit-mission': typeof SubmitMissionRoute
   '/submitted': typeof SubmittedRoute
   '/admin/feedback': typeof AdminFeedbackRoute
@@ -231,7 +247,9 @@ export interface FileRoutesById {
   '/checkout': typeof CheckoutRoute
   '/login': typeof LoginRoute
   '/my': typeof MyRouteWithChildren
+  '/onboarding': typeof OnboardingRoute
   '/pricing': typeof PricingRoute
+  '/simulations': typeof SimulationsRoute
   '/submit-mission': typeof SubmitMissionRoute
   '/submitted': typeof SubmittedRoute
   '/admin/feedback': typeof AdminFeedbackRoute
@@ -261,7 +279,9 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/login'
     | '/my'
+    | '/onboarding'
     | '/pricing'
+    | '/simulations'
     | '/submit-mission'
     | '/submitted'
     | '/admin/feedback'
@@ -288,7 +308,9 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/login'
     | '/my'
+    | '/onboarding'
     | '/pricing'
+    | '/simulations'
     | '/submit-mission'
     | '/submitted'
     | '/admin/feedback'
@@ -316,7 +338,9 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/login'
     | '/my'
+    | '/onboarding'
     | '/pricing'
+    | '/simulations'
     | '/submit-mission'
     | '/submitted'
     | '/admin/feedback'
@@ -345,7 +369,9 @@ export interface RootRouteChildren {
   CheckoutRoute: typeof CheckoutRoute
   LoginRoute: typeof LoginRoute
   MyRoute: typeof MyRouteWithChildren
+  OnboardingRoute: typeof OnboardingRoute
   PricingRoute: typeof PricingRoute
+  SimulationsRoute: typeof SimulationsRoute
   SubmitMissionRoute: typeof SubmitMissionRoute
   SubmittedRoute: typeof SubmittedRoute
   ExperiencesSlugRoute: typeof ExperiencesSlugRouteWithChildren
@@ -374,11 +400,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SubmitMissionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/simulations': {
+      id: '/simulations'
+      path: '/simulations'
+      fullPath: '/simulations'
+      preLoaderRoute: typeof SimulationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pricing': {
       id: '/pricing'
       path: '/pricing'
       fullPath: '/pricing'
       preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/my': {
@@ -607,7 +647,9 @@ const rootRouteChildren: RootRouteChildren = {
   CheckoutRoute: CheckoutRoute,
   LoginRoute: LoginRoute,
   MyRoute: MyRouteWithChildren,
+  OnboardingRoute: OnboardingRoute,
   PricingRoute: PricingRoute,
+  SimulationsRoute: SimulationsRoute,
   SubmitMissionRoute: SubmitMissionRoute,
   SubmittedRoute: SubmittedRoute,
   ExperiencesSlugRoute: ExperiencesSlugRouteWithChildren,

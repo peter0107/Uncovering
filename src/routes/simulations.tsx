@@ -1,0 +1,301 @@
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { Clock, ArrowRight, Sparkles, Building2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
+import { cn } from "@/lib/utils";
+
+export const Route = createFileRoute("/simulations")({
+  head: () => ({ meta: [{ title: "추천 시뮬레이션 — 언커버링" }] }),
+  component: SimulationsPage,
+});
+
+// ─── 타입 ────────────────────────────────────────────────────
+
+type Simulation = {
+  id: string;
+  title: string;
+  description: string | null;
+  job_family: string | null;
+  domain: string | null;
+  estimated_minutes: number | null;
+  company_name: string;
+};
+
+type JobSeeker = {
+  job_interests: string[] | null;
+  company_interests: string[] | null;
+};
+
+// ─── 추천 쿼리 (룰 기반) ─────────────────────────────────────
+
+async function fetchRecommended(seeker: JobSeeker): Promise<Simulation[]> {
+  const jobInterests = seeker.job_interests ?? [];
+  const companyInterests = seeker.company_interests ?? [];
+
+  // job_simulations + companies 조인, 관심 직무 일치 우선 정렬
+  const { data, error } = await supabase
+    .from("job_simulations")
+    .select("id, title, description, job_family, domain, estimated_minutes, companies(name)")
+    .limit(20); // 클라이언트에서 필터·정렬 후 3개 추출
+
+  if (error) throw error;
+  if (!data || data.length === 0) return [];
+
+  type RawRow = {
+    id: string;
+    title: string;
+    description: string | null;
+    job_family: string | null;
+    domain: string | null;
+    estimated_minutes: number | null;
+    companies: { name: string } | null;
+  };
+
+  const rows = (data as unknown as RawRow[]).map((row) => ({
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    job_family: row.job_family,
+    domain: row.domain,
+    estimated_minutes: row.estimated_minutes,
+    company_name: row.companies?.name ?? "",
+    // 직무 일치 여부 (정렬 키)
+    _jobMatch: jobInterests.includes(row.job_family ?? ""),
+    _companyMatch: companyInterests.includes(row.companies?.name ?? ""),
+  }));
+
+  // 직무 일치 > 기업 일치 > 나머지 순서
+  const sorted = rows.sort((a, b) => {
+    const scoreA = (a._jobMatch ? 2 : 0) + (a._companyMatch ? 1 : 0);
+    const scoreB = (b._jobMatch ? 2 : 0) + (b._companyMatch ? 1 : 0);
+    return scoreB - scoreA;
+  });
+
+  return sorted.slice(0, 3).map(({ _jobMatch: _j, _companyMatch: _c, ...rest }) => rest);
+}
+
+// ─── 카드 컴포넌트 ────────────────────────────────────────────
+
+function SimCard({
+  sim,
+  rank,
+}: {
+  sim: Simulation;
+  rank: number;
+}) {
+  return (
+    <div className="flex flex-col rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+      {/* 순위 + 직무군 태그 */}
+      <div className="flex items-center justify-between">
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-900 text-xs font-bold text-white">
+          {rank}
+        </span>
+        {sim.job_family && (
+          <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-600">
+            {sim.job_family}
+          </span>
+        )}
+      </div>
+
+      {/* 기업명 */}
+      <div className="mt-4 flex items-center gap-1.5">
+        <Building2 className="h-3.5 w-3.5 text-zinc-400" />
+        <span className="text-xs text-zinc-400">{sim.company_name}</span>
+      </div>
+
+      {/* 제목 */}
+      <h3 className="mt-1 text-lg font-bold leading-snug text-zinc-900">{sim.title}</h3>
+
+      {/* 설명 */}
+      {sim.description && (
+        <p className="mt-2 flex-1 text-sm leading-relaxed text-zinc-500 line-clamp-3">
+          {sim.description}
+        </p>
+      )}
+
+      {/* 소요시간 + CTA */}
+      <div className="mt-5 flex items-center justify-between">
+        {sim.estimated_minutes ? (
+          <div className="flex items-center gap-1 text-xs text-zinc-400">
+            <Clock className="h-3.5 w-3.5" />
+            <span>약 {sim.estimated_minutes}분</span>
+          </div>
+        ) : (
+          <div />
+        )}
+        <Link to="/simulation/$id" params={{ id: sim.id }}>
+          <Button
+            size="sm"
+            className="gap-1 rounded-xl bg-zinc-900 text-white hover:bg-zinc-700"
+          >
+            시작하기
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Button>
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// ─── 스켈레톤 ────────────────────────────────────────────────
+
+function CardSkeleton() {
+  return (
+    <div className="rounded-2xl border border-zinc-100 bg-white p-6">
+      <Skeleton className="h-7 w-7 rounded-full" />
+      <Skeleton className="mt-4 h-3 w-20" />
+      <Skeleton className="mt-2 h-6 w-3/4" />
+      <Skeleton className="mt-2 h-4 w-full" />
+      <Skeleton className="mt-1 h-4 w-5/6" />
+      <div className="mt-5 flex justify-end">
+        <Skeleton className="h-8 w-24 rounded-xl" />
+      </div>
+    </div>
+  );
+}
+
+// ─── 빈 상태 ─────────────────────────────────────────────────
+
+function EmptyState({ hasOnboarding }: { hasOnboarding: boolean }) {
+  return (
+    <div className="flex flex-col items-center py-20 text-center">
+      <Sparkles className="h-10 w-10 text-zinc-300" />
+      <h3 className="mt-4 text-lg font-semibold text-zinc-700">
+        {hasOnboarding ? "아직 준비된 시뮬레이션이 없어요" : "온보딩을 먼저 완료해주세요"}
+      </h3>
+      <p className="mt-2 max-w-xs text-sm text-zinc-400">
+        {hasOnboarding
+          ? "곧 기업 시뮬레이션이 추가될 예정이에요. 조금만 기다려 주세요!"
+          : "관심 직무와 기업을 설정하면 맞춤 시뮬레이션을 추천해 드려요."}
+      </p>
+      {!hasOnboarding && (
+        <Link to="/onboarding" className="mt-6">
+          <Button className="rounded-xl bg-zinc-900 text-white hover:bg-zinc-700">
+            온보딩 시작하기
+          </Button>
+        </Link>
+      )}
+    </div>
+  );
+}
+
+// ─── 메인 페이지 ─────────────────────────────────────────────
+
+function SimulationsPage() {
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const [seeker, setSeeker] = useState<JobSeeker | null>(null);
+  const [sims, setSims] = useState<Simulation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      navigate({ to: "/login" });
+      return;
+    }
+
+    (async () => {
+      try {
+        // 구직자 프로필 조회
+        const { data: seekerData } = await supabase
+          .from("job_seekers")
+          .select("job_interests, company_interests")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        const profile: JobSeeker = seekerData ?? {
+          job_interests: null,
+          company_interests: null,
+        };
+        setSeeker(profile);
+
+        // 추천 시뮬레이션 조회
+        const recommended = await fetchRecommended(profile);
+        setSims(recommended);
+      } catch (e) {
+        setError((e as Error).message);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [user, authLoading, navigate]);
+
+  const hasOnboarding = !!(seeker?.job_interests?.length);
+
+  return (
+    <div className="mx-auto max-w-3xl px-4 py-12">
+      {/* 헤더 */}
+      <div className="mb-2 flex items-center gap-2">
+        <Sparkles className="h-5 w-5 text-zinc-500" />
+        <span className="text-sm font-medium text-zinc-500">맞춤 추천</span>
+      </div>
+      <h1 className="text-2xl font-bold text-zinc-900 md:text-3xl">
+        나를 위한 시뮬레이션 3개
+      </h1>
+
+      {/* 관심 직무 태그 */}
+      {!loading && seeker?.job_interests && seeker.job_interests.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {seeker.job_interests.map((j) => (
+            <span
+              key={j}
+              className="rounded-full border border-zinc-200 px-3 py-1 text-xs text-zinc-600"
+            >
+              {j}
+            </span>
+          ))}
+          <Link
+            to="/onboarding"
+            className="rounded-full border border-dashed border-zinc-300 px-3 py-1 text-xs text-zinc-400 hover:border-zinc-500 hover:text-zinc-600"
+          >
+            수정
+          </Link>
+        </div>
+      )}
+
+      {/* 에러 */}
+      {error && (
+        <div className="mt-6 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
+          {error}
+        </div>
+      )}
+
+      {/* 카드 목록 */}
+      <div
+        className={cn(
+          "mt-8 grid gap-4",
+          sims.length === 3 ? "md:grid-cols-3" : "md:grid-cols-2",
+        )}
+      >
+        {loading ? (
+          <>
+            <CardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
+          </>
+        ) : sims.length > 0 ? (
+          sims.map((sim, i) => <SimCard key={sim.id} sim={sim} rank={i + 1} />)
+        ) : (
+          <div className="col-span-full">
+            <EmptyState hasOnboarding={hasOnboarding} />
+          </div>
+        )}
+      </div>
+
+      {/* 하단 안내 */}
+      {!loading && sims.length > 0 && (
+        <p className="mt-6 text-center text-xs text-zinc-400">
+          관심 직무·기업 기반으로 추천한 시뮬레이션입니다 ·{" "}
+          <Link to="/onboarding" className="underline underline-offset-2 hover:text-zinc-600">
+            기준 수정하기
+          </Link>
+        </p>
+      )}
+    </div>
+  );
+}
