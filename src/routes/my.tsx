@@ -1,11 +1,26 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState, type ChangeEvent, type ReactElement } from "react";
-import { Camera, FileText } from "lucide-react";
+import { useEffect, useRef, useState, type ChangeEvent, type ReactElement, type ReactNode } from "react";
+import {
+  Camera,
+  FileText,
+  CheckCircle2,
+  GraduationCap,
+  Briefcase,
+  Building2,
+  MapPin,
+  Sparkles,
+  Github,
+  Globe,
+  Linkedin,
+  type LucideIcon,
+} from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,7 +33,6 @@ import {
   JobInterestFields,
   CompanyInterestFields,
   WorkPreferenceFields,
-  DiscoveryConsentFields,
 } from "@/lib/profile-fields";
 
 export const Route = createFileRoute("/my")({
@@ -37,7 +51,7 @@ type CompletedSimulation = {
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 
-type SectionKey = "education" | "jobInterests" | "companyInterests" | "workPreference" | "discovery";
+type SectionKey = "education" | "jobInterests" | "companyInterests" | "workPreference";
 
 type ProfileFieldsProps = {
   data: ProfileFormData;
@@ -46,54 +60,20 @@ type ProfileFieldsProps = {
 
 const PROFILE_SECTIONS: {
   key: SectionKey;
-  label: string;
   fields: (keyof ProfileFormData)[];
   Component: (props: ProfileFieldsProps) => ReactElement;
-  summary: (d: ProfileFormData) => string;
 }[] = [
   {
     key: "education",
-    label: "학력",
     fields: ["education_level", "majors", "academic_mark"],
     Component: EducationFields,
-    summary: (d) => {
-      const parts = [d.education_level, d.majors.join(", ")].filter(Boolean);
-      if (d.academic_mark) parts.push(`학점 ${d.academic_mark}/4.5`);
-      return parts.length ? parts.join(" · ") : "아직 입력하지 않았어요";
-    },
   },
-  {
-    key: "jobInterests",
-    label: "관심 직무",
-    fields: ["job_interests"],
-    Component: JobInterestFields,
-    summary: (d) => (d.job_interests.length ? d.job_interests.join(", ") : "아직 선택하지 않았어요"),
-  },
-  {
-    key: "companyInterests",
-    label: "관심 기업",
-    fields: ["company_interests"],
-    Component: CompanyInterestFields,
-    summary: (d) =>
-      d.company_interests.length ? d.company_interests.join(", ") : "아직 선택하지 않았어요",
-  },
+  { key: "jobInterests", fields: ["job_interests"], Component: JobInterestFields },
+  { key: "companyInterests", fields: ["company_interests"], Component: CompanyInterestFields },
   {
     key: "workPreference",
-    label: "근무 선호",
     fields: ["work_regions", "employment_types", "willing_to_relocate"],
     Component: WorkPreferenceFields,
-    summary: (d) => {
-      const parts = [d.work_regions.join(", "), d.employment_types.join(", ")].filter(Boolean);
-      if (d.willing_to_relocate) parts.push("이주 가능");
-      return parts.length ? parts.join(" · ") : "아직 입력하지 않았어요";
-    },
-  },
-  {
-    key: "discovery",
-    label: "Discovery 동의",
-    fields: ["discovery_consent"],
-    Component: DiscoveryConsentFields,
-    summary: (d) => (d.discovery_consent ? "네, 발견되고 싶어요" : "지금은 괜찮아요"),
   },
 ];
 
@@ -110,6 +90,37 @@ function serializeProfileField(key: keyof ProfileFormData, value: unknown) {
   return value;
 }
 
+function Tag({ children }: { children: ReactNode }) {
+  return (
+    <span className="inline-flex items-center rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700">
+      {children}
+    </span>
+  );
+}
+
+function SectionRow({
+  icon: Icon,
+  label,
+  children,
+}: {
+  icon: LucideIcon;
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="py-5 first:pt-0 last:pb-0">
+      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-zinc-700">
+        <Icon className="h-4 w-4 text-zinc-400" />
+        {label}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+const LINK_PILL_CLASS =
+  "inline-flex items-center gap-1.5 rounded-full border border-zinc-200 px-3 py-1 text-xs font-medium text-zinc-600 hover:border-zinc-400 hover:text-zinc-900";
+
 function MyPage() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -119,13 +130,17 @@ function MyPage() {
   const [oneLineIntro, setOneLineIntro] = useState("");
   const [links, setLinks] = useState<ExternalLinks>({});
   const [profileForm, setProfileFormRaw] = useState<ProfileFormData>(INITIAL_PROFILE_FORM);
-  const [draftForm, setDraftFormRaw] = useState<ProfileFormData>(INITIAL_PROFILE_FORM);
+
   const [editingAll, setEditingAll] = useState(false);
   const [savingAll, setSavingAll] = useState(false);
+  const [draftIntro, setDraftIntro] = useState("");
+  const [draftLinks, setDraftLinks] = useState<ExternalLinks>({});
+  const [draftForm, setDraftFormRaw] = useState<ProfileFormData>(INITIAL_PROFILE_FORM);
+
+  const [discoverySaving, setDiscoverySaving] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [history, setHistory] = useState<CompletedSimulation[] | null>(null);
-  const [saving, setSaving] = useState(false);
 
   const setDraftForm = (partial: Partial<ProfileFormData>) =>
     setDraftFormRaw((prev) => ({ ...prev, ...partial }));
@@ -148,7 +163,7 @@ function MyPage() {
       setOneLineIntro(seeker?.one_line_intro ?? "");
       setLinks((seeker?.external_links as ExternalLinks) ?? {});
       setAvatarUrl(seeker?.avatar_url ?? null);
-      const loadedForm: ProfileFormData = {
+      setProfileFormRaw({
         education_level: seeker?.education_level ?? "",
         majors: seeker?.majors ?? [],
         academic_mark: seeker?.academic_mark != null ? String(seeker.academic_mark) : "",
@@ -158,9 +173,7 @@ function MyPage() {
         employment_types: seeker?.employment_types ?? [],
         willing_to_relocate: seeker?.willing_to_relocate ?? false,
         discovery_consent: seeker?.discovery_consent ?? false,
-      };
-      setProfileFormRaw(loadedForm);
-      setDraftFormRaw(loadedForm);
+      });
 
       const { data: submissions } = await supabase
         .from("submissions")
@@ -235,22 +248,27 @@ function MyPage() {
     toast.success("프로필 사진이 업데이트됐어요.");
   };
 
-  const saveProfile = async () => {
+  const toggleDiscovery = async (next: boolean) => {
     if (!user) return;
-    setSaving(true);
+    setDiscoverySaving(true);
     const { error } = await supabase
       .from("job_seekers")
-      .update({ one_line_intro: oneLineIntro || null, external_links: links })
+      .update({ discovery_consent: next })
       .eq("id", user.id);
-    setSaving(false);
+    setDiscoverySaving(false);
+
     if (error) {
       toast.error("저장 중 오류가 발생했어요.");
       return;
     }
-    toast.success("저장됐어요.");
+
+    setProfileFormRaw((prev) => ({ ...prev, discovery_consent: next }));
+    toast.success(next ? "발견 동의로 변경됐어요." : "발견 동의를 해제했어요.");
   };
 
   const startEditAll = () => {
+    setDraftIntro(oneLineIntro);
+    setDraftLinks(links);
     setDraftFormRaw(profileForm);
     setEditingAll(true);
   };
@@ -263,7 +281,10 @@ function MyPage() {
     if (!user) return;
 
     setSavingAll(true);
-    const patch: TablesUpdate<"job_seekers"> = {};
+    const patch: TablesUpdate<"job_seekers"> = {
+      one_line_intro: draftIntro || null,
+      external_links: draftLinks,
+    };
     for (const section of PROFILE_SECTIONS) {
       for (const field of section.fields) {
         (patch as Record<string, unknown>)[field] = serializeProfileField(field, draftForm[field]);
@@ -277,6 +298,8 @@ function MyPage() {
       return;
     }
 
+    setOneLineIntro(draftIntro);
+    setLinks(draftLinks);
     setProfileFormRaw(draftForm);
     setEditingAll(false);
     toast.success("저장됐어요.");
@@ -309,113 +332,155 @@ function MyPage() {
     );
   }
 
+  const hasAnyLink = Boolean(links.github || links.portfolio || links.linkedin);
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-12">
       <h1 className="text-2xl font-bold text-zinc-900">프로필</h1>
 
       <Card className="mt-6 p-6">
-        <div className="flex items-center gap-4">
-          <div className="relative shrink-0">
-            <Avatar className="h-20 w-20">
-              <AvatarImage src={avatarUrl ?? undefined} alt="프로필 사진" />
-              <AvatarFallback className="text-lg">
-                {(user?.email ?? "?").slice(0, 1).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploadingAvatar}
-              aria-label="프로필 사진 변경"
-              className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-zinc-900 text-white shadow hover:bg-zinc-700 disabled:opacity-50"
-            >
-              <Camera className="h-3.5 w-3.5" />
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleAvatarChange}
-            />
-          </div>
-          <p className="text-sm text-zinc-500">
-            {uploadingAvatar ? "업로드 중..." : "프로필 사진을 등록해보세요"}
-          </p>
-        </div>
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <div className="relative shrink-0">
+              <Avatar className="h-20 w-20">
+                <AvatarImage src={avatarUrl ?? undefined} alt="프로필 사진" />
+                <AvatarFallback className="text-lg">
+                  {(user?.email ?? "?").slice(0, 1).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingAvatar}
+                aria-label="프로필 사진 변경"
+                className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-zinc-900 text-white shadow hover:bg-zinc-700 disabled:opacity-50"
+              >
+                <Camera className="h-3.5 w-3.5" />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+              />
+            </div>
 
-        <div className="mt-6">
-          <Label htmlFor="intro">한줄소개</Label>
-          <Input
-            id="intro"
-            value={oneLineIntro}
-            onChange={(e) => setOneLineIntro(e.target.value)}
-            placeholder="나를 한 줄로 소개해보세요"
-            maxLength={100}
-            className="mt-2"
-          />
-        </div>
+            <div className="min-w-0">
+              {editingAll ? (
+                <Input
+                  value={draftIntro}
+                  onChange={(e) => setDraftIntro(e.target.value)}
+                  placeholder="나를 한 줄로 소개해보세요"
+                  maxLength={100}
+                  className="text-base font-semibold"
+                />
+              ) : (
+                <p className="text-lg font-bold text-zinc-900">
+                  {oneLineIntro || (
+                    <span className="font-normal text-zinc-400">한줄소개를 작성해보세요</span>
+                  )}
+                </p>
+              )}
+              <p className="mt-1 text-sm text-zinc-400">{user?.email}</p>
 
-        <div className="mt-6 grid gap-3">
-          <div>
-            <Label htmlFor="github">GitHub</Label>
-            <Input
-              id="github"
-              value={links.github ?? ""}
-              onChange={(e) => setLinks((prev) => ({ ...prev, github: e.target.value }))}
-              placeholder="https://github.com/..."
-              className="mt-2"
-            />
+              {editingAll ? (
+                <div className="mt-4 grid gap-3">
+                  <div>
+                    <Label htmlFor="github">GitHub</Label>
+                    <Input
+                      id="github"
+                      value={draftLinks.github ?? ""}
+                      onChange={(e) => setDraftLinks((prev) => ({ ...prev, github: e.target.value }))}
+                      placeholder="https://github.com/..."
+                      className="mt-2"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="portfolio">포트폴리오</Label>
+                    <Input
+                      id="portfolio"
+                      value={draftLinks.portfolio ?? ""}
+                      onChange={(e) =>
+                        setDraftLinks((prev) => ({ ...prev, portfolio: e.target.value }))
+                      }
+                      placeholder="https://..."
+                      className="mt-2"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="linkedin">LinkedIn</Label>
+                    <Input
+                      id="linkedin"
+                      value={draftLinks.linkedin ?? ""}
+                      onChange={(e) =>
+                        setDraftLinks((prev) => ({ ...prev, linkedin: e.target.value }))
+                      }
+                      placeholder="https://linkedin.com/in/..."
+                      className="mt-2"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {links.github && (
+                    <a href={links.github} target="_blank" rel="noreferrer" className={LINK_PILL_CLASS}>
+                      <Github className="h-3.5 w-3.5" /> GitHub
+                    </a>
+                  )}
+                  {links.portfolio && (
+                    <a href={links.portfolio} target="_blank" rel="noreferrer" className={LINK_PILL_CLASS}>
+                      <Globe className="h-3.5 w-3.5" /> 포트폴리오
+                    </a>
+                  )}
+                  {links.linkedin && (
+                    <a href={links.linkedin} target="_blank" rel="noreferrer" className={LINK_PILL_CLASS}>
+                      <Linkedin className="h-3.5 w-3.5" /> LinkedIn
+                    </a>
+                  )}
+                  {!hasAnyLink && (
+                    <p className="text-sm text-zinc-400">수정하기를 눌러 링크를 등록해보세요</p>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-          <div>
-            <Label htmlFor="portfolio">포트폴리오</Label>
-            <Input
-              id="portfolio"
-              value={links.portfolio ?? ""}
-              onChange={(e) => setLinks((prev) => ({ ...prev, portfolio: e.target.value }))}
-              placeholder="https://..."
-              className="mt-2"
-            />
-          </div>
-          <div>
-            <Label htmlFor="linkedin">LinkedIn</Label>
-            <Input
-              id="linkedin"
-              value={links.linkedin ?? ""}
-              onChange={(e) => setLinks((prev) => ({ ...prev, linkedin: e.target.value }))}
-              placeholder="https://linkedin.com/in/..."
-              className="mt-2"
-            />
-          </div>
+
+          {!editingAll && (
+            <Button variant="outline" onClick={startEditAll} className="shrink-0 rounded-xl">
+              프로필 수정
+            </Button>
+          )}
         </div>
       </Card>
 
-      <Button
-        onClick={saveProfile}
-        disabled={saving}
-        className="mt-6 rounded-xl bg-zinc-900 text-white hover:bg-zinc-700"
-      >
-        {saving ? "저장 중..." : "저장"}
-      </Button>
+      <div className="mt-4 flex items-center justify-between gap-4 rounded-xl border border-zinc-200 bg-white px-5 py-4">
+        <div className="flex items-start gap-3">
+          <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400" />
+          <div>
+            <p className="text-sm font-semibold text-zinc-700">기업에게 발견되기</p>
+            <p className="mt-0.5 text-xs text-zinc-400">
+              동의하면 관심 기업 담당자가 내 프로필을 보고 제안을 보낼 수 있어요
+            </p>
+          </div>
+        </div>
+        <Switch
+          checked={profileForm.discovery_consent}
+          onCheckedChange={toggleDiscovery}
+          disabled={discoverySaving}
+        />
+      </div>
 
-      <div className="mt-8">
-        <h2 className="text-lg font-semibold text-zinc-900">온보딩 답변</h2>
-        {PROFILE_SECTIONS.map((section) => (
-          <Card key={section.key} className="mt-4 p-6">
-            {editingAll ? (
-              <section.Component data={draftForm} setData={setDraftForm} />
-            ) : (
-              <div>
-                <p className="text-sm font-semibold text-zinc-700">{section.label}</p>
-                <p className="mt-1 text-sm text-zinc-500">{section.summary(profileForm)}</p>
+      <Card className="mt-4 p-6">
+        {editingAll ? (
+          <>
+            {PROFILE_SECTIONS.map((section, i) => (
+              <div key={section.key}>
+                {i > 0 && <Separator className="my-6" />}
+                <section.Component data={draftForm} setData={setDraftForm} />
               </div>
-            )}
-          </Card>
-        ))}
-
-        <div className="mt-4 flex gap-2">
-          {editingAll ? (
-            <>
+            ))}
+            <div className="mt-6 flex gap-2">
               <Button
                 onClick={saveAll}
                 disabled={savingAll}
@@ -431,14 +496,78 @@ function MyPage() {
               >
                 취소
               </Button>
-            </>
-          ) : (
-            <Button variant="outline" onClick={startEditAll} className="rounded-xl">
-              전체수정
-            </Button>
-          )}
-        </div>
-      </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <SectionRow icon={GraduationCap} label="학력">
+              {profileForm.education_level || profileForm.majors.length || profileForm.academic_mark ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  {profileForm.education_level && (
+                    <span className="text-sm text-zinc-800">{profileForm.education_level}</span>
+                  )}
+                  {profileForm.majors.map((m) => (
+                    <Tag key={m}>{m}</Tag>
+                  ))}
+                  {profileForm.academic_mark && (
+                    <span className="text-sm text-zinc-500">학점 {profileForm.academic_mark}/4.5</span>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-zinc-400">아직 입력하지 않았어요</p>
+              )}
+            </SectionRow>
+
+            <Separator />
+
+            <SectionRow icon={Briefcase} label="관심 직무">
+              {profileForm.job_interests.length ? (
+                <div className="flex flex-wrap gap-2">
+                  {profileForm.job_interests.map((j) => (
+                    <Tag key={j}>{j}</Tag>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-zinc-400">아직 선택하지 않았어요</p>
+              )}
+            </SectionRow>
+
+            <Separator />
+
+            <SectionRow icon={Building2} label="관심 기업">
+              {profileForm.company_interests.length ? (
+                <div className="flex flex-wrap gap-2">
+                  {profileForm.company_interests.map((c) => (
+                    <Tag key={c}>{c}</Tag>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-zinc-400">아직 선택하지 않았어요</p>
+              )}
+            </SectionRow>
+
+            <Separator />
+
+            <SectionRow icon={MapPin} label="근무 선호">
+              {profileForm.work_regions.length ||
+              profileForm.employment_types.length ||
+              profileForm.willing_to_relocate ? (
+                <div className="flex flex-wrap gap-2">
+                  {profileForm.work_regions.map((r) => (
+                    <Tag key={r}>{r}</Tag>
+                  ))}
+                  {profileForm.employment_types.map((t) => (
+                    <Tag key={t}>{t}</Tag>
+                  ))}
+                  {profileForm.willing_to_relocate && <Tag>이주 가능</Tag>}
+                </div>
+              ) : (
+                <p className="text-sm text-zinc-400">아직 입력하지 않았어요</p>
+              )}
+            </SectionRow>
+          </>
+        )}
+      </Card>
 
       <div className="mt-8">
         <h2 className="text-lg font-semibold text-zinc-900">완료한 시뮬레이션</h2>
@@ -456,7 +585,8 @@ function MyPage() {
           <ul className="mt-4 space-y-2">
             {history.map((h) => (
               <li key={h.submissionId}>
-                <Card className="flex items-center justify-between p-4">
+                <Card className="flex items-center gap-3 p-4">
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-zinc-400" />
                   <div>
                     <p className="font-medium text-zinc-900">{h.title}</p>
                     <p className="mt-0.5 text-xs text-zinc-400">
