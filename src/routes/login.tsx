@@ -63,7 +63,7 @@ function LoginPage() {
         posthog.identify(email, { email });
         posthog.capture("user_logged_in", { email, method: "email" });
         toast.success("로그인되었습니다.");
-        navigate({ to: redirect });
+        navigate({ to: redirect === "/" ? "/start" : redirect });
       }
     } finally {
       setSubmitting(false);
