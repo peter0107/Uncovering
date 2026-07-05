@@ -14,111 +14,111 @@ export type Database = {
   }
   public: {
     Tables: {
-      job_seekers: {
-        Row: {
-          id: string
-          email: string
-          education_level: string | null
-          majors: string[] | null
-          academic_mark: number | null
-          job_interests: string[] | null
-          company_interests: string[] | null
-          work_regions: string[] | null
-          employment_types: string[] | null
-          willing_to_relocate: boolean | null
-          one_line_intro: string | null
-          external_links: Json
-          discovery_consent: boolean | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          email: string
-          education_level?: string | null
-          majors?: string[] | null
-          academic_mark?: number | null
-          job_interests?: string[] | null
-          company_interests?: string[] | null
-          work_regions?: string[] | null
-          employment_types?: string[] | null
-          willing_to_relocate?: boolean | null
-          one_line_intro?: string | null
-          external_links?: Json
-          discovery_consent?: boolean | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          email?: string
-          education_level?: string | null
-          majors?: string[] | null
-          academic_mark?: number | null
-          job_interests?: string[] | null
-          company_interests?: string[] | null
-          work_regions?: string[] | null
-          employment_types?: string[] | null
-          willing_to_relocate?: boolean | null
-          one_line_intro?: string | null
-          external_links?: Json
-          discovery_consent?: boolean | null
-          created_at?: string
-        }
-        Relationships: []
-      }
       companies: {
         Row: {
+          created_at: string | null
           id: string
           name: string
           unique_code: string
-          created_at: string
         }
         Insert: {
+          created_at?: string | null
           id?: string
           name: string
           unique_code: string
-          created_at?: string
         }
         Update: {
+          created_at?: string | null
           id?: string
           name?: string
           unique_code?: string
-          created_at?: string
+        }
+        Relationships: []
+      }
+      job_seekers: {
+        Row: {
+          academic_mark: number | null
+          company_interests: string[] | null
+          created_at: string | null
+          discovery_consent: boolean | null
+          education_level: string | null
+          email: string
+          employment_types: string[] | null
+          external_links: Json | null
+          id: string
+          job_interests: string[] | null
+          majors: string[] | null
+          one_line_intro: string | null
+          willing_to_relocate: boolean | null
+          work_regions: string[] | null
+        }
+        Insert: {
+          academic_mark?: number | null
+          company_interests?: string[] | null
+          created_at?: string | null
+          discovery_consent?: boolean | null
+          education_level?: string | null
+          email: string
+          employment_types?: string[] | null
+          external_links?: Json | null
+          id?: string
+          job_interests?: string[] | null
+          majors?: string[] | null
+          one_line_intro?: string | null
+          willing_to_relocate?: boolean | null
+          work_regions?: string[] | null
+        }
+        Update: {
+          academic_mark?: number | null
+          company_interests?: string[] | null
+          created_at?: string | null
+          discovery_consent?: boolean | null
+          education_level?: string | null
+          email?: string
+          employment_types?: string[] | null
+          external_links?: Json | null
+          id?: string
+          job_interests?: string[] | null
+          majors?: string[] | null
+          one_line_intro?: string | null
+          willing_to_relocate?: boolean | null
+          work_regions?: string[] | null
         }
         Relationships: []
       }
       job_simulations: {
         Row: {
-          id: string
           company_id: string
-          title: string
+          created_at: string | null
           description: string | null
-          job_family: string | null
           domain: string | null
           estimated_minutes: number | null
+          id: string
+          job_family: string | null
           task_prompt: string | null
-          created_at: string
+          title: string
         }
         Insert: {
-          id?: string
           company_id: string
-          title: string
+          created_at?: string | null
           description?: string | null
-          job_family?: string | null
           domain?: string | null
           estimated_minutes?: number | null
+          id?: string
+          job_family?: string | null
           task_prompt?: string | null
-          created_at?: string
+          title: string
         }
         Update: {
-          id?: string
           company_id?: string
-          title?: string
+          created_at?: string | null
           description?: string | null
-          job_family?: string | null
           domain?: string | null
           estimated_minutes?: number | null
+          id?: string
+          job_family?: string | null
           task_prompt?: string | null
-          created_at?: string
+          title?: string
         }
         Relationships: [
           {
@@ -132,43 +132,43 @@ export type Database = {
       }
       submissions: {
         Row: {
+          answer_transmission_consent: boolean | null
+          created_at: string | null
+          duration_sec: number | null
           id: string
           job_seeker_id: string
           job_simulation_id: string
+          paste_detected: boolean | null
           response_text: string | null
+          score_json: Json | null
           started_at: string | null
           submitted_at: string | null
-          duration_sec: number | null
-          paste_detected: boolean | null
-          answer_transmission_consent: boolean | null
-          score_json: Json | null
-          created_at: string
         }
         Insert: {
+          answer_transmission_consent?: boolean | null
+          created_at?: string | null
+          duration_sec?: number | null
           id?: string
           job_seeker_id: string
           job_simulation_id: string
+          paste_detected?: boolean | null
           response_text?: string | null
+          score_json?: Json | null
           started_at?: string | null
           submitted_at?: string | null
-          duration_sec?: number | null
-          paste_detected?: boolean | null
-          answer_transmission_consent?: boolean | null
-          score_json?: Json | null
-          created_at?: string
         }
         Update: {
+          answer_transmission_consent?: boolean | null
+          created_at?: string | null
+          duration_sec?: number | null
           id?: string
           job_seeker_id?: string
           job_simulation_id?: string
+          paste_detected?: boolean | null
           response_text?: string | null
+          score_json?: Json | null
           started_at?: string | null
           submitted_at?: string | null
-          duration_sec?: number | null
-          paste_detected?: boolean | null
-          answer_transmission_consent?: boolean | null
-          score_json?: Json | null
-          created_at?: string
         }
         Relationships: [
           {
@@ -191,19 +191,27 @@ export type Database = {
     Views: {
       company_visible_submissions: {
         Row: {
-          id: string
-          company_id: string
-          simulation_title: string
-          response_text: string | null
-          submitted_at: string | null
-          duration_sec: number | null
-          paste_detected: boolean | null
-          one_line_intro: string | null
-          external_links: Json
-          job_interests: string[] | null
+          company_id: string | null
           discovery_consent: boolean | null
+          duration_sec: number | null
+          external_links: Json | null
+          id: string | null
+          job_interests: string[] | null
+          one_line_intro: string | null
+          paste_detected: boolean | null
+          response_text: string | null
+          simulation_title: string | null
+          submitted_at: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "job_simulations_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
