@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { usePostHog } from "@posthog/react";
 
 export const Route = createFileRoute("/login")({
-  head: () => ({ meta: [{ title: "로그인 — beginner" }] }),
+  head: () => ({ meta: [{ title: "로그인 — 언커버링" }] }),
   validateSearch: (s: Record<string, unknown>) => ({
     redirect: typeof s.redirect === "string" ? s.redirect : "/",
   }),

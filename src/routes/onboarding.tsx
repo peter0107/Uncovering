@@ -472,7 +472,7 @@ function OnboardingPage() {
   const handleFinish = async () => {
     if (!user) {
       toast.error("로그인이 필요합니다");
-      navigate({ to: "/login" });
+      navigate({ to: "/login", search: { redirect: "/onboarding" } });
       return;
     }
 

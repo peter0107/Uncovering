@@ -29,7 +29,7 @@ function GlobalNavigationOverlay() {
 
 function SiteLayout({ children }: { children: React.ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const bare = pathname.startsWith("/admin");
+  const bare = pathname.startsWith("/onboarding");
   if (bare) return <>{children}</>;
   return (
     <div className="flex min-h-screen flex-col">
@@ -102,41 +102,19 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Beginner - 하고 싶은 일을 찾기" },
+      { title: "언커버링 - 실제 업무로 나에게 맞는 회사 찾기" },
       {
         name: "description",
         content:
-          "관심 직무를 선택하고 실제 업무를 경험한 후, 직무 역량 리포트와 현직자 피드백까지 받아보세요.",
+          "관심 직무의 실제 업무 시뮬레이션을 체험하고, 답안을 기업에 전송해 발견되어보세요.",
       },
-      { property: "og:title", content: "Beginner - 하고 싶은 일을 찾기" },
+      { property: "og:title", content: "언커버링 - 실제 업무로 나에게 맞는 회사 찾기" },
       {
         property: "og:description",
         content:
-          "관심 직무를 선택하고 실제 업무를 경험한 후, 직무 역량 리포트와 현직자 피드백까지 받아보세요.",
+          "관심 직무의 실제 업무 시뮬레이션을 체험하고, 답안을 기업에 전송해 발견되어보세요.",
       },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:title", content: "Beginner - 하고 싶은 일을 찾기" },
-      {
-        name: "twitter:description",
-        content:
-          "관심 직무를 선택하고 실제 업무를 경험한 후, 직무 역량 리포트와 현직자 피드백까지 받아보세요.",
-      },
-      {
-        property: "og:image",
-        content:
-          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8a03b4ad-1812-4167-82f1-2103810ca739/id-preview-193e0ba8--bc1010db-6cc4-4e75-a858-7a48f9b5a376.lovable.app-1778568493500.png",
-      },
-      {
-        name: "twitter:image",
-        content:
-          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8a03b4ad-1812-4167-82f1-2103810ca739/id-preview-193e0ba8--bc1010db-6cc4-4e75-a858-7a48f9b5a376.lovable.app-1778568493500.png",
-      },
-      { name: "description", content: "Experience real job scenarios, get a personalized career report, and identify your strengths." },
-      { property: "og:description", content: "Experience real job scenarios, get a personalized career report, and identify your strengths." },
-      { name: "twitter:description", content: "Experience real job scenarios, get a personalized career report, and identify your strengths." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/7feeed6b-35f0-49cb-9ca5-129e56908ad4/id-preview-bfc275d2--7f9ca802-38e4-4c9e-9c3d-9f7551ac81e3.lovable.app-1783085120803.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/7feeed6b-35f0-49cb-9ca5-129e56908ad4/id-preview-bfc275d2--7f9ca802-38e4-4c9e-9c3d-9f7551ac81e3.lovable.app-1783085120803.png" },
     ],
     links: [
       {

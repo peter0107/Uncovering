@@ -195,7 +195,7 @@ function SimulationsPage() {
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
-      navigate({ to: "/login" });
+      navigate({ to: "/login", search: { redirect: "/simulations" } });
       return;
     }
 

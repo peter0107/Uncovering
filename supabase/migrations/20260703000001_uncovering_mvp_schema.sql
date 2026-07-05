@@ -114,6 +114,7 @@ where s.answer_transmission_consent = true;
 alter table job_seekers       enable row level security;
 alter table submissions       enable row level security;
 alter table job_simulations   enable row level security;
+alter table companies         enable row level security;
 
 -- 구직자: 본인 데이터만 읽기/쓰기
 create policy seeker_self_all on job_seekers
@@ -125,4 +126,8 @@ create policy sub_self_all on submissions
 
 -- job_simulations: 모든 인증 유저 읽기 허용 (구직자 추천용)
 create policy sim_read_auth on job_simulations
+  for select using (auth.role() = 'authenticated');
+
+-- companies: job_simulations 조인 시 기업명 노출용, 모든 인증 유저 읽기 허용
+create policy company_read_auth on companies
   for select using (auth.role() = 'authenticated');
