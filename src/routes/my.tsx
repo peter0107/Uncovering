@@ -1,17 +1,27 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { FileText } from "lucide-react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { Camera, FileText } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  type ProfileFormData,
+  INITIAL_PROFILE_FORM,
+  EducationFields,
+  JobInterestFields,
+  CompanyInterestFields,
+  WorkPreferenceFields,
+  DiscoveryConsentFields,
+} from "@/lib/profile-fields";
 
 export const Route = createFileRoute("/my")({
-  head: () => ({ meta: [{ title: "프로필 — Beginner" }] }),
+  head: () => ({ meta: [{ title: "프로필 — 언커버링" }] }),
   component: MyPage,
 });
 
@@ -24,15 +34,24 @@ type CompletedSimulation = {
   submittedAt: string | null;
 };
 
+const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
+
 function MyPage() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [hasProfile, setHasProfile] = useState<boolean | null>(null);
   const [oneLineIntro, setOneLineIntro] = useState("");
   const [links, setLinks] = useState<ExternalLinks>({});
+  const [profileForm, setProfileFormRaw] = useState<ProfileFormData>(INITIAL_PROFILE_FORM);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [history, setHistory] = useState<CompletedSimulation[] | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const setProfileForm = (partial: Partial<ProfileFormData>) =>
+    setProfileFormRaw((prev) => ({ ...prev, ...partial }));
 
   useEffect(() => {
     if (authLoading) return;
@@ -44,13 +63,25 @@ function MyPage() {
     (async () => {
       const { data: seeker } = await supabase
         .from("job_seekers")
-        .select("one_line_intro, external_links")
+        .select("*")
         .eq("id", user.id)
         .maybeSingle();
 
       setHasProfile(!!seeker);
       setOneLineIntro(seeker?.one_line_intro ?? "");
       setLinks((seeker?.external_links as ExternalLinks) ?? {});
+      setAvatarUrl(seeker?.avatar_url ?? null);
+      setProfileFormRaw({
+        education_level: seeker?.education_level ?? "",
+        majors: seeker?.majors ?? [],
+        academic_mark: seeker?.academic_mark != null ? String(seeker.academic_mark) : "",
+        job_interests: seeker?.job_interests ?? [],
+        company_interests: seeker?.company_interests ?? [],
+        work_regions: seeker?.work_regions ?? [],
+        employment_types: seeker?.employment_types ?? [],
+        willing_to_relocate: seeker?.willing_to_relocate ?? false,
+        discovery_consent: seeker?.discovery_consent ?? false,
+      });
 
       const { data: submissions } = await supabase
         .from("submissions")
@@ -78,12 +109,75 @@ function MyPage() {
     })();
   }, [user, authLoading, navigate]);
 
+  const handleAvatarChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !user) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("이미지 파일만 업로드할 수 있어요.");
+      return;
+    }
+    if (file.size > MAX_AVATAR_BYTES) {
+      toast.error("5MB 이하의 이미지만 업로드할 수 있어요.");
+      return;
+    }
+
+    setUploadingAvatar(true);
+    const ext = file.name.split(".").pop() || "jpg";
+    const path = `${user.id}/avatar.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("avatars")
+      .upload(path, file, { upsert: true });
+
+    if (uploadError) {
+      setUploadingAvatar(false);
+      toast.error("사진 업로드 중 오류가 발생했어요.");
+      return;
+    }
+
+    const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
+    const url = `${pub.publicUrl}?v=${Date.now()}`;
+
+    const { error: updateError } = await supabase
+      .from("job_seekers")
+      .update({ avatar_url: url })
+      .eq("id", user.id);
+
+    setUploadingAvatar(false);
+
+    if (updateError) {
+      toast.error("사진 저장 중 오류가 발생했어요.");
+      return;
+    }
+
+    setAvatarUrl(url);
+    toast.success("프로필 사진이 업데이트됐어요.");
+  };
+
   const saveProfile = async () => {
     if (!user) return;
     setSaving(true);
     const { error } = await supabase
       .from("job_seekers")
-      .update({ one_line_intro: oneLineIntro || null, external_links: links })
+      .update({
+        one_line_intro: oneLineIntro || null,
+        external_links: links,
+        education_level: profileForm.education_level || null,
+        majors: profileForm.majors.length ? profileForm.majors : null,
+        academic_mark: profileForm.academic_mark ? parseFloat(profileForm.academic_mark) : null,
+        job_interests: profileForm.job_interests.length ? profileForm.job_interests : null,
+        company_interests: profileForm.company_interests.length
+          ? profileForm.company_interests
+          : null,
+        work_regions: profileForm.work_regions.length ? profileForm.work_regions : null,
+        employment_types: profileForm.employment_types.length
+          ? profileForm.employment_types
+          : null,
+        willing_to_relocate: profileForm.willing_to_relocate,
+        discovery_consent: profileForm.discovery_consent,
+      })
       .eq("id", user.id);
     setSaving(false);
     if (error) {
@@ -125,15 +219,47 @@ function MyPage() {
       <h1 className="text-2xl font-bold text-zinc-900">프로필</h1>
 
       <Card className="mt-6 p-6">
-        <Label htmlFor="intro">한줄소개</Label>
-        <Input
-          id="intro"
-          value={oneLineIntro}
-          onChange={(e) => setOneLineIntro(e.target.value)}
-          placeholder="나를 한 줄로 소개해보세요"
-          maxLength={100}
-          className="mt-2"
-        />
+        <div className="flex items-center gap-4">
+          <div className="relative shrink-0">
+            <Avatar className="h-20 w-20">
+              <AvatarImage src={avatarUrl ?? undefined} alt="프로필 사진" />
+              <AvatarFallback className="text-lg">
+                {(user?.email ?? "?").slice(0, 1).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingAvatar}
+              aria-label="프로필 사진 변경"
+              className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-zinc-900 text-white shadow hover:bg-zinc-700 disabled:opacity-50"
+            >
+              <Camera className="h-3.5 w-3.5" />
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarChange}
+            />
+          </div>
+          <p className="text-sm text-zinc-500">
+            {uploadingAvatar ? "업로드 중..." : "프로필 사진을 등록해보세요"}
+          </p>
+        </div>
+
+        <div className="mt-6">
+          <Label htmlFor="intro">한줄소개</Label>
+          <Input
+            id="intro"
+            value={oneLineIntro}
+            onChange={(e) => setOneLineIntro(e.target.value)}
+            placeholder="나를 한 줄로 소개해보세요"
+            maxLength={100}
+            className="mt-2"
+          />
+        </div>
 
         <div className="mt-6 grid gap-3">
           <div>
@@ -167,15 +293,31 @@ function MyPage() {
             />
           </div>
         </div>
-
-        <Button
-          onClick={saveProfile}
-          disabled={saving}
-          className="mt-6 rounded-xl bg-zinc-900 text-white hover:bg-zinc-700"
-        >
-          {saving ? "저장 중..." : "저장"}
-        </Button>
       </Card>
+
+      <Card className="mt-6 p-6">
+        <EducationFields data={profileForm} setData={setProfileForm} />
+      </Card>
+      <Card className="mt-6 p-6">
+        <JobInterestFields data={profileForm} setData={setProfileForm} />
+      </Card>
+      <Card className="mt-6 p-6">
+        <CompanyInterestFields data={profileForm} setData={setProfileForm} />
+      </Card>
+      <Card className="mt-6 p-6">
+        <WorkPreferenceFields data={profileForm} setData={setProfileForm} />
+      </Card>
+      <Card className="mt-6 p-6">
+        <DiscoveryConsentFields data={profileForm} setData={setProfileForm} />
+      </Card>
+
+      <Button
+        onClick={saveProfile}
+        disabled={saving}
+        className="mt-6 rounded-xl bg-zinc-900 text-white hover:bg-zinc-700"
+      >
+        {saving ? "저장 중..." : "저장"}
+      </Button>
 
       <div className="mt-8">
         <h2 className="text-lg font-semibold text-zinc-900">완료한 시뮬레이션</h2>

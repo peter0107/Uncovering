@@ -38,6 +38,7 @@ export type Database = {
       job_seekers: {
         Row: {
           academic_mark: number | null
+          avatar_url: string | null
           company_interests: string[] | null
           created_at: string | null
           discovery_consent: boolean | null
@@ -54,6 +55,7 @@ export type Database = {
         }
         Insert: {
           academic_mark?: number | null
+          avatar_url?: string | null
           company_interests?: string[] | null
           created_at?: string | null
           discovery_consent?: boolean | null
@@ -70,6 +72,7 @@ export type Database = {
         }
         Update: {
           academic_mark?: number | null
+          avatar_url?: string | null
           company_interests?: string[] | null
           created_at?: string | null
           discovery_consent?: boolean | null
