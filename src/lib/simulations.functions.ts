@@ -18,6 +18,20 @@ export type AdminSimulationRequest = {
   updatedAt: string;
 };
 
+export type AdminCompanySimulation = {
+  id: string;
+  companyId: string;
+  companyCode: string;
+  companyName: string;
+  title: string;
+  roleLabel: string;
+  jobFamily: string;
+  domain: string;
+  estimatedMinutes: number | null;
+  description: string;
+  createdAt: string;
+};
+
 const statusEnum = z.enum(["pending", "in_progress", "completed", "rejected"]);
 
 const companyRequestInputSchema = z.object({
@@ -125,6 +139,23 @@ function mapAdminRequest(row: Record<string, unknown>): AdminSimulationRequest {
   };
 }
 
+function mapAdminSimulation(row: Record<string, unknown>): AdminCompanySimulation {
+  const company = (row.companies ?? {}) as Record<string, unknown>;
+  return {
+    id: String(row.id),
+    companyId: String(row.company_id),
+    companyCode: String(company.code ?? company.unique_code ?? ""),
+    companyName: String(company.name ?? ""),
+    title: String(row.title),
+    roleLabel: String(row.role_label ?? row.job_family ?? row.title),
+    jobFamily: String(row.job_family ?? ""),
+    domain: String(row.domain ?? ""),
+    estimatedMinutes: typeof row.estimated_minutes === "number" ? row.estimated_minutes : null,
+    description: String(row.description ?? ""),
+    createdAt: formatDateTime(String(row.created_at)),
+  };
+}
+
 export const createJobSimulationRequest = createServerFn({ method: "POST" })
   .inputValidator(companyRequestInputSchema)
   .handler(async ({ data }) => {
@@ -173,6 +204,27 @@ export const getAdminSimulationRequests = createServerFn({ method: "GET" }).hand
     }
 
     return ((data ?? []) as Record<string, unknown>[]).map(mapAdminRequest);
+  },
+);
+
+export const getAdminCompanySimulations = createServerFn({ method: "GET" }).handler(
+  async (): Promise<AdminCompanySimulation[]> => {
+    await assertAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data, error } = await supabaseAdmin
+      .from("job_simulations")
+      .select(
+        "id, company_id, title, role_label, job_family, domain, estimated_minutes, description, created_at, companies(code, unique_code, name)",
+      )
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Failed to load company simulations:", error);
+      throw new Error("Failed to load company simulations");
+    }
+
+    return ((data ?? []) as Record<string, unknown>[]).map(mapAdminSimulation);
   },
 );
 

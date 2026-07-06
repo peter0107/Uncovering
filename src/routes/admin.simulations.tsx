@@ -1,12 +1,14 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { CheckCircle2, Inbox, Plus, RefreshCw } from "lucide-react";
+import { CheckCircle2, Inbox, ListChecks, Plus, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
 
 import { useAuth } from "@/hooks/use-auth";
 import {
   createCompanySimulation,
+  getAdminCompanySimulations,
   getAdminSimulationRequests,
   updateJobSimulationRequestStatus,
+  type AdminCompanySimulation,
   type AdminSimulationRequest,
   type SimulationRequestStatus,
 } from "@/lib/simulations.functions";
@@ -56,6 +58,7 @@ function AdminSimulations() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [requests, setRequests] = useState<AdminSimulationRequest[]>([]);
+  const [simulations, setSimulations] = useState<AdminCompanySimulation[]>([]);
   const [form, setForm] = useState<SimulationForm>(EMPTY_FORM);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -71,10 +74,14 @@ function AdminSimulations() {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await getAdminSimulationRequests();
-      setRequests(data);
+      const [requestData, simulationData] = await Promise.all([
+        getAdminSimulationRequests(),
+        getAdminCompanySimulations(),
+      ]);
+      setRequests(requestData);
+      setSimulations(simulationData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "요청 목록을 불러오지 못했습니다.");
+      setError(err instanceof Error ? err.message : "관리자 목록을 불러오지 못했습니다.");
     } finally {
       setIsLoading(false);
     }
@@ -204,84 +211,144 @@ function AdminSimulations() {
       )}
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[380px_1fr]">
-        <section className="rounded-md border border-neutral-200">
-          <div className="flex items-center justify-between border-b border-neutral-200 p-4">
-            <div>
-              <h2 className="text-sm font-semibold text-neutral-900">직무 요청함</h2>
-              <p className="mt-1 text-xs text-neutral-500">기업이 보낸 요청 {requests.length}건</p>
-            </div>
-            <Inbox className="h-4 w-4 text-neutral-400" />
-          </div>
-
-          <div className="max-h-[720px] space-y-2 overflow-y-auto p-3">
-            {requests.map((request) => (
-              <article
-                key={request.id}
-                className={`rounded-md border p-4 ${
-                  request.id === selectedRequest?.id
-                    ? "border-neutral-900 bg-neutral-50"
-                    : "border-neutral-200 bg-white"
-                }`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="text-sm font-semibold text-neutral-900">
-                      {request.requestedRole}
-                    </h3>
-                    <p className="mt-1 text-xs text-neutral-500">
-                      {request.companyName} · {request.companyCode}
-                    </p>
-                  </div>
-                  <span className="rounded bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-600">
-                    {STATUS_LABEL[request.status]}
-                  </span>
-                </div>
-
-                {request.requestNote && (
-                  <p className="mt-3 line-clamp-3 text-xs leading-5 text-neutral-600">
-                    {request.requestNote}
-                  </p>
-                )}
-                <p className="mt-3 text-xs text-neutral-400">{request.createdAt}</p>
-
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => fillFromRequest(request)}
-                    className="h-8 rounded-md bg-neutral-900 px-3 text-xs font-medium text-white hover:bg-neutral-800"
-                  >
-                    입력 폼에 사용
-                  </button>
-                  {request.status !== "in_progress" && (
-                    <button
-                      type="button"
-                      onClick={() => changeRequestStatus(request.id, "in_progress")}
-                      className="h-8 rounded-md border border-neutral-300 px-3 text-xs font-medium hover:bg-neutral-50"
-                    >
-                      처리중
-                    </button>
-                  )}
-                  {request.status !== "completed" && (
-                    <button
-                      type="button"
-                      onClick={() => changeRequestStatus(request.id, "completed")}
-                      className="inline-flex h-8 items-center gap-1 rounded-md border border-neutral-300 px-3 text-xs font-medium hover:bg-neutral-50"
-                    >
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      완료
-                    </button>
-                  )}
-                </div>
-              </article>
-            ))}
-
-            {requests.length === 0 && (
-              <div className="rounded-md border border-dashed border-neutral-200 p-8 text-center text-sm text-neutral-500">
-                아직 접수된 직무 요청이 없습니다.
+        <div className="space-y-6">
+          <section className="rounded-md border border-neutral-200">
+            <div className="flex items-center justify-between border-b border-neutral-200 p-4">
+              <div>
+                <h2 className="text-sm font-semibold text-neutral-900">직무 요청함</h2>
+                <p className="mt-1 text-xs text-neutral-500">
+                  기업이 보낸 요청 {requests.length}건
+                </p>
               </div>
-            )}
-          </div>
-        </section>
+              <Inbox className="h-4 w-4 text-neutral-400" />
+            </div>
+
+            <div className="max-h-[420px] space-y-2 overflow-y-auto p-3">
+              {requests.map((request) => (
+                <article
+                  key={request.id}
+                  className={`rounded-md border p-4 ${
+                    request.id === selectedRequest?.id
+                      ? "border-neutral-900 bg-neutral-50"
+                      : "border-neutral-200 bg-white"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-semibold text-neutral-900">
+                        {request.requestedRole}
+                      </h3>
+                      <p className="mt-1 text-xs text-neutral-500">
+                        {request.companyName} · {request.companyCode}
+                      </p>
+                    </div>
+                    <span className="rounded bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-600">
+                      {STATUS_LABEL[request.status]}
+                    </span>
+                  </div>
+
+                  {request.requestNote && (
+                    <p className="mt-3 line-clamp-3 text-xs leading-5 text-neutral-600">
+                      {request.requestNote}
+                    </p>
+                  )}
+                  <p className="mt-3 text-xs text-neutral-400">{request.createdAt}</p>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => fillFromRequest(request)}
+                      className="h-8 rounded-md bg-neutral-900 px-3 text-xs font-medium text-white hover:bg-neutral-800"
+                    >
+                      입력 폼에 사용
+                    </button>
+                    {request.status !== "in_progress" && (
+                      <button
+                        type="button"
+                        onClick={() => changeRequestStatus(request.id, "in_progress")}
+                        className="h-8 rounded-md border border-neutral-300 px-3 text-xs font-medium hover:bg-neutral-50"
+                      >
+                        처리중
+                      </button>
+                    )}
+                    {request.status !== "completed" && (
+                      <button
+                        type="button"
+                        onClick={() => changeRequestStatus(request.id, "completed")}
+                        className="inline-flex h-8 items-center gap-1 rounded-md border border-neutral-300 px-3 text-xs font-medium hover:bg-neutral-50"
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        완료
+                      </button>
+                    )}
+                  </div>
+                </article>
+              ))}
+
+              {requests.length === 0 && (
+                <div className="rounded-md border border-dashed border-neutral-200 p-8 text-center text-sm text-neutral-500">
+                  아직 접수된 직무 요청이 없습니다.
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="rounded-md border border-neutral-200">
+            <div className="flex items-center justify-between border-b border-neutral-200 p-4">
+              <div>
+                <h2 className="text-sm font-semibold text-neutral-900">등록된 시뮬레이션</h2>
+                <p className="mt-1 text-xs text-neutral-500">
+                  현재 DB에 있는 직무 시뮬레이션 {simulations.length}건
+                </p>
+              </div>
+              <ListChecks className="h-4 w-4 text-neutral-400" />
+            </div>
+
+            <div className="max-h-[420px] space-y-2 overflow-y-auto p-3">
+              {simulations.map((simulation) => (
+                <article key={simulation.id} className="rounded-md border border-neutral-200 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 className="text-sm font-semibold text-neutral-900">
+                        {simulation.roleLabel}
+                      </h3>
+                      <p className="mt-1 text-xs text-neutral-500">
+                        {simulation.companyName} · {simulation.companyCode}
+                      </p>
+                    </div>
+                    {simulation.estimatedMinutes && (
+                      <span className="rounded bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-600">
+                        {simulation.estimatedMinutes}분
+                      </span>
+                    )}
+                  </div>
+                  <p className="mt-3 text-sm font-medium text-neutral-800">{simulation.title}</p>
+                  {simulation.description && (
+                    <p className="mt-2 line-clamp-2 text-xs leading-5 text-neutral-500">
+                      {simulation.description}
+                    </p>
+                  )}
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs text-neutral-500">
+                    {simulation.jobFamily && (
+                      <span className="rounded bg-neutral-50 px-2 py-1">
+                        {simulation.jobFamily}
+                      </span>
+                    )}
+                    {simulation.domain && (
+                      <span className="rounded bg-neutral-50 px-2 py-1">{simulation.domain}</span>
+                    )}
+                  </div>
+                </article>
+              ))}
+
+              {simulations.length === 0 && (
+                <div className="rounded-md border border-dashed border-neutral-200 p-8 text-center text-sm text-neutral-500">
+                  등록된 직무 시뮬레이션이 없습니다.
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
 
         <section className="rounded-md border border-neutral-200">
           <div className="border-b border-neutral-200 p-4">
