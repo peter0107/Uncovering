@@ -35,47 +35,6 @@ export type Database = {
         };
         Relationships: [];
       };
-      job_simulation_requests: {
-        Row: {
-          company_id: string;
-          contact_email: string | null;
-          created_at: string;
-          id: string;
-          request_note: string;
-          requested_role: string;
-          status: string;
-          updated_at: string;
-        };
-        Insert: {
-          company_id: string;
-          contact_email?: string | null;
-          created_at?: string;
-          id?: string;
-          request_note?: string;
-          requested_role: string;
-          status?: string;
-          updated_at?: string;
-        };
-        Update: {
-          company_id?: string;
-          contact_email?: string | null;
-          created_at?: string;
-          id?: string;
-          request_note?: string;
-          requested_role?: string;
-          status?: string;
-          updated_at?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "job_simulation_requests_company_id_fkey";
-            columns: ["company_id"];
-            isOneToOne: false;
-            referencedRelation: "companies";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
       job_seekers: {
         Row: {
           academic_mark: number | null;

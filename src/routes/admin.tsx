@@ -1,11 +1,11 @@
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
-import { ArrowRight, BriefcaseBusiness, Inbox } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowRight, BriefcaseBusiness, ListChecks } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 
 import { useAuth } from "@/hooks/use-auth";
 import {
-  getAdminSimulationRequests,
-  type AdminSimulationRequest,
+  getAdminCompanySimulations,
+  type AdminCompanySimulation,
 } from "@/lib/simulations.functions";
 
 export const Route = createFileRoute("/admin")({
@@ -22,22 +22,17 @@ function AdminHome() {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const { user, loading: authLoading } = useAuth();
-  const [requests, setRequests] = useState<AdminSimulationRequest[]>([]);
+  const [simulations, setSimulations] = useState<AdminCompanySimulation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const isAdminHome = pathname.replace(/\/+$/, "") === "/admin";
-
-  const pendingCount = useMemo(
-    () => requests.filter((request) => request.status === "pending").length,
-    [requests],
-  );
 
   const loadDashboard = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await getAdminSimulationRequests();
-      setRequests(data);
+      const data = await getAdminCompanySimulations();
+      setSimulations(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "관리자 정보를 불러오지 못했습니다.");
     } finally {
@@ -76,7 +71,7 @@ function AdminHome() {
           <p className="text-xs font-medium text-neutral-500">관리자 홈</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight">운영 관리</h1>
           <p className="mt-2 text-sm text-neutral-500">
-            기업 요청과 직무 시뮬레이션 입력 화면으로 이동합니다.
+            기업별 직무 시뮬레이션 입력 화면으로 이동합니다.
           </p>
         </div>
 
@@ -107,7 +102,7 @@ function AdminHome() {
                     직무 시뮬레이션 관리
                   </h2>
                   <p className="mt-2 text-sm leading-6 text-neutral-500">
-                    기업 요청을 확인하고 기업 코드별 직무 시뮬레이션을 추가합니다.
+                    기업 코드별 직무 시뮬레이션을 등록하고 관리합니다.
                   </p>
                 </div>
                 <ArrowRight className="mt-1 h-4 w-4 text-neutral-400 transition-colors group-hover:text-neutral-900" />
@@ -118,11 +113,11 @@ function AdminHome() {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="grid h-10 w-10 place-items-center rounded-md bg-neutral-100 text-neutral-900">
-                    <Inbox className="h-5 w-5" />
+                    <ListChecks className="h-5 w-5" />
                   </div>
-                  <h2 className="mt-4 text-base font-semibold text-neutral-900">요청 현황</h2>
+                  <h2 className="mt-4 text-base font-semibold text-neutral-900">등록 현황</h2>
                   <p className="mt-2 text-sm text-neutral-500">
-                    전체 {requests.length}건 · 대기 {pendingCount}건
+                    등록된 직무 시뮬레이션 {simulations.length}건
                   </p>
                 </div>
               </div>

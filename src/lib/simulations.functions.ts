@@ -3,21 +3,6 @@ import { getRequest } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
-export type SimulationRequestStatus = "pending" | "in_progress" | "completed" | "rejected";
-
-export type AdminSimulationRequest = {
-  id: string;
-  companyId: string;
-  companyCode: string;
-  companyName: string;
-  requestedRole: string;
-  requestNote: string;
-  contactEmail: string;
-  status: SimulationRequestStatus;
-  createdAt: string;
-  updatedAt: string;
-};
-
 export type AdminCompanySimulation = {
   id: string;
   companyId: string;
@@ -32,15 +17,6 @@ export type AdminCompanySimulation = {
   createdAt: string;
 };
 
-const statusEnum = z.enum(["pending", "in_progress", "completed", "rejected"]);
-
-const companyRequestInputSchema = z.object({
-  code: z.string().min(1),
-  requestedRole: z.string().min(1),
-  requestNote: z.string().optional().default(""),
-  contactEmail: z.string().email().optional().or(z.literal("")).default(""),
-});
-
 const createCompanySimulationInputSchema = z.object({
   companyCode: z.string().min(1),
   title: z.string().min(1),
@@ -50,12 +26,6 @@ const createCompanySimulationInputSchema = z.object({
   domain: z.string().optional().default(""),
   estimatedMinutes: z.number().int().positive().nullable().optional().default(null),
   taskPrompt: z.string().min(1),
-  requestId: z.string().uuid().optional(),
-});
-
-const updateRequestStatusInputSchema = z.object({
-  requestId: z.string().uuid(),
-  status: statusEnum,
 });
 
 function createPublicServerClient() {
@@ -123,22 +93,6 @@ function formatDateTime(iso: string): string {
   return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")}`;
 }
 
-function mapAdminRequest(row: Record<string, unknown>): AdminSimulationRequest {
-  const company = (row.companies ?? {}) as Record<string, unknown>;
-  return {
-    id: String(row.id),
-    companyId: String(row.company_id),
-    companyCode: String(company.code ?? ""),
-    companyName: String(company.name ?? ""),
-    requestedRole: String(row.requested_role),
-    requestNote: String(row.request_note ?? ""),
-    contactEmail: String(row.contact_email ?? ""),
-    status: statusEnum.parse(row.status),
-    createdAt: formatDateTime(String(row.created_at)),
-    updatedAt: formatDateTime(String(row.updated_at)),
-  };
-}
-
 function mapAdminSimulation(row: Record<string, unknown>): AdminCompanySimulation {
   const company = (row.companies ?? {}) as Record<string, unknown>;
   return {
@@ -155,57 +109,6 @@ function mapAdminSimulation(row: Record<string, unknown>): AdminCompanySimulatio
     createdAt: formatDateTime(String(row.created_at)),
   };
 }
-
-export const createJobSimulationRequest = createServerFn({ method: "POST" })
-  .inputValidator(companyRequestInputSchema)
-  .handler(async ({ data }) => {
-    const supabase = createPublicServerClient();
-
-    const { data: company, error: companyError } = await supabase
-      .from("companies")
-      .select("id")
-      .eq("code", data.code)
-      .single();
-
-    if (companyError || !company) {
-      throw new Error("Invalid company code");
-    }
-
-    const { error } = await supabase.from("job_simulation_requests").insert({
-      company_id: company.id,
-      requested_role: data.requestedRole,
-      request_note: data.requestNote,
-      contact_email: data.contactEmail || null,
-    });
-
-    if (error) {
-      console.error("Failed to create simulation request:", error);
-      throw new Error("Failed to create simulation request");
-    }
-
-    return { ok: true };
-  });
-
-export const getAdminSimulationRequests = createServerFn({ method: "GET" }).handler(
-  async (): Promise<AdminSimulationRequest[]> => {
-    await assertAdmin();
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    const { data, error } = await supabaseAdmin
-      .from("job_simulation_requests")
-      .select(
-        "id, company_id, requested_role, request_note, contact_email, status, created_at, updated_at, companies(code, name)",
-      )
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Failed to load simulation requests:", error);
-      throw new Error("Failed to load simulation requests");
-    }
-
-    return ((data ?? []) as Record<string, unknown>[]).map(mapAdminRequest);
-  },
-);
 
 export const getAdminCompanySimulations = createServerFn({ method: "GET" }).handler(
   async (): Promise<AdminCompanySimulation[]> => {
@@ -227,25 +130,6 @@ export const getAdminCompanySimulations = createServerFn({ method: "GET" }).hand
     return ((data ?? []) as Record<string, unknown>[]).map(mapAdminSimulation);
   },
 );
-
-export const updateJobSimulationRequestStatus = createServerFn({ method: "POST" })
-  .inputValidator(updateRequestStatusInputSchema)
-  .handler(async ({ data }) => {
-    await assertAdmin();
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    const { error } = await supabaseAdmin
-      .from("job_simulation_requests")
-      .update({ status: data.status, updated_at: new Date().toISOString() })
-      .eq("id", data.requestId);
-
-    if (error) {
-      console.error("Failed to update simulation request:", error);
-      throw new Error("Failed to update simulation request");
-    }
-
-    return { ok: true };
-  });
 
 export const createCompanySimulation = createServerFn({ method: "POST" })
   .inputValidator(createCompanySimulationInputSchema)
@@ -277,13 +161,6 @@ export const createCompanySimulation = createServerFn({ method: "POST" })
     if (error) {
       console.error("Failed to create company simulation:", error);
       throw new Error("Failed to create company simulation");
-    }
-
-    if (data.requestId) {
-      await supabaseAdmin
-        .from("job_simulation_requests")
-        .update({ status: "completed", updated_at: new Date().toISOString() })
-        .eq("id", data.requestId);
     }
 
     return { ok: true };
