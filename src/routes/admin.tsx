@@ -1,0 +1,128 @@
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { ArrowRight, BriefcaseBusiness, Inbox } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+import { useAuth } from "@/hooks/use-auth";
+import {
+  getAdminSimulationRequests,
+  type AdminSimulationRequest,
+} from "@/lib/simulations.functions";
+
+export const Route = createFileRoute("/admin")({
+  head: () => ({
+    meta: [
+      { title: "Beginner - 관리자" },
+      { name: "description", content: "Beginner 관리자 홈입니다." },
+    ],
+  }),
+  component: AdminHome,
+});
+
+function AdminHome() {
+  const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
+  const [requests, setRequests] = useState<AdminSimulationRequest[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const pendingCount = useMemo(
+    () => requests.filter((request) => request.status === "pending").length,
+    [requests],
+  );
+
+  const loadDashboard = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await getAdminSimulationRequests();
+      setRequests(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "관리자 정보를 불러오지 못했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      navigate({ to: "/login", search: { redirect: "/admin" } });
+      return;
+    }
+    void loadDashboard();
+  }, [authLoading, user, navigate, loadDashboard]);
+
+  return (
+    <div className="min-h-screen bg-white text-neutral-900">
+      <header className="flex h-14 items-center justify-between border-b border-neutral-200 px-6">
+        <div>
+          <span className="text-sm font-semibold tracking-tight">Beginner</span>
+          <span className="ml-2 text-xs text-neutral-500">Admin</span>
+        </div>
+        <Link to="/biz" className="text-xs font-medium text-neutral-500 hover:text-neutral-900">
+          기업 페이지
+        </Link>
+      </header>
+
+      <main className="mx-auto max-w-5xl px-6 py-8">
+        <div className="border-b border-neutral-200 pb-6">
+          <p className="text-xs font-medium text-neutral-500">관리자 홈</p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight">운영 관리</h1>
+          <p className="mt-2 text-sm text-neutral-500">
+            기업 요청과 직무 시뮬레이션 입력 화면으로 이동합니다.
+          </p>
+        </div>
+
+        {(authLoading || isLoading) && (
+          <div className="py-16 text-center text-sm text-neutral-500">
+            관리자 정보를 확인 중입니다...
+          </div>
+        )}
+
+        {!authLoading && !isLoading && error && (
+          <div className="mt-6 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        {!authLoading && !isLoading && !error && (
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            <Link
+              to="/admin/simulations"
+              className="group rounded-md border border-neutral-200 p-5 transition-colors hover:border-neutral-900 hover:bg-neutral-50"
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="grid h-10 w-10 place-items-center rounded-md bg-neutral-900 text-white">
+                    <BriefcaseBusiness className="h-5 w-5" />
+                  </div>
+                  <h2 className="mt-4 text-base font-semibold text-neutral-900">
+                    직무 시뮬레이션 관리
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-neutral-500">
+                    기업 요청을 확인하고 기업 코드별 직무 시뮬레이션을 추가합니다.
+                  </p>
+                </div>
+                <ArrowRight className="mt-1 h-4 w-4 text-neutral-400 transition-colors group-hover:text-neutral-900" />
+              </div>
+            </Link>
+
+            <section className="rounded-md border border-neutral-200 p-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="grid h-10 w-10 place-items-center rounded-md bg-neutral-100 text-neutral-900">
+                    <Inbox className="h-5 w-5" />
+                  </div>
+                  <h2 className="mt-4 text-base font-semibold text-neutral-900">요청 현황</h2>
+                  <p className="mt-2 text-sm text-neutral-500">
+                    전체 {requests.length}건 · 대기 {pendingCount}건
+                  </p>
+                </div>
+              </div>
+            </section>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}

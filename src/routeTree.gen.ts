@@ -15,6 +15,7 @@ import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as MyRouteImport } from './routes/my'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as BizRouteImport } from './routes/biz'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SimulationIdRouteImport } from './routes/simulation.$id'
 import { Route as BizReviewRouteImport } from './routes/biz_.review'
@@ -50,6 +51,11 @@ const BizRoute = BizRouteImport.update({
   path: '/biz',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -66,13 +72,14 @@ const BizReviewRoute = BizReviewRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminSimulationsRoute = AdminSimulationsRouteImport.update({
-  id: '/admin/simulations',
-  path: '/admin/simulations',
-  getParentRoute: () => rootRouteImport,
+  id: '/simulations',
+  path: '/simulations',
+  getParentRoute: () => AdminRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/biz': typeof BizRoute
   '/login': typeof LoginRoute
   '/my': typeof MyRoute
@@ -85,6 +92,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/biz': typeof BizRoute
   '/login': typeof LoginRoute
   '/my': typeof MyRoute
@@ -98,6 +106,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/biz': typeof BizRoute
   '/login': typeof LoginRoute
   '/my': typeof MyRoute
@@ -112,6 +121,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/biz'
     | '/login'
     | '/my'
@@ -124,6 +134,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin'
     | '/biz'
     | '/login'
     | '/my'
@@ -136,6 +147,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/biz'
     | '/login'
     | '/my'
@@ -149,13 +161,13 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
   BizRoute: typeof BizRoute
   LoginRoute: typeof LoginRoute
   MyRoute: typeof MyRoute
   OnboardingRoute: typeof OnboardingRoute
   SimulationsRoute: typeof SimulationsRoute
   StartRoute: typeof StartRoute
-  AdminSimulationsRoute: typeof AdminSimulationsRoute
   BizReviewRoute: typeof BizReviewRoute
   SimulationIdRoute: typeof SimulationIdRoute
 }
@@ -204,6 +216,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BizRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -227,23 +246,33 @@ declare module '@tanstack/react-router' {
     }
     '/admin/simulations': {
       id: '/admin/simulations'
-      path: '/admin/simulations'
+      path: '/simulations'
       fullPath: '/admin/simulations'
       preLoaderRoute: typeof AdminSimulationsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AdminRoute
     }
   }
 }
 
+interface AdminRouteChildren {
+  AdminSimulationsRoute: typeof AdminSimulationsRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminSimulationsRoute: AdminSimulationsRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
   BizRoute: BizRoute,
   LoginRoute: LoginRoute,
   MyRoute: MyRoute,
   OnboardingRoute: OnboardingRoute,
   SimulationsRoute: SimulationsRoute,
   StartRoute: StartRoute,
-  AdminSimulationsRoute: AdminSimulationsRoute,
   BizReviewRoute: BizReviewRoute,
   SimulationIdRoute: SimulationIdRoute,
 }
