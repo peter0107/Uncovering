@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { ArrowRight, BriefcaseBusiness, Inbox } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -20,10 +20,12 @@ export const Route = createFileRoute("/admin")({
 
 function AdminHome() {
   const navigate = useNavigate();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const { user, loading: authLoading } = useAuth();
   const [requests, setRequests] = useState<AdminSimulationRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isAdminHome = pathname.replace(/\/+$/, "") === "/admin";
 
   const pendingCount = useMemo(
     () => requests.filter((request) => request.status === "pending").length,
@@ -44,13 +46,18 @@ function AdminHome() {
   }, []);
 
   useEffect(() => {
+    if (!isAdminHome) return;
     if (authLoading) return;
     if (!user) {
       navigate({ to: "/login", search: { redirect: "/admin" } });
       return;
     }
     void loadDashboard();
-  }, [authLoading, user, navigate, loadDashboard]);
+  }, [authLoading, user, navigate, loadDashboard, isAdminHome]);
+
+  if (!isAdminHome) {
+    return <Outlet />;
+  }
 
   return (
     <div className="min-h-screen bg-white text-neutral-900">
