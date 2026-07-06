@@ -33,7 +33,7 @@ with a_company as (
 ),
 existing_simulation as (
   select js.id
-  from public.job_simulations
+  from public.job_simulations js
   join a_company on a_company.company_id = js.company_id
   where coalesce(js.role_label, '') = '마케팅 매니저'
   order by js.created_at nulls last, js.id
