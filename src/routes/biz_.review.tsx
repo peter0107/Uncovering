@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { Bookmark } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 
@@ -36,6 +37,8 @@ function BizReview() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [savedIds, setSavedIds] = useState<Set<string>>(() => new Set());
+  const [showSavedOnly, setShowSavedOnly] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -68,10 +71,28 @@ function BizReview() {
     };
   }, [code]);
 
+  const visibleApplicants = useMemo(() => {
+    const applicants = data?.applicants ?? [];
+    if (!showSavedOnly) return applicants;
+    return applicants.filter((applicant) => savedIds.has(applicant.id));
+  }, [data, savedIds, showSavedOnly]);
+
   const selectedApplicant = useMemo(
-    () => data?.applicants.find((applicant) => applicant.id === selectedId) ?? null,
-    [data, selectedId],
+    () =>
+      visibleApplicants.find((applicant) => applicant.id === selectedId) ??
+      visibleApplicants[0] ??
+      null,
+    [selectedId, visibleApplicants],
   );
+
+  function toggleSaved(id: string) {
+    setSavedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   if (isLoading) {
     return <BizShell>지원자 정보를 불러오는 중입니다...</BizShell>;
@@ -114,31 +135,75 @@ function BizReview() {
             총 {data.applicants.length}명의 제출자가 있습니다.
           </p>
 
+          <div className="mt-5 grid grid-cols-2 rounded-md border border-neutral-200 bg-white p-1">
+            <button
+              type="button"
+              onClick={() => setShowSavedOnly(false)}
+              className={`h-9 rounded text-xs font-medium transition-colors ${
+                !showSavedOnly
+                  ? "bg-neutral-900 text-white"
+                  : "text-neutral-600 hover:bg-neutral-50"
+              }`}
+            >
+              전체
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowSavedOnly(true)}
+              className={`h-9 rounded text-xs font-medium transition-colors ${
+                showSavedOnly ? "bg-neutral-900 text-white" : "text-neutral-600 hover:bg-neutral-50"
+              }`}
+            >
+              관심 지원자
+            </button>
+          </div>
+
           <div className="mt-6 space-y-2">
-            {data.applicants.map((applicant) => (
-              <button
+            {visibleApplicants.map((applicant) => (
+              <div
                 key={applicant.id}
-                type="button"
-                onClick={() => setSelectedId(applicant.id)}
-                className={`w-full rounded-md border p-4 text-left transition-colors ${
+                className={`grid grid-cols-[1fr_auto] gap-2 rounded-md border transition-colors ${
                   applicant.id === selectedId
                     ? "border-neutral-900 bg-neutral-50"
                     : "border-neutral-200 hover:bg-neutral-50"
                 }`}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="font-medium text-neutral-900">{applicant.name}</div>
-                    <div className="mt-1 text-xs text-neutral-500">
-                      {applicant.role} · {applicant.experience}
-                    </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedId(applicant.id)}
+                  className="min-w-0 p-4 text-left"
+                >
+                  <div className="font-medium text-neutral-900">{applicant.name}</div>
+                  <div className="mt-1 text-xs text-neutral-500">
+                    {applicant.role} · {applicant.experience}
                   </div>
-                  <span className="rounded bg-neutral-100 px-2 py-1 text-xs text-neutral-600">
-                    {STATUS_LABEL[applicant.status]}
-                  </span>
-                </div>
-              </button>
+                  <div className="mt-3">
+                    <span className="rounded bg-neutral-100 px-2 py-1 text-xs text-neutral-600">
+                      {STATUS_LABEL[applicant.status]}
+                    </span>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toggleSaved(applicant.id)}
+                  aria-label={`${applicant.name} 관심 지원자`}
+                  aria-pressed={savedIds.has(applicant.id)}
+                  className="mr-3 mt-3 grid h-8 w-8 place-items-center rounded-md text-neutral-400 hover:bg-white hover:text-neutral-900"
+                >
+                  <Bookmark
+                    className={`h-4 w-4 ${
+                      savedIds.has(applicant.id) ? "fill-neutral-900 text-neutral-900" : ""
+                    }`}
+                  />
+                </button>
+              </div>
             ))}
+
+            {visibleApplicants.length === 0 && (
+              <div className="rounded-md border border-dashed border-neutral-200 p-6 text-center text-sm text-neutral-500">
+                관심 지원자가 없습니다.
+              </div>
+            )}
           </div>
         </aside>
 
@@ -192,65 +257,94 @@ function ApplicantDetail({ applicant }: { applicant: Applicant }) {
         </div>
       </div>
 
-      <div className="grid gap-6 p-6 xl:grid-cols-[1fr_320px]">
-        <div className="space-y-6">
-          <InfoBlock title="기본 정보">
-            <dl className="grid gap-x-8 gap-y-3 text-sm md:grid-cols-2">
-              <Field label="이메일" value={applicant.email} />
-              <Field label="전화번호" value={applicant.phone} />
-              <Field label="지역" value={applicant.location} />
-              <Field label="제출 일시" value={applicant.submittedAt} />
-              <Field label="학력" value={applicant.education} />
-              <Field label="최근 경력" value={applicant.recentJob} />
-            </dl>
-          </InfoBlock>
+      <div className="grid gap-8 p-6 xl:grid-cols-[1fr_1fr]">
+        <section>
+          <h3 className="text-xl font-semibold tracking-tight text-neutral-900">
+            이력서 / 포트폴리오
+          </h3>
+          <div className="mt-5 space-y-4">
+            <InfoBlock title="기본 정보">
+              <dl className="grid gap-x-8 gap-y-4 text-sm md:grid-cols-2">
+                <Field label="이메일" value={applicant.email} />
+                <Field label="전화번호" value={applicant.phone} />
+                <Field label="거주 지역" value={applicant.location} />
+                <Field label="제출 일시" value={applicant.submittedAt} />
+              </dl>
+            </InfoBlock>
 
-          <InfoBlock title="직무 시뮬레이션 제출 내용">
-            <ol className="space-y-6">
-              {applicant.simulation.map((step) => (
-                <li key={step.step} className="grid grid-cols-[32px_1fr] gap-4">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-white">
-                    {step.step}
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-semibold text-neutral-900">{step.title}</h4>
-                    <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-neutral-700">
-                      {step.answer}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </InfoBlock>
-        </div>
+            <InfoBlock title="구직조건">
+              <dl className="grid gap-x-8 gap-y-4 text-sm md:grid-cols-3">
+                <Field label="희망 연봉" value="5,000만원 협의 가능" />
+                <Field label="희망 지역" value={normalizeLocation(applicant.location)} />
+                <Field label="근무 형태" value="정규직, 하이브리드" />
+              </dl>
+            </InfoBlock>
 
-        <div className="space-y-4">
-          <InfoBlock title="스킬 / 툴">
-            <ChipList items={[...applicant.skills, ...applicant.tools]} />
-          </InfoBlock>
+            <InfoBlock title="학력">
+              <p className="text-sm font-medium leading-6 text-neutral-900">
+                {applicant.education}
+              </p>
+            </InfoBlock>
 
-          <InfoBlock title="포트폴리오">
-            <div className="grid gap-3">
-              {applicant.portfolio.map((item) => (
-                <a
-                  key={item.title}
-                  href={item.url}
-                  className="block rounded-md border border-neutral-200 p-3 text-sm hover:bg-neutral-50"
-                >
-                  <div className="font-medium text-neutral-900">{item.title}</div>
-                  <div className="mt-2 text-xs text-neutral-500">업데이트 {item.updatedAt}</div>
-                </a>
-              ))}
-            </div>
-          </InfoBlock>
+            <InfoBlock title="경력">
+              <p className="text-sm font-medium leading-6 text-neutral-900">
+                {applicant.recentJob}
+                <span className="ml-2 rounded bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-600">
+                  {applicant.experience}
+                </span>
+              </p>
+            </InfoBlock>
 
-          <InfoBlock title="제출 정보">
-            <dl className="space-y-3 text-sm">
-              <Field label="제출 일시" value={applicant.submittedAt} />
-              <Field label="소요 시간" value={applicant.duration} />
-            </dl>
-          </InfoBlock>
-        </div>
+            <InfoBlock title="스킬 / 툴">
+              <ChipList items={[...applicant.skills, ...applicant.tools]} />
+            </InfoBlock>
+
+            <InfoBlock title="포트폴리오">
+              <div className="grid gap-3 md:grid-cols-2">
+                {applicant.portfolio.map((item) => (
+                  <a
+                    key={item.title}
+                    href={item.url}
+                    className="block rounded-md border border-neutral-200 p-3 text-sm hover:bg-neutral-50"
+                  >
+                    <div className="font-medium text-neutral-900">{item.title}</div>
+                    <div className="mt-2 text-xs text-neutral-500">업데이트 {item.updatedAt}</div>
+                  </a>
+                ))}
+              </div>
+            </InfoBlock>
+          </div>
+        </section>
+
+        <section>
+          <h3 className="text-xl font-semibold tracking-tight text-neutral-900">제출 정보</h3>
+          <div className="mt-5 space-y-4">
+            <InfoBlock>
+              <dl className="grid gap-x-8 gap-y-4 text-sm md:grid-cols-2">
+                <Field label="제출 일시" value={applicant.submittedAt} />
+                <Field label="소요 시간" value={applicant.duration} />
+              </dl>
+            </InfoBlock>
+
+            <InfoBlock title="직무 시뮬레이션 제출 내용">
+              <ol className="space-y-6">
+                {applicant.simulation.map((step) => (
+                  <li key={step.step} className="grid grid-cols-[32px_1fr] gap-4">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-white">
+                      {step.step}
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-neutral-900">{step.title}</h4>
+                      <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-neutral-700">
+                        {step.answer}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </InfoBlock>
+          </div>
+        </section>
       </div>
 
       {isMailOpen && (
@@ -258,6 +352,15 @@ function ApplicantDetail({ applicant }: { applicant: Applicant }) {
       )}
     </section>
   );
+}
+
+function normalizeLocation(location: string): string {
+  if (location.includes("강남")) return "서울, 강남구";
+  if (location.includes("마포")) return "서울, 마포구";
+  if (location.includes("송파")) return "서울, 송파구";
+  if (location.includes("용산")) return "서울, 용산구";
+  if (location.includes("성남")) return "경기, 성남시";
+  return location;
 }
 
 function Field({ label, value }: { label: string; value: string }) {
@@ -269,11 +372,11 @@ function Field({ label, value }: { label: string; value: string }) {
   );
 }
 
-function InfoBlock({ title, children }: { title: string; children: React.ReactNode }) {
+function InfoBlock({ title, children }: { title?: string; children: React.ReactNode }) {
   return (
     <section className="rounded-md border border-neutral-200 p-4">
-      <h3 className="text-sm font-semibold text-neutral-900">{title}</h3>
-      <div className="mt-3">{children}</div>
+      {title && <h3 className="text-sm font-semibold text-neutral-900">{title}</h3>}
+      <div className={title ? "mt-3" : ""}>{children}</div>
     </section>
   );
 }
