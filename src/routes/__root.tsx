@@ -29,7 +29,7 @@ function GlobalNavigationOverlay() {
 
 function SiteLayout({ children }: { children: React.ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const bare = pathname.startsWith("/onboarding");
+  const bare = pathname.startsWith("/onboarding") || pathname.startsWith("/biz");
   if (bare) return <>{children}</>;
   return (
     <div className="flex min-h-screen flex-col">

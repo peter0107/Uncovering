@@ -14,8 +14,10 @@ import { Route as SimulationsRouteImport } from './routes/simulations'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as MyRouteImport } from './routes/my'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as BizRouteImport } from './routes/biz'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SimulationIdRouteImport } from './routes/simulation.$id'
+import { Route as BizReviewRouteImport } from './routes/biz_.review'
 
 const StartRoute = StartRouteImport.update({
   id: '/start',
@@ -42,6 +44,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BizRoute = BizRouteImport.update({
+  id: '/biz',
+  path: '/biz',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -52,72 +59,91 @@ const SimulationIdRoute = SimulationIdRouteImport.update({
   path: '/simulation/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BizReviewRoute = BizReviewRouteImport.update({
+  id: '/biz_/review',
+  path: '/biz/review',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/biz': typeof BizRoute
   '/login': typeof LoginRoute
   '/my': typeof MyRoute
   '/onboarding': typeof OnboardingRoute
   '/simulations': typeof SimulationsRoute
   '/start': typeof StartRoute
+  '/biz/review': typeof BizReviewRoute
   '/simulation/$id': typeof SimulationIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/biz': typeof BizRoute
   '/login': typeof LoginRoute
   '/my': typeof MyRoute
   '/onboarding': typeof OnboardingRoute
   '/simulations': typeof SimulationsRoute
   '/start': typeof StartRoute
+  '/biz/review': typeof BizReviewRoute
   '/simulation/$id': typeof SimulationIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/biz': typeof BizRoute
   '/login': typeof LoginRoute
   '/my': typeof MyRoute
   '/onboarding': typeof OnboardingRoute
   '/simulations': typeof SimulationsRoute
   '/start': typeof StartRoute
+  '/biz_/review': typeof BizReviewRoute
   '/simulation/$id': typeof SimulationIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/biz'
     | '/login'
     | '/my'
     | '/onboarding'
     | '/simulations'
     | '/start'
+    | '/biz/review'
     | '/simulation/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/biz'
     | '/login'
     | '/my'
     | '/onboarding'
     | '/simulations'
     | '/start'
+    | '/biz/review'
     | '/simulation/$id'
   id:
     | '__root__'
     | '/'
+    | '/biz'
     | '/login'
     | '/my'
     | '/onboarding'
     | '/simulations'
     | '/start'
+    | '/biz_/review'
     | '/simulation/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BizRoute: typeof BizRoute
   LoginRoute: typeof LoginRoute
   MyRoute: typeof MyRoute
   OnboardingRoute: typeof OnboardingRoute
   SimulationsRoute: typeof SimulationsRoute
   StartRoute: typeof StartRoute
+  BizReviewRoute: typeof BizReviewRoute
   SimulationIdRoute: typeof SimulationIdRoute
 }
 
@@ -158,6 +184,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/biz': {
+      id: '/biz'
+      path: '/biz'
+      fullPath: '/biz'
+      preLoaderRoute: typeof BizRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -172,16 +205,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SimulationIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/biz_/review': {
+      id: '/biz_/review'
+      path: '/biz/review'
+      fullPath: '/biz/review'
+      preLoaderRoute: typeof BizReviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BizRoute: BizRoute,
   LoginRoute: LoginRoute,
   MyRoute: MyRoute,
   OnboardingRoute: OnboardingRoute,
   SimulationsRoute: SimulationsRoute,
   StartRoute: StartRoute,
+  BizReviewRoute: BizReviewRoute,
   SimulationIdRoute: SimulationIdRoute,
 }
 export const routeTree = rootRouteImport
