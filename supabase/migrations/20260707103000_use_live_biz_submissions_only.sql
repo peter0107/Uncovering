@@ -1,4 +1,4 @@
-do $$
+do $applicant_status$
 begin
   if not exists (
     select 1
@@ -9,7 +9,8 @@ begin
   ) then
     create type public.applicant_status as enum ('submitted', 'in_review', 'completed');
   end if;
-end $$;
+end;
+$applicant_status$;
 
 alter table public.job_simulations
 add column if not exists role_label text;
@@ -24,7 +25,7 @@ set
   code = excluded.code,
   role_label = excluded.role_label;
 
-do $$
+do $company_seed$
 declare
   a_company_id uuid;
   target_simulation_id uuid;
@@ -105,7 +106,8 @@ begin
     )
     returning id into target_simulation_id;
   end if;
-end $$;
+end;
+$company_seed$;
 
 insert into public.job_seekers (
   id,
@@ -312,7 +314,7 @@ language sql
 stable
 security definer
 set search_path = public
-as $$
+as $get_applicants$
   select
     s.id,
     js.company_id,
@@ -406,7 +408,7 @@ as $$
     and s.answer_transmission_consent = true
     and seeker.discovery_consent = true
   order by coalesce(s.submitted_at, s.created_at) desc;
-$$;
+$get_applicants$;
 
 grant execute on function public.get_applicants_by_company_code(text) to anon;
 grant execute on function public.get_applicants_by_company_code(text) to authenticated;
