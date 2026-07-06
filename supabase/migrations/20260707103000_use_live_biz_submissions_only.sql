@@ -1,16 +1,15 @@
-do $applicant_status$
+do '
 begin
   if not exists (
     select 1
     from pg_type t
     join pg_namespace n on n.oid = t.typnamespace
-    where n.nspname = 'public'
-      and t.typname = 'applicant_status'
+    where n.nspname = ''public''
+      and t.typname = ''applicant_status''
   ) then
-    create type public.applicant_status as enum ('submitted', 'in_review', 'completed');
+    create type public.applicant_status as enum (''submitted'', ''in_review'', ''completed'');
   end if;
-end;
-$applicant_status$;
+end;';
 
 alter table public.job_simulations
 add column if not exists role_label text;
@@ -25,75 +24,50 @@ set
   code = excluded.code,
   role_label = excluded.role_label;
 
-do $company_seed$
-declare
-  a_company_id uuid;
-  target_simulation_id uuid;
-begin
-  select id
-  into a_company_id
+with a_company as (
+  select id as company_id
   from public.companies
   where code = 'BGNR-2024-A'
   order by created_at nulls last, id
-  limit 1;
-
-  select id
-  into target_simulation_id
+  limit 1
+),
+existing_simulation as (
+  select js.id
   from public.job_simulations
-  where company_id = a_company_id
-    and coalesce(role_label, '') = '마케팅 매니저'
-  order by created_at nulls last, id
-  limit 1;
-
-  if target_simulation_id is null then
-    insert into public.job_simulations (
-      company_id,
-      title,
-      role_label,
-      description,
-      job_family,
-      domain,
-      estimated_minutes,
-      task_prompt
-    )
-    select
-      a_company_id,
-      source.title,
-      '마케팅 매니저',
-      source.description,
-      source.job_family,
-      source.domain,
-      source.estimated_minutes,
-      source.task_prompt
-    from public.job_simulations source
-    join public.companies source_company on source_company.id = source.company_id
-    where source_company.code = 'BEGINNER-CONTENT-2026'
-      and source.title = '마케팅 캠페인 A/B 테스트 결과 해석'
-    order by source.created_at nulls last, source.id
-    limit 1
-    returning id into target_simulation_id;
-  end if;
-
-  if target_simulation_id is null then
-    insert into public.job_simulations (
-      company_id,
-      title,
-      role_label,
-      description,
-      job_family,
-      domain,
-      estimated_minutes,
-      task_prompt
-    )
-    values (
-      a_company_id,
-      '마케팅 캠페인 A/B 테스트 결과 해석',
-      '마케팅 매니저',
-      '마케팅 캠페인 실험 결과를 해석하고 실행 전략을 제안하는 직무 시뮬레이션입니다.',
-      '마케팅',
-      '그로스',
-      72,
-      '# 마케팅 캠페인 A/B 테스트 결과 해석
+  join a_company on a_company.company_id = js.company_id
+  where coalesce(js.role_label, '') = '마케팅 매니저'
+  order by js.created_at nulls last, js.id
+  limit 1
+),
+source_simulation as (
+  select
+    a_company.company_id,
+    source.title,
+    '마케팅 매니저'::text as role_label,
+    source.description,
+    source.job_family,
+    source.domain,
+    source.estimated_minutes,
+    source.task_prompt
+  from a_company
+  join public.job_simulations source on true
+  join public.companies source_company on source_company.id = source.company_id
+  where source_company.code = 'BEGINNER-CONTENT-2026'
+    and source.title = '마케팅 캠페인 A/B 테스트 결과 해석'
+    and not exists (select 1 from existing_simulation)
+  order by source.created_at nulls last, source.id
+  limit 1
+),
+fallback_simulation as (
+  select
+    a_company.company_id,
+    '마케팅 캠페인 A/B 테스트 결과 해석'::text as title,
+    '마케팅 매니저'::text as role_label,
+    '마케팅 캠페인 실험 결과를 해석하고 실행 전략을 제안하는 직무 시뮬레이션입니다.'::text as description,
+    '마케팅'::text as job_family,
+    '그로스'::text as domain,
+    72::integer as estimated_minutes,
+    '# 마케팅 캠페인 A/B 테스트 결과 해석
 
 ## 상황
 신규 고객 전환을 높이기 위한 캠페인 A/B 테스트 결과를 검토하고, 타깃 고객, 핵심 메시지, 채널 운영 전략, 실행 일정을 제안하세요.
@@ -102,12 +76,42 @@ begin
 1. 타깃 고객 정의
 2. 핵심 메시지
 3. 채널 운영 전략
-4. 실행 일정'
-    )
-    returning id into target_simulation_id;
-  end if;
-end;
-$company_seed$;
+4. 실행 일정'::text as task_prompt
+  from a_company
+  where not exists (select 1 from existing_simulation)
+    and not exists (select 1 from source_simulation)
+)
+insert into public.job_simulations (
+  company_id,
+  title,
+  role_label,
+  description,
+  job_family,
+  domain,
+  estimated_minutes,
+  task_prompt
+)
+select
+  company_id,
+  title,
+  role_label,
+  description,
+  job_family,
+  domain,
+  estimated_minutes,
+  task_prompt
+from source_simulation
+union all
+select
+  company_id,
+  title,
+  role_label,
+  description,
+  job_family,
+  domain,
+  estimated_minutes,
+  task_prompt
+from fallback_simulation;
 
 insert into public.job_seekers (
   id,
