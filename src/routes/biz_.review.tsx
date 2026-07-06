@@ -298,14 +298,18 @@ function ApplicantDetail({ applicant }: { applicant: Applicant }) {
                 <Field label="전화번호" value={applicant.phone} />
                 <Field label="거주 지역" value={applicant.location} />
                 <Field label="제출 일시" value={applicant.submittedAt} />
+                <Field label="연결 이력서" value={applicant.resumeTitle || "기본 프로필"} />
               </dl>
             </InfoBlock>
 
             <InfoBlock title="구직조건">
               <dl className="grid gap-x-8 gap-y-4 text-sm md:grid-cols-3">
-                <Field label="희망 연봉" value="5,000만원 협의 가능" />
-                <Field label="희망 지역" value={normalizeLocation(applicant.location)} />
-                <Field label="근무 형태" value="정규직, 하이브리드" />
+                <Field label="희망 연봉" value={applicant.desiredSalary} />
+                <Field
+                  label="희망 지역"
+                  value={applicant.preferredRegion || normalizeLocation(applicant.location)}
+                />
+                <Field label="근무 형태" value={applicant.employmentType} />
               </dl>
             </InfoBlock>
 

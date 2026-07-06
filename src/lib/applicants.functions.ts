@@ -35,6 +35,11 @@ export type Applicant = {
   portfolio: PortfolioItem[];
   duration: string;
   simulation: SimulationStep[];
+  desiredSalary: string;
+  preferredRegion: string;
+  employmentType: string;
+  resumeTitle: string;
+  resumeSourceType: string;
 };
 
 export type Company = {
@@ -82,6 +87,11 @@ const applicantSchema = z.object({
   portfolio: z.array(portfolioItemSchema),
   duration: z.string(),
   simulation: z.array(simulationStepSchema),
+  desiredSalary: z.string(),
+  preferredRegion: z.string(),
+  employmentType: z.string(),
+  resumeTitle: z.string(),
+  resumeSourceType: z.string(),
 });
 
 const companyApplicantsSchema = z.object({
@@ -133,9 +143,22 @@ function mapApplicant(row: Record<string, unknown>): Applicant {
     skills: Array.isArray(row.skills) ? row.skills.map(String) : [],
     tools: Array.isArray(row.tools) ? row.tools.map(String) : [],
     resumeUrl: String(row.resume_url),
-    portfolio: portfolio.map((p) => portfolioItemSchema.parse(p)),
+    portfolio: portfolio.map((p) =>
+      portfolioItemSchema.parse({
+        ...(typeof p === "object" && p !== null ? p : {}),
+        updatedAt:
+          typeof p === "object" && p !== null && "updatedAt" in p
+            ? (p as { updatedAt?: unknown }).updatedAt
+            : "",
+      }),
+    ),
     duration: String(row.duration),
     simulation: simulation.map((s) => simulationStepSchema.parse(s)),
+    desiredSalary: String(row.desired_salary ?? "희망 연봉 미입력"),
+    preferredRegion: String(row.preferred_region ?? ""),
+    employmentType: String(row.employment_type ?? "근무 형태 미입력"),
+    resumeTitle: String(row.resume_title ?? "기본 프로필"),
+    resumeSourceType: String(row.resume_source_type ?? ""),
   };
 }
 
