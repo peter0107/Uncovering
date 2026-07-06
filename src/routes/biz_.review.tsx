@@ -39,6 +39,7 @@ function BizReview() {
   const [isLoading, setIsLoading] = useState(true);
   const [savedIds, setSavedIds] = useState<Set<string>>(() => new Set());
   const [showSavedOnly, setShowSavedOnly] = useState(false);
+  const [roleFilter, setRoleFilter] = useState("all");
 
   useEffect(() => {
     let alive = true;
@@ -71,11 +72,19 @@ function BizReview() {
     };
   }, [code]);
 
+  const roleOptions = useMemo(() => {
+    const roles = new Set(data?.applicants.map((applicant) => applicant.role) ?? []);
+    return Array.from(roles);
+  }, [data]);
+
   const visibleApplicants = useMemo(() => {
     const applicants = data?.applicants ?? [];
-    if (!showSavedOnly) return applicants;
-    return applicants.filter((applicant) => savedIds.has(applicant.id));
-  }, [data, savedIds, showSavedOnly]);
+    return applicants.filter((applicant) => {
+      if (roleFilter !== "all" && applicant.role !== roleFilter) return false;
+      if (showSavedOnly && !savedIds.has(applicant.id)) return false;
+      return true;
+    });
+  }, [data, roleFilter, savedIds, showSavedOnly]);
 
   const selectedApplicant = useMemo(
     () =>
@@ -135,7 +144,27 @@ function BizReview() {
             총 {data.applicants.length}명의 제출자가 있습니다.
           </p>
 
-          <div className="mt-5 grid grid-cols-2 rounded-md border border-neutral-200 bg-white p-1">
+          <label className="mt-5 block">
+            <span className="text-xs font-medium text-neutral-600">직무 선택</span>
+            <select
+              value={roleFilter}
+              onChange={(event) => setRoleFilter(event.target.value)}
+              className="mt-2 h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm font-medium text-neutral-900 outline-none focus:border-neutral-900"
+            >
+              <option value="all">전체 직무</option>
+              {roleOptions.map((role) => (
+                <option key={role} value={role}>
+                  {role}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <p className="mt-3 text-xs text-neutral-500">
+            현재 조건에 맞는 지원자 {visibleApplicants.length}명
+          </p>
+
+          <div className="mt-4 grid grid-cols-2 rounded-md border border-neutral-200 bg-white p-1">
             <button
               type="button"
               onClick={() => setShowSavedOnly(false)}
@@ -163,7 +192,7 @@ function BizReview() {
               <div
                 key={applicant.id}
                 className={`grid grid-cols-[1fr_auto] gap-2 rounded-md border transition-colors ${
-                  applicant.id === selectedId
+                  applicant.id === selectedApplicant?.id
                     ? "border-neutral-900 bg-neutral-50"
                     : "border-neutral-200 hover:bg-neutral-50"
                 }`}
@@ -201,7 +230,7 @@ function BizReview() {
 
             {visibleApplicants.length === 0 && (
               <div className="rounded-md border border-dashed border-neutral-200 p-6 text-center text-sm text-neutral-500">
-                관심 지원자가 없습니다.
+                조건에 맞는 지원자가 없습니다.
               </div>
             )}
           </div>
