@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Building2, ListChecks, Plus, RefreshCw, Save, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { toast } from "sonner";
 
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -103,8 +104,6 @@ function AdminSimulations() {
   const [isSaving, setIsSaving] = useState(false);
   const [isCreatingCompany, setIsCreatingCompany] = useState(false);
   const [actioningSimulationId, setActioningSimulationId] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const loadedUserIdRef = useRef<string | null>(null);
   const userId = user?.id ?? null;
 
@@ -138,20 +137,15 @@ function AdminSimulations() {
   const selectSimulation = useCallback((simulation: AdminCompanySimulation) => {
     setSelectedSimulationId(simulation.id);
     setForm(formFromSimulation(simulation));
-    setMessage(null);
-    setError(null);
   }, []);
 
   const startNewSimulation = useCallback((companyCode: string) => {
     setSelectedSimulationId(null);
     setForm(createEmptyForm(companyCode));
-    setMessage(null);
-    setError(null);
   }, []);
 
   const loadSimulations = useCallback(async () => {
     setIsLoading(true);
-    setError(null);
     try {
       const [companyData, simulationData] = await Promise.all([
         getAdminCompanies(),
@@ -160,7 +154,7 @@ function AdminSimulations() {
       setCompanies(companyData);
       setSimulations(simulationData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "관리자 목록을 불러오지 못했습니다.");
+      toast.error(err instanceof Error ? err.message : "관리자 목록을 불러오지 못했습니다.");
     } finally {
       setIsLoading(false);
     }
@@ -224,8 +218,6 @@ function AdminSimulations() {
     if (isCreatingCompany) return;
 
     setIsCreatingCompany(true);
-    setMessage(null);
-    setError(null);
     try {
       const company = await createCompany({
         data: {
@@ -241,11 +233,11 @@ function AdminSimulations() {
       setSelectedCompanyCode(company.code);
       startNewSimulation(company.code);
       await loadSimulations();
-      setMessage(
+      toast.success(
         `${company.name} 기업을 추가했습니다. /biz에서 ${company.code} 코드로 접속할 수 있습니다.`,
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "기업을 추가하지 못했습니다.");
+      toast.error(err instanceof Error ? err.message : "기업을 추가하지 못했습니다.");
     } finally {
       setIsCreatingCompany(false);
     }
@@ -256,8 +248,6 @@ function AdminSimulations() {
     if (isSaving) return;
 
     setIsSaving(true);
-    setMessage(null);
-    setError(null);
     try {
       const estimatedMinutes = form.estimatedMinutes.trim()
         ? Number(form.estimatedMinutes.trim())
@@ -282,16 +272,16 @@ function AdminSimulations() {
           },
         });
         await loadSimulations();
-        setMessage("직무 시뮬레이션을 수정했습니다.");
+        toast.success("직무 시뮬레이션을 수정했습니다.");
         return;
       }
 
       const result = await createCompanySimulation({ data: payload });
       await loadSimulations();
       setSelectedSimulationId(result.id);
-      setMessage("직무 시뮬레이션을 추가했습니다. 기업 페이지 드롭다운에 반영됩니다.");
+      toast.success("직무 시뮬레이션을 추가했습니다. 기업 페이지 드롭다운에 반영됩니다.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "직무 시뮬레이션을 추가하지 못했습니다.");
+      toast.error(err instanceof Error ? err.message : "직무 시뮬레이션을 추가하지 못했습니다.");
     } finally {
       setIsSaving(false);
     }
@@ -301,8 +291,6 @@ function AdminSimulations() {
     if (actioningSimulationId) return;
 
     setActioningSimulationId(simulation.id);
-    setMessage(null);
-    setError(null);
     const nextIsPublic = !simulation.isPublic;
 
     try {
@@ -318,7 +306,7 @@ function AdminSimulations() {
         ),
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "공개 상태를 변경하지 못했습니다.");
+      toast.error(err instanceof Error ? err.message : "공개 상태를 변경하지 못했습니다.");
     } finally {
       setActioningSimulationId(null);
     }
@@ -332,8 +320,6 @@ function AdminSimulations() {
     if (!confirmed) return;
 
     setActioningSimulationId(simulation.id);
-    setMessage(null);
-    setError(null);
 
     try {
       await deleteCompanySimulation({ data: { id: simulation.id } });
@@ -346,9 +332,9 @@ function AdminSimulations() {
           startNewSimulation(selectedCompanyCode);
         }
       }
-      setMessage("직무 시뮬레이션을 삭제했습니다.");
+      toast.success("직무 시뮬레이션을 삭제했습니다.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "직무 시뮬레이션을 삭제하지 못했습니다.");
+      toast.error(err instanceof Error ? err.message : "직무 시뮬레이션을 삭제하지 못했습니다.");
     } finally {
       setActioningSimulationId(null);
     }
@@ -385,18 +371,6 @@ function AdminSimulations() {
           새로고침
         </button>
       </div>
-
-      {(message || error) && (
-        <div
-          className={`mt-5 rounded-md border px-4 py-3 text-sm ${
-            error
-              ? "border-red-200 bg-red-50 text-red-700"
-              : "border-blue-200 bg-blue-50 text-blue-700"
-          }`}
-        >
-          {error ?? message}
-        </div>
-      )}
 
       <div className="mt-6 grid gap-6 xl:grid-cols-[280px_360px_1fr]">
         <section className="flex min-h-0 flex-col rounded-md border border-neutral-200">
