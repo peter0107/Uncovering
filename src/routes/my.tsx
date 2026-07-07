@@ -1123,18 +1123,6 @@ function MyPage() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="github">GitHub</Label>
-                    <Input
-                      id="github"
-                      value={draftLinks.github ?? ""}
-                      onChange={(e) =>
-                        setDraftLinks((prev) => ({ ...prev, github: e.target.value }))
-                      }
-                      placeholder="https://github.com/..."
-                      className="mt-2"
-                    />
-                  </div>
-                  <div>
                     <Label htmlFor="linkedin">LinkedIn</Label>
                     <Input
                       id="linkedin"
@@ -1143,6 +1131,18 @@ function MyPage() {
                         setDraftLinks((prev) => ({ ...prev, linkedin: e.target.value }))
                       }
                       placeholder="https://linkedin.com/in/..."
+                      className="mt-2"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="github">GitHub</Label>
+                    <Input
+                      id="github"
+                      value={draftLinks.github ?? ""}
+                      onChange={(e) =>
+                        setDraftLinks((prev) => ({ ...prev, github: e.target.value }))
+                      }
+                      placeholder="https://github.com/..."
                       className="mt-2"
                     />
                   </div>
@@ -1178,6 +1178,16 @@ function MyPage() {
                 </div>
               ) : (
                 <div className="mt-3 flex flex-wrap gap-2">
+                  {links.linkedin && (
+                    <a
+                      href={normalizeExternalUrl(links.linkedin)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className={LINK_PILL_CLASS}
+                    >
+                      <Linkedin className="h-3.5 w-3.5" /> LinkedIn
+                    </a>
+                  )}
                   {links.github && (
                     <a
                       href={normalizeExternalUrl(links.github)}
@@ -1196,16 +1206,6 @@ function MyPage() {
                       className={LINK_PILL_CLASS}
                     >
                       <Globe className="h-3.5 w-3.5" /> 포트폴리오
-                    </a>
-                  )}
-                  {links.linkedin && (
-                    <a
-                      href={normalizeExternalUrl(links.linkedin)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className={LINK_PILL_CLASS}
-                    >
-                      <Linkedin className="h-3.5 w-3.5" /> LinkedIn
                     </a>
                   )}
                   {!hasAnyLink && (
