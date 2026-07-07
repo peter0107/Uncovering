@@ -63,6 +63,7 @@ export type CompanyApplicants = {
   company: Company;
   applicants: Applicant[];
   simulations: CompanySimulation[];
+  savedApplicantIds: string[];
 };
 
 const statusEnum = z.enum(["submitted", "in_review", "completed"]);
@@ -124,10 +125,17 @@ const companyApplicantsSchema = z.object({
       description: z.string(),
     }),
   ),
+  savedApplicantIds: z.array(z.string().uuid()),
 });
 
 const companyCodeInputSchema = z.object({
   code: z.string().min(1),
+});
+
+const savedApplicantInputSchema = z.object({
+  code: z.string().min(1),
+  applicantId: z.string().uuid(),
+  isSaved: z.boolean(),
 });
 
 function formatSubmittedAt(iso: string): string {
@@ -235,6 +243,18 @@ export const getApplicantsByCompanyCode = createServerFn({ method: "GET" })
 
     const applicants = ((rows ?? []) as Record<string, unknown>[]).map(mapApplicant);
 
+    const { data: savedRows, error: savedError } = await supabase.rpc(
+      "get_saved_applicant_ids_by_company_code",
+      {
+        company_code: data.code,
+      },
+    );
+
+    if (savedError) {
+      console.error("Failed to load saved applicants:", savedError);
+      throw new Error("Failed to load saved applicants");
+    }
+
     const { data: simulationRows, error: simulationsError } = await supabase
       .from("job_simulations")
       .select("id, title, role_label, job_family, domain, estimated_minutes, description")
@@ -255,5 +275,39 @@ export const getApplicantsByCompanyCode = createServerFn({ method: "GET" })
       },
       applicants,
       simulations: ((simulationRows ?? []) as Record<string, unknown>[]).map(mapSimulation),
+      savedApplicantIds: ((savedRows ?? []) as { submission_id: string }[]).map(
+        (row) => row.submission_id,
+      ),
     });
+  });
+
+export const setSavedApplicantByCompanyCode = createServerFn({ method: "POST" })
+  .inputValidator(savedApplicantInputSchema)
+  .handler(async ({ data }): Promise<{ saved: boolean }> => {
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error("Backend is not configured");
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+
+    const { data: saved, error } = await supabase.rpc("set_saved_applicant_by_company_code", {
+      company_code: data.code,
+      submission_id: data.applicantId,
+      is_saved: data.isSaved,
+    });
+
+    if (error) {
+      console.error("Failed to update saved applicant:", error);
+      throw new Error("Failed to update saved applicant");
+    }
+
+    return { saved: Boolean(saved) };
   });

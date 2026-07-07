@@ -5,10 +5,12 @@ import { z } from "zod";
 
 import {
   getApplicantsByCompanyCode,
+  setSavedApplicantByCompanyCode,
   type Applicant,
   type CompanyApplicants,
   type Status,
 } from "@/lib/applicants.functions";
+import { toast } from "sonner";
 
 const searchSchema = z.object({
   code: z.string().catch(""),
@@ -38,6 +40,7 @@ function BizReview() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [savedIds, setSavedIds] = useState<Set<string>>(() => new Set());
+  const [savingIds, setSavingIds] = useState<Set<string>>(() => new Set());
   const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [roleFilter, setRoleFilter] = useState("all");
 
@@ -57,6 +60,7 @@ function BizReview() {
         const result = await getApplicantsByCompanyCode({ data: { code } });
         if (!alive) return;
         setData(result);
+        setSavedIds(new Set(result.savedApplicantIds));
         setSelectedId(result.applicants[0]?.id ?? null);
       } catch {
         if (!alive) return;
@@ -100,13 +104,41 @@ function BizReview() {
     [selectedId, visibleApplicants],
   );
 
-  function toggleSaved(id: string) {
+  async function toggleSaved(id: string) {
+    if (savingIds.has(id)) return;
+    const nextSaved = !savedIds.has(id);
+
     setSavedIds((current) => {
       const next = new Set(current);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (nextSaved) next.add(id);
+      else next.delete(id);
       return next;
     });
+    setSavingIds((current) => new Set(current).add(id));
+
+    try {
+      await setSavedApplicantByCompanyCode({
+        data: {
+          code,
+          applicantId: id,
+          isSaved: nextSaved,
+        },
+      });
+    } catch {
+      setSavedIds((current) => {
+        const rollback = new Set(current);
+        if (nextSaved) rollback.delete(id);
+        else rollback.add(id);
+        return rollback;
+      });
+      toast.error("관심 지원자 저장 중 오류가 발생했습니다.");
+    } finally {
+      setSavingIds((current) => {
+        const next = new Set(current);
+        next.delete(id);
+        return next;
+      });
+    }
   }
 
   if (isLoading) {
@@ -221,9 +253,10 @@ function BizReview() {
                 <button
                   type="button"
                   onClick={() => toggleSaved(applicant.id)}
+                  disabled={savingIds.has(applicant.id)}
                   aria-label={`${applicant.name} 관심 지원자`}
                   aria-pressed={savedIds.has(applicant.id)}
-                  className="mr-3 mt-3 grid h-8 w-8 place-items-center rounded-md text-neutral-400 hover:bg-white hover:text-neutral-900"
+                  className="mr-3 mt-3 grid h-8 w-8 place-items-center rounded-md text-neutral-400 hover:bg-white hover:text-neutral-900 disabled:opacity-50"
                 >
                   <Bookmark
                     className={`h-4 w-4 ${
