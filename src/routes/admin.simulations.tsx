@@ -317,9 +317,6 @@ function AdminSimulations() {
           item.id === simulation.id ? { ...item, isPublic: nextIsPublic } : item,
         ),
       );
-      setMessage(
-        nextIsPublic ? "직무 시뮬레이션을 공개했습니다." : "직무 시뮬레이션을 비공개했습니다.",
-      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "공개 상태를 변경하지 못했습니다.");
     } finally {
