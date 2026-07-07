@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Bookmark } from "lucide-react";
+import { Bookmark, Filter, Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 
@@ -20,6 +20,23 @@ const STATUS_LABEL: Record<Status, string> = {
   submitted: "신규 제출",
   in_review: "검토 중",
   completed: "검토 완료",
+};
+
+const SALARY_RANGE = [500, 20000] as const;
+const EXPERIENCE_RANGE = [0, 360] as const;
+
+type ApplicantFilters = {
+  salaryRange: [number, number];
+  employmentTypes: string[];
+  school: string;
+  experienceRange: [number, number];
+};
+
+const DEFAULT_FILTERS: ApplicantFilters = {
+  salaryRange: [...SALARY_RANGE],
+  employmentTypes: [],
+  school: "",
+  experienceRange: [...EXPERIENCE_RANGE],
 };
 
 export const Route = createFileRoute("/biz_/review")({
@@ -43,6 +60,8 @@ function BizReview() {
   const [savingIds, setSavingIds] = useState<Set<string>>(() => new Set());
   const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [roleFilter, setRoleFilter] = useState("all");
+  const [filters, setFilters] = useState<ApplicantFilters>(DEFAULT_FILTERS);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -92,9 +111,31 @@ function BizReview() {
     return applicants.filter((applicant) => {
       if (roleFilter !== "all" && applicant.role !== roleFilter) return false;
       if (showSavedOnly && !savedIds.has(applicant.id)) return false;
+      if (!matchesApplicantFilters(applicant, filters)) return false;
       return true;
     });
-  }, [data, roleFilter, savedIds, showSavedOnly]);
+  }, [data, filters, roleFilter, savedIds, showSavedOnly]);
+
+  const employmentOptions = useMemo(() => {
+    const options = new Set<string>();
+    for (const applicant of data?.applicants ?? []) {
+      for (const type of splitEmploymentTypes(applicant.employmentType)) {
+        options.add(type);
+      }
+    }
+    return Array.from(options).sort((a, b) => a.localeCompare(b, "ko-KR"));
+  }, [data]);
+
+  const schoolOptions = useMemo(() => {
+    const schools = new Set<string>();
+    for (const applicant of data?.applicants ?? []) {
+      const school = extractSchoolName(applicant.education);
+      if (school) schools.add(school);
+    }
+    return Array.from(schools).sort((a, b) => a.localeCompare(b, "ko-KR"));
+  }, [data]);
+
+  const activeFilterCount = useMemo(() => countActiveFilters(filters), [filters]);
 
   const selectedApplicant = useMemo(
     () =>
@@ -244,6 +285,20 @@ function BizReview() {
             </button>
           </div>
 
+          <button
+            type="button"
+            onClick={() => setIsFilterOpen(true)}
+            className="mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-neutral-300 bg-white px-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50"
+          >
+            <Filter className="h-4 w-4" />
+            필터
+            {activeFilterCount > 0 && (
+              <span className="rounded-full bg-neutral-900 px-2 py-0.5 text-xs font-semibold text-white">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
+
           <div className="mt-6 space-y-2">
             {visibleApplicants.map((applicant) => (
               <div
@@ -304,6 +359,380 @@ function BizReview() {
           </section>
         )}
       </main>
+
+      {isFilterOpen && (
+        <ApplicantFilterDialog
+          filters={filters}
+          employmentOptions={employmentOptions}
+          schoolOptions={schoolOptions}
+          onApply={(nextFilters) => {
+            setFilters(nextFilters);
+            setIsFilterOpen(false);
+          }}
+          onClose={() => setIsFilterOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function matchesApplicantFilters(applicant: Applicant, filters: ApplicantFilters) {
+  const salaryFilterActive =
+    filters.salaryRange[0] !== SALARY_RANGE[0] || filters.salaryRange[1] !== SALARY_RANGE[1];
+  if (salaryFilterActive) {
+    const salary = parseSalaryManwon(applicant.desiredSalary);
+    if (salary === null || salary < filters.salaryRange[0] || salary > filters.salaryRange[1]) {
+      return false;
+    }
+  }
+
+  if (filters.employmentTypes.length > 0) {
+    const applicantTypes = splitEmploymentTypes(applicant.employmentType);
+    if (!filters.employmentTypes.some((type) => applicantTypes.includes(type))) return false;
+  }
+
+  if (filters.school) {
+    if (extractSchoolName(applicant.education) !== filters.school) return false;
+  }
+
+  const experienceFilterActive =
+    filters.experienceRange[0] !== EXPERIENCE_RANGE[0] ||
+    filters.experienceRange[1] !== EXPERIENCE_RANGE[1];
+  if (experienceFilterActive) {
+    const months = parseExperienceMonths(applicant.experience);
+    if (
+      months === null ||
+      months < filters.experienceRange[0] ||
+      months > filters.experienceRange[1]
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function countActiveFilters(filters: ApplicantFilters) {
+  let count = 0;
+  if (filters.salaryRange[0] !== SALARY_RANGE[0] || filters.salaryRange[1] !== SALARY_RANGE[1]) {
+    count += 1;
+  }
+  if (filters.employmentTypes.length > 0) count += 1;
+  if (filters.school) count += 1;
+  if (
+    filters.experienceRange[0] !== EXPERIENCE_RANGE[0] ||
+    filters.experienceRange[1] !== EXPERIENCE_RANGE[1]
+  ) {
+    count += 1;
+  }
+  return count;
+}
+
+function parseSalaryManwon(value: string) {
+  const text = value.replaceAll(",", "").trim();
+  const eokMatch = text.match(/(\d+)\s*억/);
+  const manwonMatch = text.match(/(\d+)\s*만원/);
+  const eok = eokMatch ? Number(eokMatch[1]) * 10000 : 0;
+  const manwon = manwonMatch ? Number(manwonMatch[1]) : 0;
+  const total = eok + manwon;
+  return total > 0 ? total : null;
+}
+
+function parseExperienceMonths(value: string) {
+  const yearMatch = value.match(/(\d+)\s*년/);
+  const monthMatch = value.match(/(\d+)\s*개월/);
+  const years = yearMatch ? Number(yearMatch[1]) : 0;
+  const months = monthMatch ? Number(monthMatch[1]) : 0;
+  if (years || months) return years * 12 + months;
+  if (value.includes("신입")) return 0;
+  return null;
+}
+
+function formatSalaryManwon(value: number) {
+  if (value < 10000) return `${value}만원`;
+  const eok = Math.floor(value / 10000);
+  const manwon = value % 10000;
+  return manwon ? `${eok}억 ${manwon}만원` : `${eok}억원`;
+}
+
+function formatExperienceMonths(months: number) {
+  if (months === 0) return "0개월";
+  const years = Math.floor(months / 12);
+  const rest = months % 12;
+  if (years && rest) return `${years}년 ${rest}개월`;
+  if (years) return `${years}년`;
+  return `${rest}개월`;
+}
+
+function splitEmploymentTypes(value: string) {
+  return value
+    .split(/[,.·/]/)
+    .map((item) => item.trim())
+    .filter((item) => item && item !== "근무 형태 미입력");
+}
+
+function extractSchoolName(education: string) {
+  const normalized = education.replace(/\([^)]*\)/g, "").trim();
+  if (!normalized) return "";
+  const markers = ["교육대학교", "과학기술원", "사관학교", "대학교", "대학"];
+  let matched = "";
+  let matchedEnd = 0;
+  for (const marker of markers) {
+    const index = normalized.indexOf(marker);
+    if (index === -1) continue;
+    const end = index + marker.length;
+    if (!matched || end > matchedEnd) {
+      matched = normalized.slice(0, end).trim();
+      matchedEnd = end;
+    }
+  }
+  if (!matched) return normalized.split(/\s+/)[0] ?? "";
+  const rest = normalized.slice(matchedEnd).trim();
+  const campus = rest.match(/^([A-Za-z가-힣]+캠퍼스)/)?.[1];
+  return campus ? `${matched} ${campus}` : matched;
+}
+
+function ApplicantFilterDialog({
+  filters,
+  employmentOptions,
+  schoolOptions,
+  onApply,
+  onClose,
+}: {
+  filters: ApplicantFilters;
+  employmentOptions: string[];
+  schoolOptions: string[];
+  onApply: (filters: ApplicantFilters) => void;
+  onClose: () => void;
+}) {
+  const [draft, setDraft] = useState<ApplicantFilters>(filters);
+  const [schoolQuery, setSchoolQuery] = useState("");
+
+  const filteredSchoolOptions = useMemo(() => {
+    const keyword = schoolQuery.trim().toLowerCase();
+    if (!keyword) return schoolOptions.slice(0, 8);
+    return schoolOptions
+      .filter((school) => school.toLowerCase().includes(keyword))
+      .slice(0, 8);
+  }, [schoolOptions, schoolQuery]);
+
+  function toggleEmploymentType(type: string) {
+    setDraft((current) => ({
+      ...current,
+      employmentTypes: current.employmentTypes.includes(type)
+        ? current.employmentTypes.filter((item) => item !== type)
+        : [...current.employmentTypes, type],
+    }));
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
+      <div className="max-h-[86vh] w-full max-w-xl overflow-hidden rounded-md bg-white shadow-xl">
+        <div className="flex items-start justify-between gap-4 border-b border-neutral-200 p-5">
+          <div>
+            <h3 className="text-lg font-semibold tracking-tight text-neutral-900">지원자 필터</h3>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid h-8 w-8 place-items-center rounded-md text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900"
+            aria-label="필터 닫기"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="max-h-[calc(86vh-142px)] space-y-7 overflow-y-auto p-5">
+          <FilterSection title="연봉">
+            <DualRangeSlider
+              min={SALARY_RANGE[0]}
+              max={SALARY_RANGE[1]}
+              step={500}
+              value={draft.salaryRange}
+              onChange={(salaryRange) => setDraft((current) => ({ ...current, salaryRange }))}
+              formatValue={formatSalaryManwon}
+            />
+          </FilterSection>
+
+          <FilterSection title="근무형태">
+            <div className="flex flex-wrap gap-2">
+              {employmentOptions.length ? (
+                employmentOptions.map((type) => {
+                  const selected = draft.employmentTypes.includes(type);
+                  return (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => toggleEmploymentType(type)}
+                      className={`h-9 rounded-full border px-3 text-xs font-medium transition-colors ${
+                        selected
+                          ? "border-neutral-900 bg-neutral-900 text-white"
+                          : "border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50"
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  );
+                })
+              ) : (
+                <p className="text-sm text-neutral-500">선택 가능한 근무형태가 없습니다.</p>
+              )}
+            </div>
+          </FilterSection>
+
+          <FilterSection title="학교">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+              <input
+                value={schoolQuery}
+                onChange={(event) => setSchoolQuery(event.target.value)}
+                placeholder="학교 이름 검색"
+                className="h-10 w-full rounded-md border border-neutral-300 bg-white pl-9 pr-3 text-sm outline-none focus:border-neutral-900"
+              />
+            </div>
+
+            {draft.school && (
+              <button
+                type="button"
+                onClick={() => setDraft((current) => ({ ...current, school: "" }))}
+                className="mt-3 inline-flex h-8 items-center gap-2 rounded-full bg-neutral-100 px-3 text-xs font-medium text-neutral-700"
+              >
+                {draft.school}
+                <X className="h-3 w-3" />
+              </button>
+            )}
+
+            <div className="mt-3 grid gap-2">
+              {filteredSchoolOptions.length ? (
+                filteredSchoolOptions.map((school) => (
+                  <button
+                    key={school}
+                    type="button"
+                    onClick={() => setDraft((current) => ({ ...current, school }))}
+                    className={`h-9 rounded-md border px-3 text-left text-sm transition-colors ${
+                      draft.school === school
+                        ? "border-neutral-900 bg-neutral-900 text-white"
+                        : "border-neutral-200 text-neutral-700 hover:bg-neutral-50"
+                    }`}
+                  >
+                    {school}
+                  </button>
+                ))
+              ) : (
+                <p className="rounded-md border border-dashed border-neutral-200 p-4 text-center text-sm text-neutral-500">
+                  검색 결과가 없습니다.
+                </p>
+              )}
+            </div>
+          </FilterSection>
+
+          <FilterSection title="경력">
+            <DualRangeSlider
+              min={EXPERIENCE_RANGE[0]}
+              max={EXPERIENCE_RANGE[1]}
+              step={1}
+              value={draft.experienceRange}
+              onChange={(experienceRange) =>
+                setDraft((current) => ({ ...current, experienceRange }))
+              }
+              formatValue={formatExperienceMonths}
+            />
+          </FilterSection>
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-neutral-200 p-5">
+          <button
+            type="button"
+            onClick={() => {
+              setDraft(DEFAULT_FILTERS);
+              setSchoolQuery("");
+            }}
+            className="h-10 rounded-md border border-neutral-300 px-4 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+          >
+            초기화
+          </button>
+          <button
+            type="button"
+            onClick={() => onApply(draft)}
+            className="h-10 rounded-md bg-neutral-900 px-4 text-sm font-medium text-white hover:bg-neutral-800"
+          >
+            적용
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section>
+      <h4 className="text-sm font-semibold text-neutral-900">{title}</h4>
+      <div className="mt-3">{children}</div>
+    </section>
+  );
+}
+
+function DualRangeSlider({
+  min,
+  max,
+  step,
+  value,
+  onChange,
+  formatValue,
+}: {
+  min: number;
+  max: number;
+  step: number;
+  value: [number, number];
+  onChange: (value: [number, number]) => void;
+  formatValue: (value: number) => string;
+}) {
+  const [low, high] = value;
+  const lowPercent = ((low - min) / (max - min)) * 100;
+  const highPercent = ((high - min) / (max - min)) * 100;
+
+  function updateLow(nextLow: number) {
+    onChange([Math.min(nextLow, high - step), high]);
+  }
+
+  function updateHigh(nextHigh: number) {
+    onChange([low, Math.max(nextHigh, low + step)]);
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between text-xs font-medium text-neutral-600">
+        <span>{formatValue(low)}</span>
+        <span>{formatValue(high)}</span>
+      </div>
+      <div className="relative mt-4 h-8">
+        <div className="absolute left-0 right-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-neutral-200" />
+        <div
+          className="absolute top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-neutral-900"
+          style={{ left: `${lowPercent}%`, width: `${highPercent - lowPercent}%` }}
+        />
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={low}
+          onChange={(event) => updateLow(Number(event.target.value))}
+          className="pointer-events-none absolute inset-x-0 top-1/2 h-2 w-full -translate-y-1/2 appearance-none bg-transparent [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-neutral-900 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow"
+          aria-label="최소값"
+        />
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={high}
+          onChange={(event) => updateHigh(Number(event.target.value))}
+          className="pointer-events-none absolute inset-x-0 top-1/2 h-2 w-full -translate-y-1/2 appearance-none bg-transparent [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-neutral-900 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:shadow"
+          aria-label="최대값"
+        />
+      </div>
     </div>
   );
 }
