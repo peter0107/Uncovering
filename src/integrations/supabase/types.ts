@@ -471,7 +471,11 @@ export type Database = {
         }[]
       }
       set_saved_applicant_by_company_code: {
-        Args: { applicant_id: string; company_code: string; is_saved: boolean }
+        Args: {
+          p_applicant_id: string
+          p_company_code: string
+          p_is_saved: boolean
+        }
         Returns: boolean
       }
     }
