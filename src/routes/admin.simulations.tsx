@@ -12,7 +12,7 @@ import {
   type AdminCompany,
   type AdminCompanySimulation,
 } from "@/lib/simulations.functions";
-import { DOMAIN_CATEGORIES } from "@/lib/domain-categories";
+import { DOMAIN_CATEGORIES, type DomainCategory } from "@/lib/domain-categories";
 
 type SimulationForm = {
   companyCode: string;
