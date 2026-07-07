@@ -239,6 +239,7 @@ export type Database = {
           is_public: boolean
           job_family: string | null
           role_label: string | null
+          steps: Json | null
           task_prompt: string | null
           title: string
         }
@@ -253,6 +254,7 @@ export type Database = {
           is_public?: boolean
           job_family?: string | null
           role_label?: string | null
+          steps?: Json | null
           task_prompt?: string | null
           title: string
         }
@@ -267,6 +269,7 @@ export type Database = {
           is_public?: boolean
           job_family?: string | null
           role_label?: string | null
+          steps?: Json | null
           task_prompt?: string | null
           title?: string
         }
