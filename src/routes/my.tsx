@@ -60,6 +60,7 @@ import {
   CompanyInterestFields,
   WorkPreferenceFields,
 } from "@/lib/profile-fields";
+import { isDomainCategory } from "@/lib/domain-categories";
 
 export const Route = createFileRoute("/my")({
   head: () => ({ meta: [{ title: "프로필 — 언커버링" }] }),
@@ -161,6 +162,12 @@ function serializeProfileField(key: keyof ProfileFormData, value: unknown) {
   if (key === "academic_mark") {
     return value ? parseFloat(value as string) : null;
   }
+  if (key === "job_interests" && Array.isArray(value)) {
+    const validJobInterests = value.filter((item): item is string => {
+      return typeof item === "string" && isDomainCategory(item);
+    });
+    return validJobInterests.length ? validJobInterests : null;
+  }
   if (Array.isArray(value)) {
     return value.length ? value : null;
   }
@@ -246,6 +253,10 @@ function splitTags(value: string) {
 
 function fallbackDisplayName(userEmail: string) {
   return userEmail.split("@")[0] || "이름";
+}
+
+function normalizeJobInterests(values: string[] | null | undefined) {
+  return (values ?? []).filter(isDomainCategory);
 }
 
 function loadImage(src: string) {
@@ -522,12 +533,13 @@ function MyPage() {
       setOneLineIntro(seeker?.one_line_intro ?? "");
       setLinks((seeker?.external_links as ExternalLinks) ?? {});
       setAvatarUrl(seeker?.avatar_url ?? null);
+      const normalizedJobInterests = normalizeJobInterests(seeker?.job_interests);
       setProfileFormRaw({
         university_name: seeker?.university_name ?? "",
         education_level: seeker?.education_level ?? "",
         majors: seeker?.majors ?? [],
         academic_mark: seeker?.academic_mark != null ? String(seeker.academic_mark) : "",
-        job_interests: seeker?.job_interests ?? [],
+        job_interests: normalizedJobInterests,
         company_interests: seeker?.company_interests ?? [],
         work_regions: seeker?.work_regions ?? [],
         employment_types: seeker?.employment_types ?? [],

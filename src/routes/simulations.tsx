@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
-import { DOMAIN_DESCRIPTIONS } from "@/lib/domain-categories";
+import { DOMAIN_DESCRIPTIONS, isDomainCategory } from "@/lib/domain-categories";
 
 export const Route = createFileRoute("/simulations")({
   head: () => ({ meta: [{ title: "추천 시뮬레이션 — Beginner" }] }),
@@ -55,7 +55,7 @@ function toSimulation(row: RawRow): Simulation {
 }
 
 async function fetchRecommended(seeker: JobSeeker): Promise<Simulation[]> {
-  const jobInterests = seeker.job_interests ?? [];
+  const jobInterests = (seeker.job_interests ?? []).filter(isDomainCategory);
   const companyInterests = seeker.company_interests ?? [];
 
   // job_simulations + companies 조인, 관심 도메인 일치 우선 정렬
@@ -217,10 +217,15 @@ function SimulationsPage() {
           .eq("id", user.id)
           .maybeSingle();
 
-        const profile: JobSeeker = seekerData ?? {
-          job_interests: null,
-          company_interests: null,
-        };
+        const profile: JobSeeker = seekerData
+          ? {
+              ...seekerData,
+              job_interests: (seekerData.job_interests ?? []).filter(isDomainCategory),
+            }
+          : {
+              job_interests: null,
+              company_interests: null,
+            };
         setSeeker(profile);
 
         // 추천 시뮬레이션 조회
