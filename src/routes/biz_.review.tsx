@@ -358,7 +358,7 @@ function ApplicantDetail({ applicant }: { applicant: Applicant }) {
                 <Field label="전화번호" value={applicant.phone} />
                 <Field label="거주 지역" value={applicant.location} />
                 <Field label="제출 일시" value={applicant.submittedAt} />
-                <Field label="연결 이력서" value={applicant.resumeTitle || "기본 프로필"} />
+                <Field label="이력서 제목" value={applicant.resumeTitle || "기본 프로필"} />
               </dl>
             </InfoBlock>
 
