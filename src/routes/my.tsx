@@ -68,7 +68,7 @@ export const Route = createFileRoute("/my")({
 });
 
 type ExternalLinks = { github?: string; portfolio?: string; linkedin?: string };
-type AvatarEditorState = { file: File; previewUrl: string };
+type AvatarEditorState = { previewUrl: string };
 
 type CompletedSimulation = {
   submissionId: string;
@@ -460,7 +460,6 @@ function MyPage() {
   const [hasProfile, setHasProfile] = useState<boolean | null>(null);
   const [seeker, setSeeker] = useState<JobSeeker | null>(null);
   const [displayName, setDisplayName] = useState("");
-  const [oneLineIntro, setOneLineIntro] = useState("");
   const [links, setLinks] = useState<ExternalLinks>({});
   const [profileForm, setProfileFormRaw] = useState<ProfileFormData>(INITIAL_PROFILE_FORM);
 
@@ -469,7 +468,6 @@ function MyPage() {
   const [editingSection, setEditingSection] = useState<SectionKey | null>(null);
   const [savingSection, setSavingSection] = useState(false);
   const [draftDisplayName, setDraftDisplayName] = useState("");
-  const [draftIntro, setDraftIntro] = useState("");
   const [draftLinks, setDraftLinks] = useState<ExternalLinks>({});
   const [draftForm, setDraftFormRaw] = useState<ProfileFormData>(INITIAL_PROFILE_FORM);
 
@@ -530,7 +528,6 @@ function MyPage() {
       setHasProfile(!!seeker);
       setSeeker(seeker ?? null);
       setDisplayName(seeker?.display_name ?? fallbackDisplayName(user.email ?? ""));
-      setOneLineIntro(seeker?.one_line_intro ?? "");
       setLinks((seeker?.external_links as ExternalLinks) ?? {});
       setAvatarUrl(seeker?.avatar_url ?? null);
       const normalizedJobInterests = normalizeJobInterests(seeker?.job_interests);
@@ -600,7 +597,7 @@ function MyPage() {
     setAvatarZoom(1);
     setAvatarOffsetX(0);
     setAvatarOffsetY(0);
-    setAvatarEditor({ file, previewUrl: URL.createObjectURL(file) });
+    setAvatarEditor({ previewUrl: URL.createObjectURL(file) });
   };
 
   const closeAvatarEditor = () => {
@@ -677,7 +674,6 @@ function MyPage() {
 
   const startEditProfileCard = () => {
     setDraftDisplayName(displayName);
-    setDraftIntro(oneLineIntro);
     setDraftLinks(links);
     setEditingProfileCard(true);
   };
@@ -692,7 +688,6 @@ function MyPage() {
     setSavingProfileCard(true);
     const patch: TablesUpdate<"job_seekers"> = {
       display_name: draftDisplayName.trim() || null,
-      one_line_intro: draftIntro || null,
       external_links: draftLinks,
     };
     const { error } = await supabase.from("job_seekers").update(patch).eq("id", user.id);
@@ -704,7 +699,6 @@ function MyPage() {
     }
 
     setDisplayName(draftDisplayName.trim() || fallbackDisplayName(userEmail));
-    setOneLineIntro(draftIntro);
     setLinks(draftLinks);
     setEditingProfileCard(false);
     toast.success("저장됐어요.");
