@@ -119,6 +119,9 @@ type ResumeForm = {
   preferred_region: string;
   employment_type: string;
   education: string;
+  education_school: string;
+  education_major: string;
+  education_status: string;
   experiences: ResumeExperienceForm[];
   skills: string;
   tools: string;
@@ -159,6 +162,9 @@ const EMPTY_RESUME_FORM: ResumeForm = {
   preferred_region: "",
   employment_type: "",
   education: "",
+  education_school: "",
+  education_major: "",
+  education_status: "",
   experiences: [],
   skills: "",
   tools: "",
@@ -168,6 +174,221 @@ const EMPTY_RESUME_FORM: ResumeForm = {
 const EMPTY_SELECT_VALUE = "__empty__";
 const MONTH_OPTIONS = Array.from({ length: 12 }, (_, index) => String(index + 1).padStart(2, "0"));
 const SALARY_OPTIONS = Array.from({ length: 40 }, (_, index) => (index + 1) * 500);
+const EDUCATION_STATUS_OPTIONS = ["재학", "휴학", "수료", "졸업"];
+const UNIVERSITY_OPTIONS = [
+  "가야대학교",
+  "가천대학교",
+  "가톨릭관동대학교",
+  "가톨릭꽃동네대학교",
+  "가톨릭대학교",
+  "감리교신학대학교",
+  "강남대학교",
+  "강서대학교",
+  "강원대학교",
+  "건국대학교",
+  "건국대학교 GLOCAL캠퍼스",
+  "건양대학교",
+  "경기대학교",
+  "경남대학교",
+  "경동대학교",
+  "경북대학교",
+  "경상국립대학교",
+  "경성대학교",
+  "경운대학교",
+  "경인교육대학교",
+  "경일대학교",
+  "경찰대학",
+  "경희대학교",
+  "계명대학교",
+  "고려대학교",
+  "고려대학교 세종캠퍼스",
+  "고신대학교",
+  "공군사관학교",
+  "공주교육대학교",
+  "광신대학교",
+  "광운대학교",
+  "광주대학교",
+  "광주가톨릭대학교",
+  "광주과학기술원",
+  "광주교육대학교",
+  "광주여자대학교",
+  "국군간호사관학교",
+  "국립경국대학교",
+  "국립공주대학교",
+  "국립군산대학교",
+  "국립금오공과대학교",
+  "국립목포대학교",
+  "국립목포해양대학교",
+  "국립부경대학교",
+  "국립순천대학교",
+  "국립창원대학교",
+  "국립한국교통대학교",
+  "국립한국해양대학교",
+  "국립한밭대학교",
+  "국민대학교",
+  "극동대학교",
+  "금강대학교",
+  "김천대학교",
+  "나사렛대학교",
+  "나주대학교",
+  "남부대학교",
+  "남서울대학교",
+  "단국대학교",
+  "대구대학교",
+  "대구가톨릭대학교",
+  "대구경북과학기술원",
+  "대구교육대학교",
+  "대구예술대학교",
+  "대구한의대학교",
+  "대신대학교",
+  "대전대학교",
+  "대전가톨릭대학교",
+  "대전신학대학교",
+  "대진대학교",
+  "덕성여자대학교",
+  "동국대학교",
+  "동국대학교 WISE캠퍼스",
+  "동덕여자대학교",
+  "동명대학교",
+  "동서대학교",
+  "동신대학교",
+  "동아대학교",
+  "동아방송예술대학교",
+  "동양대학교",
+  "동의대학교",
+  "두원공과대학교",
+  "루터대학교",
+  "명지대학교",
+  "목원대학교",
+  "목포가톨릭대학교",
+  "배재대학교",
+  "백석대학교",
+  "부산대학교",
+  "부산가톨릭대학교",
+  "부산교육대학교",
+  "부산외국어대학교",
+  "부산장신대학교",
+  "삼육대학교",
+  "상명대학교",
+  "상지대학교",
+  "서강대학교",
+  "서경대학교",
+  "서울대학교",
+  "서울과학기술대학교",
+  "서울교육대학교",
+  "서울기독대학교",
+  "서울시립대학교",
+  "서울신학대학교",
+  "서울여자대학교",
+  "서울장신대학교",
+  "서울한영대학교",
+  "서원대학교",
+  "선문대학교",
+  "성결대학교",
+  "성공회대학교",
+  "성균관대학교",
+  "성신여자대학교",
+  "세명대학교",
+  "세종대학교",
+  "세한대학교",
+  "송원대학교",
+  "수원대학교",
+  "수원가톨릭대학교",
+  "숙명여자대학교",
+  "순천향대학교",
+  "숭실대학교",
+  "신경주대학교",
+  "신라대학교",
+  "신한대학교",
+  "서일대학교",
+  "아신대학교",
+  "아주대학교",
+  "안양대학교",
+  "연세대학교",
+  "연세대학교 미래캠퍼스",
+  "영남대학교",
+  "영남신학대학교",
+  "영산대학교",
+  "영산선학대학교",
+  "예수대학교",
+  "예원예술대학교",
+  "용인대학교",
+  "우석대학교",
+  "우송대학교",
+  "울산대학교",
+  "울산과학기술원",
+  "웅지세무대학교",
+  "원광대학교",
+  "위덕대학교",
+  "유원대학교",
+  "육군사관학교",
+  "을지대학교",
+  "이화여자대학교",
+  "인제대학교",
+  "인천대학교",
+  "인천가톨릭대학교",
+  "인하대학교",
+  "장로회신학대학교",
+  "전남대학교",
+  "전북대학교",
+  "전주대학교",
+  "전주교육대학교",
+  "제주대학교",
+  "제주국제대학교",
+  "제주한라대학교",
+  "조선대학교",
+  "중부대학교",
+  "중앙대학교",
+  "중앙승가대학교",
+  "중원대학교",
+  "진주교육대학교",
+  "차의과학대학교",
+  "창신대학교",
+  "청운대학교",
+  "청주교육대학교",
+  "청주대학교",
+  "초당대학교",
+  "총신대학교",
+  "추계예술대학교",
+  "춘천교육대학교",
+  "충남대학교",
+  "충북대학교",
+  "칼빈대학교",
+  "평택대학교",
+  "포항공과대학교",
+  "한경국립대학교",
+  "한국공학대학교",
+  "한국과학기술원",
+  "한국교원대학교",
+  "한국기술교육대학교",
+  "한국방송통신대학교",
+  "한국성서대학교",
+  "한국예술종합학교",
+  "한국외국어대학교",
+  "한국전통문화대학교",
+  "한국체육대학교",
+  "한국침례신학대학교",
+  "한국항공대학교",
+  "한남대학교",
+  "한동대학교",
+  "한라대학교",
+  "한림대학교",
+  "한서대학교",
+  "한성대학교",
+  "한세대학교",
+  "한신대학교",
+  "한양대학교",
+  "한양대학교 ERICA캠퍼스",
+  "한일장신대학교",
+  "해군사관학교",
+  "협성대학교",
+  "호남대학교",
+  "호남신학대학교",
+  "호서대학교",
+  "호원대학교",
+  "홍익대학교",
+  "화성의과학대학교",
+];
 
 function createResumeExperience(
   overrides: Partial<ResumeExperienceForm> = {},
@@ -397,6 +618,45 @@ function asString(value: Json | undefined) {
   return typeof value === "string" ? value : "";
 }
 
+function normalizeEducationStatus(value: string) {
+  if (EDUCATION_STATUS_OPTIONS.includes(value)) return value;
+  if (value.includes("졸")) return "졸업";
+  if (value.includes("재")) return "재학";
+  if (value.includes("휴")) return "휴학";
+  if (value.includes("수료")) return "수료";
+  return "";
+}
+
+function buildEducationDescription(form: ResumeForm) {
+  const school = form.education_school.trim();
+  const major = form.education_major.trim();
+  const status = form.education_status.trim();
+  const schoolAndMajor = [school, major].filter(Boolean).join(" ");
+  if (schoolAndMajor && status) return `${schoolAndMajor} (${status})`;
+  return schoolAndMajor || status;
+}
+
+function splitEducationDescription(description: string) {
+  if (!description.trim()) {
+    return { school: "", major: "", status: "" };
+  }
+
+  const statusMatch = description.match(/\((재학|휴학|수료|졸업)\)$/);
+  const status = statusMatch?.[1] ?? "";
+  const withoutStatus = status ? description.replace(/\s*\((재학|휴학|수료|졸업)\)$/, "") : description;
+  const matchedSchool = UNIVERSITY_OPTIONS.find((school) => withoutStatus.startsWith(school));
+
+  if (!matchedSchool) {
+    return { school: withoutStatus.trim(), major: "", status };
+  }
+
+  return {
+    school: matchedSchool,
+    major: withoutStatus.slice(matchedSchool.length).trim(),
+    status,
+  };
+}
+
 function selectedOptionsFromText(value: string, options: string[]) {
   if (!value.trim()) return [];
   const selected = value
@@ -485,6 +745,10 @@ async function createCroppedAvatarBlob(
 }
 
 function buildBlankResumeForm(userEmail: string, seeker: JobSeeker | null): ResumeForm {
+  const educationSchool = seeker?.university_name ?? "";
+  const educationMajor = seeker?.majors?.join(", ") ?? "";
+  const educationStatus = normalizeEducationStatus(seeker?.education_level ?? "");
+
   return {
     ...EMPTY_RESUME_FORM,
     title: "새 이력서",
@@ -493,9 +757,10 @@ function buildBlankResumeForm(userEmail: string, seeker: JobSeeker | null): Resu
     target_role: seeker?.job_interests?.[0] ?? "",
     preferred_region: seeker?.work_regions?.join(", ") ?? "",
     employment_type: seeker?.employment_types?.join(", ") ?? "",
-    education: [seeker?.university_name, seeker?.education_level, seeker?.majors?.join(", ")]
-      .filter(Boolean)
-      .join(" / "),
+    education: [educationSchool, educationMajor].filter(Boolean).join(" "),
+    education_school: educationSchool,
+    education_major: educationMajor,
+    education_status: educationStatus,
     experiences: [createResumeExperience()],
     activities: [createResumeActivity()],
   };
@@ -507,6 +772,8 @@ function formFromResume(resume: Resume, userEmail: string, seeker: JobSeeker | n
   const education = firstRecord(resume.educations);
   const experienceRows = recordsFromJson(resume.experiences);
   const activityRows = recordsFromJson(resume.portfolios);
+  const educationDescription = asString(education.description);
+  const parsedEducation = splitEducationDescription(educationDescription);
 
   return {
     ...buildBlankResumeForm(userEmail, seeker),
@@ -521,7 +788,10 @@ function formFromResume(resume: Resume, userEmail: string, seeker: JobSeeker | n
     desired_salary: asString(conditions.desired_salary),
     preferred_region: asString(conditions.preferred_region),
     employment_type: asString(conditions.employment_type),
-    education: asString(education.description),
+    education: educationDescription,
+    education_school: asString(education.school) || parsedEducation.school,
+    education_major: asString(education.major) || parsedEducation.major,
+    education_status: normalizeEducationStatus(asString(education.status) || parsedEducation.status),
     experiences: experienceRows.length
       ? experienceRows.map((experience) => {
           const periodParts = parsePeriodParts(asString(experience.period));
@@ -552,6 +822,8 @@ function formFromResume(resume: Resume, userEmail: string, seeker: JobSeeker | n
 function patchFromResumeForm(
   form: ResumeForm,
 ): Omit<TablesUpdate<"resumes">, "id" | "user_id" | "created_at" | "updated_at"> {
+  const educationDescription = buildEducationDescription(form);
+
   return {
     title: form.title.trim() || "새 이력서",
     memo: form.memo.trim() || null,
@@ -568,7 +840,16 @@ function patchFromResumeForm(
       preferred_region: form.preferred_region.trim(),
       employment_type: form.employment_type.trim(),
     },
-    educations: form.education.trim() ? [{ description: form.education.trim() }] : [],
+    educations: educationDescription
+      ? [
+          {
+            school: form.education_school.trim(),
+            major: form.education_major.trim(),
+            status: form.education_status.trim(),
+            description: educationDescription,
+          },
+        ]
+      : [],
     experiences: form.experiences
       .filter(
         (experience) =>
@@ -606,22 +887,43 @@ function patchFromResumeForm(
   };
 }
 
+function ResumeLabel({
+  htmlFor,
+  children,
+  shared = false,
+}: {
+  htmlFor?: string;
+  children: ReactNode;
+  shared?: boolean;
+}) {
+  return (
+    <Label htmlFor={htmlFor}>
+      {children}
+      {shared && <span className="ml-1 text-red-500">*</span>}
+    </Label>
+  );
+}
+
 function ResumeField({
   id,
   label,
   value,
   onChange,
   placeholder,
+  shared = false,
 }: {
   id: keyof ResumeForm;
   label: string;
   value: string;
   onChange: (id: keyof ResumeForm, value: string) => void;
   placeholder?: string;
+  shared?: boolean;
 }) {
   return (
     <div>
-      <Label htmlFor={id}>{label}</Label>
+      <ResumeLabel htmlFor={id} shared={shared}>
+        {label}
+      </ResumeLabel>
       <Input
         id={id}
         value={value}
@@ -639,16 +941,20 @@ function ResumeTextField({
   value,
   onChange,
   placeholder,
+  shared = false,
 }: {
   id: keyof ResumeForm;
   label: string;
   value: string;
   onChange: (id: keyof ResumeForm, value: string) => void;
   placeholder?: string;
+  shared?: boolean;
 }) {
   return (
     <div>
-      <Label htmlFor={id}>{label}</Label>
+      <ResumeLabel htmlFor={id} shared={shared}>
+        {label}
+      </ResumeLabel>
       <Textarea
         id={id}
         value={value}
@@ -667,6 +973,7 @@ function ResumeSelectField({
   options,
   onChange,
   placeholder = "선택",
+  shared = false,
 }: {
   id: keyof ResumeForm;
   label: string;
@@ -674,10 +981,13 @@ function ResumeSelectField({
   options: string[];
   onChange: (id: keyof ResumeForm, value: string) => void;
   placeholder?: string;
+  shared?: boolean;
 }) {
   return (
     <div>
-      <Label htmlFor={id}>{label}</Label>
+      <ResumeLabel htmlFor={id} shared={shared}>
+        {label}
+      </ResumeLabel>
       <Select
         value={value || EMPTY_SELECT_VALUE}
         onValueChange={(next) => onChange(id, next === EMPTY_SELECT_VALUE ? "" : next)}
@@ -705,6 +1015,7 @@ function ResumeMultiSelectField({
   options,
   onChange,
   placeholder = "선택",
+  shared = false,
 }: {
   id: keyof ResumeForm;
   label: string;
@@ -712,6 +1023,7 @@ function ResumeMultiSelectField({
   options: string[];
   onChange: (id: keyof ResumeForm, value: string) => void;
   placeholder?: string;
+  shared?: boolean;
 }) {
   const selected = selectedOptionsFromText(value, options);
 
@@ -724,7 +1036,9 @@ function ResumeMultiSelectField({
 
   return (
     <div>
-      <Label htmlFor={id}>{label}</Label>
+      <ResumeLabel htmlFor={id} shared={shared}>
+        {label}
+      </ResumeLabel>
       <Popover>
         <PopoverTrigger asChild>
           <Button
@@ -758,6 +1072,85 @@ function ResumeMultiSelectField({
                 </button>
               );
             })}
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
+
+function ResumeSchoolField({
+  id,
+  label,
+  value,
+  onChange,
+  shared = false,
+}: {
+  id: keyof ResumeForm;
+  label: string;
+  value: string;
+  onChange: (id: keyof ResumeForm, value: string) => void;
+  shared?: boolean;
+}) {
+  const [query, setQuery] = useState("");
+  const filteredSchools = useMemo(() => {
+    const keyword = query.trim().toLowerCase();
+    if (!keyword) return UNIVERSITY_OPTIONS.slice(0, 20);
+    return UNIVERSITY_OPTIONS.filter((school) => school.toLowerCase().includes(keyword)).slice(
+      0,
+      30,
+    );
+  }, [query]);
+
+  return (
+    <div>
+      <ResumeLabel htmlFor={id} shared={shared}>
+        {label}
+      </ResumeLabel>
+      <Popover
+        onOpenChange={(open) => {
+          if (open) setQuery(value);
+        }}
+      >
+        <PopoverTrigger asChild>
+          <Button
+            id={id}
+            type="button"
+            variant="outline"
+            className="mt-2 h-10 w-full justify-between rounded-md border-neutral-300 px-3 text-left font-normal"
+          >
+            <span className={value ? "truncate text-neutral-900" : "text-neutral-400"}>
+              {value || "학교명 검색"}
+            </span>
+            <ChevronDown className="ml-2 h-4 w-4 shrink-0 text-neutral-500" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          align="start"
+          className="max-h-80 w-[var(--radix-popover-trigger-width)] overflow-hidden p-2"
+        >
+          <Input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="학교명 검색"
+            className="mb-2 h-9"
+          />
+          <div className="max-h-60 overflow-y-auto">
+            {filteredSchools.length ? (
+              filteredSchools.map((school) => (
+                <button
+                  key={school}
+                  type="button"
+                  onClick={() => onChange(id, school)}
+                  className="flex w-full items-center justify-between rounded-md px-2 py-2 text-left text-sm hover:bg-zinc-100"
+                >
+                  <span>{school}</span>
+                  {value === school && <Check className="h-4 w-4 text-blue-600" />}
+                </button>
+              ))
+            ) : (
+              <p className="px-2 py-6 text-center text-sm text-zinc-400">검색 결과가 없습니다.</p>
+            )}
           </div>
         </PopoverContent>
       </Popover>
@@ -1695,7 +2088,7 @@ function MyPage() {
             </span>
             <strong className="mt-4 text-sm font-semibold text-zinc-900">직접 작성</strong>
             <span className="mt-1 text-xs leading-5 text-zinc-400">
-              기본정보, 경력, 학력, 스킬, 포트폴리오를 입력해요.
+              기본정보, 경력, 학력, 스킬, 활동을 입력해요.
             </span>
           </button>
 
@@ -1933,24 +2326,29 @@ function MyPage() {
             <DialogTitle>{editingResume ? "이력서 수정" : "새 이력서 작성"}</DialogTitle>
             <DialogDescription>
               회사나 직무별로 다른 내용을 저장할 수 있어요. 비어 있는 항목은 저장해도 괜찮아요.
+              <span className="mt-1 block">
+                <span className="font-semibold text-red-500">*</span> 항목은 동의 시 기업에 공유됩니다.
+              </span>
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-8 overflow-y-auto px-6 py-4">
-            <section>
-              <h3 className="text-sm font-bold text-zinc-900">이력서 정보</h3>
+            <section className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+              <h3 className="text-sm font-bold text-zinc-500">이력서 정보</h3>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <ResumeField
                   id="title"
                   label="이력서 제목"
                   value={resumeForm.title}
                   onChange={updateResumeForm}
+                  shared
                 />
                 <ResumeField
                   id="target_role"
                   label="지원 직무"
                   value={resumeForm.target_role}
                   onChange={updateResumeForm}
+                  shared
                 />
                 <div className="md:col-span-2">
                   <ResumeTextField
@@ -1972,24 +2370,28 @@ function MyPage() {
                   label="이름"
                   value={resumeForm.name}
                   onChange={updateResumeForm}
+                  shared
                 />
                 <ResumeField
                   id="email"
                   label="이메일"
                   value={resumeForm.email}
                   onChange={updateResumeForm}
+                  shared
                 />
                 <ResumeField
                   id="phone"
                   label="전화번호"
                   value={resumeForm.phone}
                   onChange={updateResumeForm}
+                  shared
                 />
                 <ResumeField
                   id="location"
                   label="거주 지역"
                   value={resumeForm.location}
                   onChange={updateResumeForm}
+                  shared
                 />
                 <div className="md:col-span-2">
                   <ResumeField
@@ -1998,6 +2400,7 @@ function MyPage() {
                     value={resumeForm.headline}
                     onChange={updateResumeForm}
                     placeholder="예: 데이터를 바탕으로 성장을 만드는 마케터"
+                    shared
                   />
                 </div>
               </div>
@@ -2013,6 +2416,7 @@ function MyPage() {
                   onChange={updateResumeForm}
                   options={SALARY_OPTIONS.map(formatSalaryOption)}
                   placeholder="희망 연봉 선택"
+                  shared
                 />
                 <ResumeMultiSelectField
                   id="preferred_region"
@@ -2021,6 +2425,7 @@ function MyPage() {
                   onChange={updateResumeForm}
                   options={WORK_REGIONS}
                   placeholder="희망 지역 선택"
+                  shared
                 />
                 <ResumeSelectField
                   id="employment_type"
@@ -2029,19 +2434,37 @@ function MyPage() {
                   onChange={updateResumeForm}
                   options={EMPLOYMENT_TYPES}
                   placeholder="근무 형태 선택"
+                  shared
                 />
               </div>
             </section>
 
             <section>
               <h3 className="text-sm font-bold text-zinc-900">학력</h3>
-              <div className="mt-4">
-                <ResumeField
-                  id="education"
-                  label="학력 내용"
-                  value={resumeForm.education}
+              <div className="mt-4 grid gap-4 md:grid-cols-3">
+                <ResumeSchoolField
+                  id="education_school"
+                  label="학교명"
+                  value={resumeForm.education_school}
                   onChange={updateResumeForm}
-                  placeholder="예: 연세대학교 경영학과 (2016.02 졸업)"
+                  shared
+                />
+                <ResumeField
+                  id="education_major"
+                  label="전공"
+                  value={resumeForm.education_major}
+                  onChange={updateResumeForm}
+                  placeholder="예: 경영학과"
+                  shared
+                />
+                <ResumeSelectField
+                  id="education_status"
+                  label="상태"
+                  value={resumeForm.education_status}
+                  onChange={updateResumeForm}
+                  options={EDUCATION_STATUS_OPTIONS}
+                  placeholder="상태 선택"
+                  shared
                 />
               </div>
             </section>
@@ -2096,7 +2519,9 @@ function MyPage() {
 
                     <div className="grid gap-4 md:grid-cols-2">
                       <div>
-                        <Label htmlFor={`company-${experience.id}`}>회사명</Label>
+                        <ResumeLabel htmlFor={`company-${experience.id}`} shared>
+                          회사명
+                        </ResumeLabel>
                         <Input
                           id={`company-${experience.id}`}
                           value={experience.company}
@@ -2107,7 +2532,9 @@ function MyPage() {
                         />
                       </div>
                       <div>
-                        <Label htmlFor={`role-${experience.id}`}>직무/포지션</Label>
+                        <ResumeLabel htmlFor={`role-${experience.id}`} shared>
+                          직무/포지션
+                        </ResumeLabel>
                         <Input
                           id={`role-${experience.id}`}
                           value={experience.role}
@@ -2118,7 +2545,7 @@ function MyPage() {
                         />
                       </div>
                       <div className="md:col-span-2">
-                        <Label>기간</Label>
+                        <ResumeLabel shared>기간</ResumeLabel>
                         <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_120px_auto_1fr_120px]">
                           <Input
                             type="number"
@@ -2192,9 +2619,9 @@ function MyPage() {
                         </div>
                       </div>
                       <div className="md:col-span-2">
-                        <Label htmlFor={`experience-description-${experience.id}`}>
+                        <ResumeLabel htmlFor={`experience-description-${experience.id}`} shared>
                           주요 업무/성과
-                        </Label>
+                        </ResumeLabel>
                         <Textarea
                           id={`experience-description-${experience.id}`}
                           value={experience.description}
@@ -2219,6 +2646,7 @@ function MyPage() {
                   value={resumeForm.skills}
                   onChange={updateResumeForm}
                   placeholder="쉼표로 구분"
+                  shared
                 />
                 <ResumeField
                   id="tools"
@@ -2226,6 +2654,7 @@ function MyPage() {
                   value={resumeForm.tools}
                   onChange={updateResumeForm}
                   placeholder="쉼표로 구분"
+                  shared
                 />
               </div>
             </section>
@@ -2263,7 +2692,9 @@ function MyPage() {
                     </div>
                     <div className="grid gap-4">
                       <div>
-                        <Label htmlFor={`activity-title-${activity.id}`}>활동 제목</Label>
+                        <ResumeLabel htmlFor={`activity-title-${activity.id}`} shared>
+                          활동 제목
+                        </ResumeLabel>
                         <Input
                           id={`activity-title-${activity.id}`}
                           value={activity.title}
@@ -2274,7 +2705,9 @@ function MyPage() {
                         />
                       </div>
                       <div>
-                        <Label htmlFor={`activity-description-${activity.id}`}>활동 내용</Label>
+                        <ResumeLabel htmlFor={`activity-description-${activity.id}`} shared>
+                          활동 내용
+                        </ResumeLabel>
                         <Textarea
                           id={`activity-description-${activity.id}`}
                           value={activity.description}
