@@ -992,7 +992,7 @@ function ResumeSelectField({
         value={value || EMPTY_SELECT_VALUE}
         onValueChange={(next) => onChange(id, next === EMPTY_SELECT_VALUE ? "" : next)}
       >
-        <SelectTrigger id={id} className="mt-2 h-10">
+        <SelectTrigger id={id} className="mt-2 h-9">
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
@@ -1045,7 +1045,7 @@ function ResumeMultiSelectField({
             id={id}
             type="button"
             variant="outline"
-            className="mt-2 h-10 w-full justify-between rounded-md border-neutral-300 px-3 text-left font-normal"
+            className="mt-2 h-9 w-full justify-between rounded-md border-neutral-300 px-3 text-left font-normal"
           >
             <span className={selected.length ? "truncate text-neutral-900" : "text-neutral-400"}>
               {selected.length ? selected.join(", ") : placeholder}
@@ -1117,7 +1117,7 @@ function ResumeSchoolField({
             id={id}
             type="button"
             variant="outline"
-            className="mt-2 h-10 w-full justify-between rounded-md border-neutral-300 px-3 text-left font-normal"
+            className="mt-2 h-9 w-full justify-between rounded-md border-neutral-300 px-3 text-left font-normal"
           >
             <span className={value ? "truncate text-neutral-900" : "text-neutral-400"}>
               {value || "학교명 검색"}
