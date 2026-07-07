@@ -665,6 +665,28 @@ function selectedOptionsFromText(value: string, options: string[]) {
   return selected.filter((item) => options.includes(item));
 }
 
+function normalizeEmploymentTypeValues(values: string[] | null | undefined) {
+  const normalized = new Set<string>();
+
+  for (const value of values ?? []) {
+    for (const item of value.split(",")) {
+      const trimmed = item.trim();
+      if (!trimmed) continue;
+      const mapped =
+        trimmed === "정규직" || trimmed === "하이브리드" || trimmed === "경력"
+          ? "경력직"
+          : trimmed;
+      if (EMPLOYMENT_TYPES.includes(mapped)) normalized.add(mapped);
+    }
+  }
+
+  return EMPLOYMENT_TYPES.filter((type) => normalized.has(type));
+}
+
+function normalizeEmploymentTypeText(value: string) {
+  return normalizeEmploymentTypeValues(value ? value.split(",") : []).join(", ");
+}
+
 function splitTags(value: string) {
   return value
     .split(",")
@@ -689,7 +711,7 @@ function profileFormFromSeeker(seeker: JobSeeker | null): ProfileFormData {
     job_interests: normalizeJobInterests(seeker?.job_interests),
     company_interests: seeker?.company_interests ?? [],
     work_regions: seeker?.work_regions ?? [],
-    employment_types: seeker?.employment_types ?? [],
+    employment_types: normalizeEmploymentTypeValues(seeker?.employment_types),
     willing_to_relocate: seeker?.willing_to_relocate ?? false,
     discovery_consent: seeker?.discovery_consent ?? false,
   };
@@ -755,7 +777,7 @@ function buildBlankResumeForm(userEmail: string, seeker: JobSeeker | null): Resu
     headline: seeker?.one_line_intro ?? "",
     target_role: seeker?.job_interests?.[0] ?? "",
     preferred_region: seeker?.work_regions?.join(", ") ?? "",
-    employment_type: seeker?.employment_types?.join(", ") ?? "",
+    employment_type: normalizeEmploymentTypeValues(seeker?.employment_types).join(", "),
     education: [educationSchool, educationMajor].filter(Boolean).join(" "),
     education_school: educationSchool,
     education_major: educationMajor,
@@ -786,7 +808,9 @@ function formFromResume(resume: Resume, userEmail: string, seeker: JobSeeker | n
     headline: asString(basics.headline),
     desired_salary: asString(conditions.desired_salary),
     preferred_region: asString(conditions.preferred_region),
-    employment_type: asString(conditions.employment_type),
+    employment_type:
+      normalizeEmploymentTypeText(asString(conditions.employment_type)) ||
+      normalizeEmploymentTypeValues(seeker?.employment_types).join(", "),
     education: educationDescription,
     education_school: asString(education.school) || parsedEducation.school,
     education_major: asString(education.major) || parsedEducation.major,
@@ -837,7 +861,7 @@ function patchFromResumeForm(
     job_conditions: {
       desired_salary: form.desired_salary.trim(),
       preferred_region: form.preferred_region.trim(),
-      employment_type: form.employment_type.trim(),
+      employment_type: normalizeEmploymentTypeText(form.employment_type),
     },
     educations: educationDescription
       ? [
@@ -2427,7 +2451,7 @@ function MyPage() {
                   placeholder="희망 지역 선택"
                   shared
                 />
-                <ResumeSelectField
+                <ResumeMultiSelectField
                   id="employment_type"
                   label="근무 형태"
                   value={resumeForm.employment_type}

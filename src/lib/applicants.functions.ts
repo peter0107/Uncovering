@@ -158,6 +158,24 @@ const savedApplicantInputSchema = z.object({
   isSaved: z.boolean(),
 });
 
+const EMPLOYMENT_TYPES = ["인턴", "신입", "계약직", "경력직"] as const;
+
+function normalizeEmploymentType(value: string): string {
+  const normalized = new Set<string>();
+
+  for (const item of value.split(",")) {
+    const trimmed = item.trim();
+    if (!trimmed || trimmed === "근무 형태 미입력") continue;
+    const mapped =
+      trimmed === "정규직" || trimmed === "하이브리드" || trimmed === "경력"
+        ? "경력직"
+        : trimmed;
+    if ((EMPLOYMENT_TYPES as readonly string[]).includes(mapped)) normalized.add(mapped);
+  }
+
+  return EMPLOYMENT_TYPES.filter((type) => normalized.has(type)).join(", ");
+}
+
 function formatSubmittedAt(iso: string): string {
   const formatter = new Intl.DateTimeFormat("ko-KR", {
     timeZone: "Asia/Seoul",
@@ -242,7 +260,8 @@ function mapApplicant(row: Record<string, unknown>): Applicant {
     simulation: simulation.map((s) => simulationStepSchema.parse(s)),
     desiredSalary: String(row.desired_salary ?? "희망 연봉 미입력"),
     preferredRegion: String(row.preferred_region ?? ""),
-    employmentType: String(row.employment_type ?? "근무 형태 미입력"),
+    employmentType:
+      normalizeEmploymentType(String(row.employment_type ?? "")) || "근무 형태 미입력",
     resumeTitle: String(row.resume_title ?? "기본 프로필"),
     resumeSourceType: String(row.resume_source_type ?? ""),
   };

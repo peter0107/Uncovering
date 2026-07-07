@@ -50,7 +50,7 @@ export const WORK_REGIONS = [
   "해외",
 ];
 
-export const EMPLOYMENT_TYPES = ["인턴", "신입", "계약직"];
+export const EMPLOYMENT_TYPES = ["인턴", "신입", "계약직", "경력직"];
 
 // ─── 타입 ────────────────────────────────────────────────────
 
