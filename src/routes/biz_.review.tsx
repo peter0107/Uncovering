@@ -591,28 +591,22 @@ function ApplicantFilterDialog({
               />
             </div>
 
-            {draft.school && (
-              <button
-                type="button"
-                onClick={() => setDraft((current) => ({ ...current, school: "" }))}
-                className="mt-3 inline-flex h-8 items-center gap-2 rounded-full bg-neutral-100 px-3 text-xs font-medium text-neutral-700"
-              >
-                {draft.school}
-                <X className="h-3 w-3" />
-              </button>
-            )}
-
-            <div className="mt-3 grid gap-2">
+            <div className="mt-3 flex flex-wrap gap-2">
               {filteredSchoolOptions.length ? (
                 filteredSchoolOptions.map((school) => (
                   <button
                     key={school}
                     type="button"
-                    onClick={() => setDraft((current) => ({ ...current, school }))}
-                    className={`h-9 rounded-md border px-3 text-left text-sm transition-colors ${
+                    onClick={() =>
+                      setDraft((current) => ({
+                        ...current,
+                        school: current.school === school ? "" : school,
+                      }))
+                    }
+                    className={`h-9 rounded-full border px-3 text-xs font-medium transition-colors ${
                       draft.school === school
                         ? "border-neutral-900 bg-neutral-900 text-white"
-                        : "border-neutral-200 text-neutral-700 hover:bg-neutral-50"
+                        : "border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50"
                     }`}
                   >
                     {school}
