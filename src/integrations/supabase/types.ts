@@ -453,6 +453,7 @@ export type Database = {
           email: string
           employment_type: string
           experience: string
+          experiences: Json
           headline: string
           id: string
           location: string

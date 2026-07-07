@@ -8,6 +8,15 @@ export type PortfolioItem = {
   title: string;
   url: string;
   updatedAt: string;
+  description: string;
+};
+
+export type ExperienceItem = {
+  company: string;
+  role: string;
+  period: string;
+  duration: string;
+  description: string;
 };
 
 export type SimulationStep = {
@@ -29,6 +38,7 @@ export type Applicant = {
   headline: string;
   education: string;
   recentJob: string;
+  experiences: ExperienceItem[];
   skills: string[];
   tools: string[];
   resumeUrl: string;
@@ -72,6 +82,15 @@ const portfolioItemSchema = z.object({
   title: z.string(),
   url: z.string(),
   updatedAt: z.string(),
+  description: z.string(),
+});
+
+const experienceItemSchema = z.object({
+  company: z.string(),
+  role: z.string(),
+  period: z.string(),
+  duration: z.string(),
+  description: z.string(),
 });
 
 const simulationStepSchema = z.object({
@@ -93,6 +112,7 @@ const applicantSchema = z.object({
   headline: z.string(),
   education: z.string(),
   recentJob: z.string(),
+  experiences: z.array(experienceItemSchema),
   skills: z.array(z.string()),
   tools: z.array(z.string()),
   resumeUrl: z.string(),
@@ -155,7 +175,37 @@ function formatSubmittedAt(iso: string): string {
 
 function mapApplicant(row: Record<string, unknown>): Applicant {
   const portfolio = Array.isArray(row.portfolio) ? row.portfolio : [];
+  const experienceRows = Array.isArray(row.experiences) ? row.experiences : [];
   const simulation = Array.isArray(row.simulation) ? row.simulation : [];
+  const experiences = experienceRows.map((item) =>
+    experienceItemSchema.parse({
+      company: String(
+        typeof item === "object" && item !== null && "company" in item
+          ? (item as { company?: unknown }).company
+          : "",
+      ),
+      role: String(
+        typeof item === "object" && item !== null && "role" in item
+          ? (item as { role?: unknown }).role
+          : "",
+      ),
+      period: String(
+        typeof item === "object" && item !== null && "period" in item
+          ? (item as { period?: unknown }).period
+          : "",
+      ),
+      duration: String(
+        typeof item === "object" && item !== null && "duration" in item
+          ? (item as { duration?: unknown }).duration
+          : "",
+      ),
+      description: String(
+        typeof item === "object" && item !== null && "description" in item
+          ? (item as { description?: unknown }).description
+          : "",
+      ),
+    }),
+  );
 
   return {
     id: String(row.id),
@@ -170,6 +220,7 @@ function mapApplicant(row: Record<string, unknown>): Applicant {
     headline: String(row.headline),
     education: String(row.education),
     recentJob: String(row.recent_job),
+    experiences,
     skills: Array.isArray(row.skills) ? row.skills.map(String) : [],
     tools: Array.isArray(row.tools) ? row.tools.map(String) : [],
     resumeUrl: String(row.resume_url),
@@ -180,6 +231,11 @@ function mapApplicant(row: Record<string, unknown>): Applicant {
           typeof p === "object" && p !== null && "updatedAt" in p
             ? (p as { updatedAt?: unknown }).updatedAt
             : "",
+        description: String(
+          typeof p === "object" && p !== null && "description" in p
+            ? (p as { description?: unknown }).description
+            : "",
+        ),
       }),
     ),
     duration: String(row.duration),

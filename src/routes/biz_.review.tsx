@@ -389,26 +389,64 @@ function ApplicantDetail({ applicant }: { applicant: Applicant }) {
                 </span>
               }
             >
-              <p className="text-sm font-medium leading-6 text-neutral-900">
-                {applicant.recentJob}
-              </p>
+              {applicant.experiences.length ? (
+                <div className="space-y-4">
+                  {applicant.experiences.map((experience, index) => (
+                    <div
+                      key={`${experience.company}-${experience.role}-${index}`}
+                      className="rounded-md border border-neutral-200 p-3"
+                    >
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-semibold text-neutral-900">
+                          {[experience.company, experience.role].filter(Boolean).join(" · ") ||
+                            "경력"}
+                        </p>
+                        {experience.duration && (
+                          <span className="rounded bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-600">
+                            {experience.duration}
+                          </span>
+                        )}
+                      </div>
+                      {experience.period && (
+                        <p className="mt-1 text-xs text-neutral-500">{experience.period}</p>
+                      )}
+                      {experience.description && (
+                        <p className="mt-3 whitespace-pre-line text-sm leading-6 text-neutral-700">
+                          {experience.description}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm font-medium leading-6 text-neutral-900">
+                  {applicant.recentJob}
+                </p>
+              )}
             </InfoBlock>
 
             <InfoBlock title="스킬 / 툴">
               <ChipList items={[...applicant.skills, ...applicant.tools]} />
             </InfoBlock>
 
-            <InfoBlock title="포트폴리오">
+            <InfoBlock title="활동">
               <div className="grid gap-3 md:grid-cols-2">
                 {applicant.portfolio.map((item) => (
-                  <a
+                  <div
                     key={item.title}
-                    href={item.url}
-                    className="block rounded-md border border-neutral-200 p-3 text-sm hover:bg-neutral-50"
+                    className="block rounded-md border border-neutral-200 p-3 text-sm"
                   >
                     <div className="font-medium text-neutral-900">{item.title}</div>
-                    <div className="mt-2 text-xs text-neutral-500">업데이트 {item.updatedAt}</div>
-                  </a>
+                    {item.description ? (
+                      <div className="mt-2 whitespace-pre-line text-xs leading-5 text-neutral-500">
+                        {item.description}
+                      </div>
+                    ) : (
+                      <div className="mt-2 text-xs text-neutral-500">
+                        {item.updatedAt && `업데이트 ${item.updatedAt}`}
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             </InfoBlock>

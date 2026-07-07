@@ -44,6 +44,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
@@ -59,6 +66,8 @@ import {
   JobInterestFields,
   CompanyInterestFields,
   WorkPreferenceFields,
+  WORK_REGIONS,
+  EMPLOYMENT_TYPES,
 } from "@/lib/profile-fields";
 import { isDomainCategory } from "@/lib/domain-categories";
 
@@ -108,14 +117,27 @@ type ResumeForm = {
   preferred_region: string;
   employment_type: string;
   education: string;
-  company: string;
-  role: string;
-  period: string;
-  experience_description: string;
+  experiences: ResumeExperienceForm[];
   skills: string;
   tools: string;
-  portfolio_title: string;
-  portfolio_url: string;
+  activities: ResumeActivityForm[];
+};
+
+type ResumeExperienceForm = {
+  id: string;
+  company: string;
+  role: string;
+  startYear: string;
+  startMonth: string;
+  endYear: string;
+  endMonth: string;
+  description: string;
+};
+
+type ResumeActivityForm = {
+  id: string;
+  title: string;
+  description: string;
 };
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
@@ -135,15 +157,89 @@ const EMPTY_RESUME_FORM: ResumeForm = {
   preferred_region: "",
   employment_type: "",
   education: "",
-  company: "",
-  role: "",
-  period: "",
-  experience_description: "",
+  experiences: [],
   skills: "",
   tools: "",
-  portfolio_title: "",
-  portfolio_url: "",
+  activities: [],
 };
+
+const EMPTY_SELECT_VALUE = "__empty__";
+const MONTH_OPTIONS = Array.from({ length: 12 }, (_, index) => String(index + 1).padStart(2, "0"));
+const SALARY_OPTIONS = Array.from({ length: 40 }, (_, index) => (index + 1) * 500);
+
+function createResumeExperience(
+  overrides: Partial<ResumeExperienceForm> = {},
+): ResumeExperienceForm {
+  return {
+    id: crypto.randomUUID(),
+    company: "",
+    role: "",
+    startYear: "",
+    startMonth: "",
+    endYear: "",
+    endMonth: "",
+    description: "",
+    ...overrides,
+  };
+}
+
+function createResumeActivity(overrides: Partial<ResumeActivityForm> = {}): ResumeActivityForm {
+  return {
+    id: crypto.randomUUID(),
+    title: "",
+    description: "",
+    ...overrides,
+  };
+}
+
+function formatSalaryOption(amountInManwon: number) {
+  if (amountInManwon >= 10000 && amountInManwon % 10000 === 0) {
+    return `${amountInManwon / 10000}억원 이상`;
+  }
+  return `${amountInManwon}만원 이상`;
+}
+
+function parsePeriodParts(period: string): Partial<ResumeExperienceForm> {
+  const match = period.match(/(\d{4})[.\-/년\s]+(\d{1,2}).*?(\d{4})[.\-/년\s]+(\d{1,2})/);
+  if (!match) return {};
+  return {
+    startYear: match[1] ?? "",
+    startMonth: match[2]?.padStart(2, "0") ?? "",
+    endYear: match[3] ?? "",
+    endMonth: match[4]?.padStart(2, "0") ?? "",
+  };
+}
+
+function experienceMonths(experience: ResumeExperienceForm) {
+  const startYear = Number(experience.startYear);
+  const startMonth = Number(experience.startMonth);
+  const endYear = Number(experience.endYear);
+  const endMonth = Number(experience.endMonth);
+  if (!startYear || !startMonth || !endYear || !endMonth) return 0;
+  const months = (endYear - startYear) * 12 + (endMonth - startMonth) + 1;
+  return Math.max(0, months);
+}
+
+function formatDuration(months: number) {
+  if (months <= 0) return "기간 미입력";
+  const years = Math.floor(months / 12);
+  const rest = months % 12;
+  if (years && rest) return `${years}년 ${rest}개월`;
+  if (years) return `${years}년`;
+  return `${rest}개월`;
+}
+
+function formatExperiencePeriod(experience: ResumeExperienceForm) {
+  if (
+    !experience.startYear ||
+    !experience.startMonth ||
+    !experience.endYear ||
+    !experience.endMonth
+  ) {
+    return "";
+  }
+  return `${experience.startYear}.${experience.startMonth} ~ ${experience.endYear}.${experience.endMonth}`;
+}
 
 type SectionKey = "education" | "jobInterests" | "companyInterests" | "workPreference";
 
@@ -280,6 +376,13 @@ function firstRecord(value: Json | null): JsonRecord {
   return first && !Array.isArray(first) && typeof first === "object" ? first : {};
 }
 
+function recordsFromJson(value: Json | null): JsonRecord[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(
+    (item): item is JsonRecord => !!item && !Array.isArray(item) && typeof item === "object",
+  );
+}
+
 function asString(value: Json | undefined) {
   return typeof value === "string" ? value : "";
 }
@@ -374,6 +477,8 @@ function buildBlankResumeForm(userEmail: string, seeker: JobSeeker | null): Resu
     education: [seeker?.university_name, seeker?.education_level, seeker?.majors?.join(", ")]
       .filter(Boolean)
       .join(" / "),
+    experiences: [createResumeExperience()],
+    activities: [createResumeActivity()],
   };
 }
 
@@ -381,8 +486,8 @@ function formFromResume(resume: Resume, userEmail: string, seeker: JobSeeker | n
   const basics = asRecord(resume.basics);
   const conditions = asRecord(resume.job_conditions);
   const education = firstRecord(resume.educations);
-  const experience = firstRecord(resume.experiences);
-  const portfolio = firstRecord(resume.portfolios);
+  const experienceRows = recordsFromJson(resume.experiences);
+  const activityRows = recordsFromJson(resume.portfolios);
 
   return {
     ...buildBlankResumeForm(userEmail, seeker),
@@ -398,14 +503,30 @@ function formFromResume(resume: Resume, userEmail: string, seeker: JobSeeker | n
     preferred_region: asString(conditions.preferred_region),
     employment_type: asString(conditions.employment_type),
     education: asString(education.description),
-    company: asString(experience.company),
-    role: asString(experience.role),
-    period: asString(experience.period),
-    experience_description: asString(experience.description),
+    experiences: experienceRows.length
+      ? experienceRows.map((experience) => {
+          const periodParts = parsePeriodParts(asString(experience.period));
+          return createResumeExperience({
+            company: asString(experience.company),
+            role: asString(experience.role),
+            startYear: asString(experience.startYear) || periodParts.startYear || "",
+            startMonth: asString(experience.startMonth) || periodParts.startMonth || "",
+            endYear: asString(experience.endYear) || periodParts.endYear || "",
+            endMonth: asString(experience.endMonth) || periodParts.endMonth || "",
+            description: asString(experience.description),
+          });
+        })
+      : [createResumeExperience()],
     skills: resume.skills.join(", "),
     tools: resume.tools.join(", "),
-    portfolio_title: asString(portfolio.title),
-    portfolio_url: asString(portfolio.url),
+    activities: activityRows.length
+      ? activityRows.map((activity) =>
+          createResumeActivity({
+            title: asString(activity.title),
+            description: asString(activity.description) || asString(activity.url),
+          }),
+        )
+      : [createResumeActivity()],
   };
 }
 
@@ -429,26 +550,40 @@ function patchFromResumeForm(
       employment_type: form.employment_type.trim(),
     },
     educations: form.education.trim() ? [{ description: form.education.trim() }] : [],
-    experiences:
-      form.company.trim() ||
-      form.role.trim() ||
-      form.period.trim() ||
-      form.experience_description.trim()
-        ? [
-            {
-              company: form.company.trim(),
-              role: form.role.trim(),
-              period: form.period.trim(),
-              description: form.experience_description.trim(),
-            },
-          ]
-        : [],
+    experiences: form.experiences
+      .filter(
+        (experience) =>
+          experience.company.trim() ||
+          experience.role.trim() ||
+          experience.startYear.trim() ||
+          experience.startMonth.trim() ||
+          experience.endYear.trim() ||
+          experience.endMonth.trim() ||
+          experience.description.trim(),
+      )
+      .map((experience) => {
+        const months = experienceMonths(experience);
+        return {
+          company: experience.company.trim(),
+          role: experience.role.trim(),
+          startYear: experience.startYear.trim(),
+          startMonth: experience.startMonth.trim(),
+          endYear: experience.endYear.trim(),
+          endMonth: experience.endMonth.trim(),
+          period: formatExperiencePeriod(experience),
+          durationMonths: months,
+          duration: formatDuration(months),
+          description: experience.description.trim(),
+        };
+      }),
     skills: splitTags(form.skills),
     tools: splitTags(form.tools),
-    portfolios:
-      form.portfolio_title.trim() || form.portfolio_url.trim()
-        ? [{ title: form.portfolio_title.trim(), url: form.portfolio_url.trim() }]
-        : [],
+    portfolios: form.activities
+      .filter((activity) => activity.title.trim() || activity.description.trim())
+      .map((activity) => ({
+        title: activity.title.trim(),
+        description: activity.description.trim(),
+      })),
   };
 }
 
@@ -502,6 +637,44 @@ function ResumeTextField({
         placeholder={placeholder}
         className="mt-2 min-h-24"
       />
+    </div>
+  );
+}
+
+function ResumeSelectField({
+  id,
+  label,
+  value,
+  options,
+  onChange,
+  placeholder = "선택",
+}: {
+  id: keyof ResumeForm;
+  label: string;
+  value: string;
+  options: string[];
+  onChange: (id: keyof ResumeForm, value: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <div>
+      <Label htmlFor={id}>{label}</Label>
+      <Select
+        value={value || EMPTY_SELECT_VALUE}
+        onValueChange={(next) => onChange(id, next === EMPTY_SELECT_VALUE ? "" : next)}
+      >
+        <SelectTrigger id={id} className="mt-2 h-10">
+          <SelectValue placeholder={placeholder} />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={EMPTY_SELECT_VALUE}>선택 안 함</SelectItem>
+          {options.map((option) => (
+            <SelectItem key={option} value={option}>
+              {option}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }
@@ -877,6 +1050,66 @@ function MyPage() {
 
   const updateResumeForm = (key: keyof ResumeForm, value: string) => {
     setResumeForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const updateResumeExperience = (
+    id: string,
+    key: keyof Omit<ResumeExperienceForm, "id">,
+    value: string,
+  ) => {
+    setResumeForm((prev) => ({
+      ...prev,
+      experiences: prev.experiences.map((experience) =>
+        experience.id === id ? { ...experience, [key]: value } : experience,
+      ),
+    }));
+  };
+
+  const addResumeExperience = () => {
+    setResumeForm((prev) => ({
+      ...prev,
+      experiences: [...prev.experiences, createResumeExperience()],
+    }));
+  };
+
+  const removeResumeExperience = (id: string) => {
+    setResumeForm((prev) => ({
+      ...prev,
+      experiences:
+        prev.experiences.length > 1
+          ? prev.experiences.filter((experience) => experience.id !== id)
+          : [createResumeExperience()],
+    }));
+  };
+
+  const updateResumeActivity = (
+    id: string,
+    key: keyof Omit<ResumeActivityForm, "id">,
+    value: string,
+  ) => {
+    setResumeForm((prev) => ({
+      ...prev,
+      activities: prev.activities.map((activity) =>
+        activity.id === id ? { ...activity, [key]: value } : activity,
+      ),
+    }));
+  };
+
+  const addResumeActivity = () => {
+    setResumeForm((prev) => ({
+      ...prev,
+      activities: [...prev.activities, createResumeActivity()],
+    }));
+  };
+
+  const removeResumeActivity = (id: string) => {
+    setResumeForm((prev) => ({
+      ...prev,
+      activities:
+        prev.activities.length > 1
+          ? prev.activities.filter((activity) => activity.id !== id)
+          : [createResumeActivity()],
+    }));
   };
 
   const openNewResume = () => {
@@ -1687,23 +1920,29 @@ function MyPage() {
             <section>
               <h3 className="text-sm font-bold text-zinc-900">구직조건</h3>
               <div className="mt-4 grid gap-4 md:grid-cols-3">
-                <ResumeField
+                <ResumeSelectField
                   id="desired_salary"
                   label="희망 연봉"
                   value={resumeForm.desired_salary}
                   onChange={updateResumeForm}
+                  options={SALARY_OPTIONS.map(formatSalaryOption)}
+                  placeholder="희망 연봉 선택"
                 />
-                <ResumeField
+                <ResumeSelectField
                   id="preferred_region"
                   label="희망 지역"
                   value={resumeForm.preferred_region}
                   onChange={updateResumeForm}
+                  options={WORK_REGIONS}
+                  placeholder="희망 지역 선택"
                 />
-                <ResumeField
+                <ResumeSelectField
                   id="employment_type"
                   label="근무 형태"
                   value={resumeForm.employment_type}
                   onChange={updateResumeForm}
+                  options={EMPLOYMENT_TYPES}
+                  placeholder="근무 형태 선택"
                 />
               </div>
             </section>
@@ -1722,34 +1961,166 @@ function MyPage() {
             </section>
 
             <section>
-              <h3 className="text-sm font-bold text-zinc-900">경력</h3>
-              <div className="mt-4 grid gap-4 md:grid-cols-3">
-                <ResumeField
-                  id="company"
-                  label="회사명"
-                  value={resumeForm.company}
-                  onChange={updateResumeForm}
-                />
-                <ResumeField
-                  id="role"
-                  label="직무/포지션"
-                  value={resumeForm.role}
-                  onChange={updateResumeForm}
-                />
-                <ResumeField
-                  id="period"
-                  label="기간"
-                  value={resumeForm.period}
-                  onChange={updateResumeForm}
-                />
-                <div className="md:col-span-3">
-                  <ResumeTextField
-                    id="experience_description"
-                    label="주요 업무/성과"
-                    value={resumeForm.experience_description}
-                    onChange={updateResumeForm}
-                  />
-                </div>
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-sm font-bold text-zinc-900">
+                  경력
+                  <span className="ml-2 rounded bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-600">
+                    총{" "}
+                    {formatDuration(
+                      resumeForm.experiences.reduce(
+                        (total, experience) => total + experienceMonths(experience),
+                        0,
+                      ),
+                    )}
+                  </span>
+                </h3>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addResumeExperience}
+                  className="h-8 rounded-xl px-3 text-xs"
+                >
+                  <FilePlus2 className="mr-1.5 h-3.5 w-3.5" /> 추가
+                </Button>
+              </div>
+              <div className="mt-4 space-y-4">
+                {resumeForm.experiences.map((experience, index) => (
+                  <div
+                    key={experience.id}
+                    className="rounded-xl border border-zinc-200 bg-zinc-50 p-4"
+                  >
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                      <p className="text-xs font-semibold text-zinc-500">경력 {index + 1}</p>
+                      <div className="flex items-center gap-2">
+                        <span className="rounded bg-white px-2 py-1 text-xs font-semibold text-zinc-600">
+                          {formatDuration(experienceMonths(experience))}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeResumeExperience(experience.id)}
+                          aria-label="경력 삭제"
+                          className="h-8 w-8 rounded-full"
+                        >
+                          <Trash2 className="h-4 w-4 text-zinc-400" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <Label htmlFor={`company-${experience.id}`}>회사명</Label>
+                        <Input
+                          id={`company-${experience.id}`}
+                          value={experience.company}
+                          onChange={(e) =>
+                            updateResumeExperience(experience.id, "company", e.target.value)
+                          }
+                          className="mt-2"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor={`role-${experience.id}`}>직무/포지션</Label>
+                        <Input
+                          id={`role-${experience.id}`}
+                          value={experience.role}
+                          onChange={(e) =>
+                            updateResumeExperience(experience.id, "role", e.target.value)
+                          }
+                          className="mt-2"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <Label>기간</Label>
+                        <div className="mt-2 grid gap-2 sm:grid-cols-[1fr_120px_auto_1fr_120px]">
+                          <Input
+                            type="number"
+                            inputMode="numeric"
+                            min={1900}
+                            max={2100}
+                            value={experience.startYear}
+                            onChange={(e) =>
+                              updateResumeExperience(experience.id, "startYear", e.target.value)
+                            }
+                            placeholder="시작 년도"
+                          />
+                          <Select
+                            value={experience.startMonth || EMPTY_SELECT_VALUE}
+                            onValueChange={(next) =>
+                              updateResumeExperience(
+                                experience.id,
+                                "startMonth",
+                                next === EMPTY_SELECT_VALUE ? "" : next,
+                              )
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="시작 월" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value={EMPTY_SELECT_VALUE}>선택</SelectItem>
+                              {MONTH_OPTIONS.map((month) => (
+                                <SelectItem key={month} value={month}>
+                                  {month}월
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <span className="hidden items-center justify-center text-sm text-zinc-400 sm:flex">
+                            ~
+                          </span>
+                          <Input
+                            type="number"
+                            inputMode="numeric"
+                            min={1900}
+                            max={2100}
+                            value={experience.endYear}
+                            onChange={(e) =>
+                              updateResumeExperience(experience.id, "endYear", e.target.value)
+                            }
+                            placeholder="종료 년도"
+                          />
+                          <Select
+                            value={experience.endMonth || EMPTY_SELECT_VALUE}
+                            onValueChange={(next) =>
+                              updateResumeExperience(
+                                experience.id,
+                                "endMonth",
+                                next === EMPTY_SELECT_VALUE ? "" : next,
+                              )
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="종료 월" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value={EMPTY_SELECT_VALUE}>선택</SelectItem>
+                              {MONTH_OPTIONS.map((month) => (
+                                <SelectItem key={month} value={month}>
+                                  {month}월
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="md:col-span-2">
+                        <Label htmlFor={`experience-description-${experience.id}`}>
+                          주요 업무/성과
+                        </Label>
+                        <Textarea
+                          id={`experience-description-${experience.id}`}
+                          value={experience.description}
+                          onChange={(e) =>
+                            updateResumeExperience(experience.id, "description", e.target.value)
+                          }
+                          className="mt-2 min-h-24"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </section>
 
@@ -1774,20 +2145,62 @@ function MyPage() {
             </section>
 
             <section>
-              <h3 className="text-sm font-bold text-zinc-900">포트폴리오</h3>
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <ResumeField
-                  id="portfolio_title"
-                  label="포트폴리오 제목"
-                  value={resumeForm.portfolio_title}
-                  onChange={updateResumeForm}
-                />
-                <ResumeField
-                  id="portfolio_url"
-                  label="URL"
-                  value={resumeForm.portfolio_url}
-                  onChange={updateResumeForm}
-                />
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-sm font-bold text-zinc-900">활동</h3>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addResumeActivity}
+                  className="h-8 rounded-xl px-3 text-xs"
+                >
+                  <FilePlus2 className="mr-1.5 h-3.5 w-3.5" /> 추가
+                </Button>
+              </div>
+              <div className="mt-4 space-y-4">
+                {resumeForm.activities.map((activity, index) => (
+                  <div
+                    key={activity.id}
+                    className="rounded-xl border border-zinc-200 bg-zinc-50 p-4"
+                  >
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                      <p className="text-xs font-semibold text-zinc-500">활동 {index + 1}</p>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeResumeActivity(activity.id)}
+                        aria-label="활동 삭제"
+                        className="h-8 w-8 rounded-full"
+                      >
+                        <Trash2 className="h-4 w-4 text-zinc-400" />
+                      </Button>
+                    </div>
+                    <div className="grid gap-4">
+                      <div>
+                        <Label htmlFor={`activity-title-${activity.id}`}>활동 제목</Label>
+                        <Input
+                          id={`activity-title-${activity.id}`}
+                          value={activity.title}
+                          onChange={(e) =>
+                            updateResumeActivity(activity.id, "title", e.target.value)
+                          }
+                          className="mt-2"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor={`activity-description-${activity.id}`}>활동 내용</Label>
+                        <Textarea
+                          id={`activity-description-${activity.id}`}
+                          value={activity.description}
+                          onChange={(e) =>
+                            updateResumeActivity(activity.id, "description", e.target.value)
+                          }
+                          className="mt-2 min-h-24"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </section>
           </div>
