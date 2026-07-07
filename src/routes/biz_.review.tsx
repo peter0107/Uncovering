@@ -166,15 +166,28 @@ function BizReview() {
     <div className="min-h-screen bg-white text-neutral-900">
       <header className="border-b border-neutral-200">
         <div className="mx-auto grid max-w-7xl gap-3 px-6 py-3 xl:min-h-14 xl:grid-cols-[360px_1fr] xl:items-center xl:gap-6 xl:py-2">
-          <div className="flex min-w-0 items-center justify-between gap-4">
-            <div className="flex min-w-0 items-center gap-4">
+          <div className="flex min-w-0 items-center justify-between gap-3">
+            <div className="flex min-w-0 flex-1 items-center gap-4">
               <div className="shrink-0 whitespace-nowrap">
                 <span className="text-sm font-semibold tracking-tight">Beginner</span>
                 <span className="ml-1 text-xs font-light text-neutral-500">biz</span>
               </div>
-              <span className="truncate text-sm font-medium text-neutral-500">
+              <span className="max-w-24 shrink-0 truncate text-sm font-medium text-neutral-500">
                 {data.company.name}
               </span>
+              <select
+                value={roleFilter}
+                onChange={(event) => setRoleFilter(event.target.value)}
+                aria-label="직무 선택"
+                className="hidden h-9 min-w-0 flex-1 rounded-md border border-neutral-300 bg-white px-3 text-sm font-medium text-neutral-900 outline-none focus:border-neutral-900 xl:block"
+              >
+                <option value="all">전체 직무</option>
+                {roleOptions.map((role) => (
+                  <option key={role} value={role}>
+                    {role}
+                  </option>
+                ))}
+              </select>
             </div>
             <Link
               to="/biz"
@@ -183,7 +196,7 @@ function BizReview() {
               코드 변경
             </Link>
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 xl:hidden">
             <select
               value={roleFilter}
               onChange={(event) => setRoleFilter(event.target.value)}
