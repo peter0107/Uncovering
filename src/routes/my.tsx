@@ -23,6 +23,7 @@ import {
   Linkedin,
   CalendarDays,
   Check,
+  ChevronDown,
   FilePlus2,
   Pencil,
   Star,
@@ -42,6 +43,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -193,10 +195,18 @@ function createResumeActivity(overrides: Partial<ResumeActivityForm> = {}): Resu
 }
 
 function formatSalaryOption(amountInManwon: number) {
-  if (amountInManwon >= 10000 && amountInManwon % 10000 === 0) {
-    return `${amountInManwon / 10000}억원 이상`;
+  if (amountInManwon < 10000) {
+    return `${amountInManwon}만원 이상`;
   }
-  return `${amountInManwon}만원 이상`;
+
+  const eok = Math.floor(amountInManwon / 10000);
+  const manwon = amountInManwon % 10000;
+
+  if (manwon === 0) {
+    return `${eok}억원 이상`;
+  }
+
+  return `${eok}억 ${manwon}만원 이상`;
 }
 
 function parsePeriodParts(period: string): Partial<ResumeExperienceForm> {
@@ -385,6 +395,15 @@ function recordsFromJson(value: Json | null): JsonRecord[] {
 
 function asString(value: Json | undefined) {
   return typeof value === "string" ? value : "";
+}
+
+function selectedOptionsFromText(value: string, options: string[]) {
+  if (!value.trim()) return [];
+  const selected = value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  return selected.filter((item) => options.includes(item));
 }
 
 function splitTags(value: string) {
@@ -675,6 +694,73 @@ function ResumeSelectField({
           ))}
         </SelectContent>
       </Select>
+    </div>
+  );
+}
+
+function ResumeMultiSelectField({
+  id,
+  label,
+  value,
+  options,
+  onChange,
+  placeholder = "선택",
+}: {
+  id: keyof ResumeForm;
+  label: string;
+  value: string;
+  options: string[];
+  onChange: (id: keyof ResumeForm, value: string) => void;
+  placeholder?: string;
+}) {
+  const selected = selectedOptionsFromText(value, options);
+
+  const toggleOption = (option: string) => {
+    const next = selected.includes(option)
+      ? selected.filter((item) => item !== option)
+      : [...selected, option];
+    onChange(id, next.join(", "));
+  };
+
+  return (
+    <div>
+      <Label htmlFor={id}>{label}</Label>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            id={id}
+            type="button"
+            variant="outline"
+            className="mt-2 h-10 w-full justify-between rounded-md border-neutral-300 px-3 text-left font-normal"
+          >
+            <span className={selected.length ? "truncate text-neutral-900" : "text-neutral-400"}>
+              {selected.length ? selected.join(", ") : placeholder}
+            </span>
+            <ChevronDown className="ml-2 h-4 w-4 shrink-0 text-neutral-500" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          align="start"
+          className="max-h-72 w-[var(--radix-popover-trigger-width)] overflow-y-auto p-2"
+        >
+          <div className="space-y-1">
+            {options.map((option) => {
+              const isSelected = selected.includes(option);
+              return (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => toggleOption(option)}
+                  className="flex w-full items-center justify-between rounded-md px-2 py-2 text-left text-sm hover:bg-zinc-100"
+                >
+                  <span>{option}</span>
+                  {isSelected && <Check className="h-4 w-4 text-blue-600" />}
+                </button>
+              );
+            })}
+          </div>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }
@@ -1928,7 +2014,7 @@ function MyPage() {
                   options={SALARY_OPTIONS.map(formatSalaryOption)}
                   placeholder="희망 연봉 선택"
                 />
-                <ResumeSelectField
+                <ResumeMultiSelectField
                   id="preferred_region"
                   label="희망 지역"
                   value={resumeForm.preferred_region}
