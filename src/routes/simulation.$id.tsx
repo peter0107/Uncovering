@@ -25,9 +25,10 @@ import {
   allAnswered,
   buildResponseJson,
   buildResponseText,
-  parseSimulationSteps,
+  buildWizardModel,
   stepAnswered,
-  type ParsedSimulation,
+  type WizardModel,
+  type WizardStep,
 } from "@/lib/simulation-steps";
 
 export const Route = createFileRoute("/simulation/$id")({
@@ -39,9 +40,52 @@ type SimulationDetail = {
   id: string;
   title: string;
   task_prompt: string | null;
+  steps: unknown;
   estimated_minutes: number | null;
   company_name: string;
 };
+
+/** 왼쪽 자료 섹션 (라벨 + 마크다운 카드) */
+function MaterialSection({ label, markdown }: { label: string; markdown: string }) {
+  return (
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">{label}</p>
+      <Card className="mt-2 p-6">
+        <div className="prose prose-sm prose-zinc max-w-none prose-table:text-sm">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function StepMeta({ step }: { step: WizardStep }) {
+  const hasMeta =
+    step.durationMin != null || step.difficulty != null || (step.tags?.length ?? 0) > 0;
+  if (!hasMeta) return null;
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-zinc-400">
+      {step.durationMin != null && (
+        <span className="inline-flex items-center gap-1">
+          <Clock className="h-3.5 w-3.5" />약 {step.durationMin}분
+        </span>
+      )}
+      {step.difficulty != null && (
+        <span className="text-amber-500">
+          {"★".repeat(Math.max(0, Math.min(5, step.difficulty)))}
+          <span className="text-zinc-200">
+            {"★".repeat(Math.max(0, 5 - Math.min(5, step.difficulty)))}
+          </span>
+        </span>
+      )}
+      {step.tags?.map((tag) => (
+        <span key={tag} className="rounded-full bg-zinc-100 px-2 py-0.5 text-zinc-500">
+          {tag}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 function SimulationDetailPage() {
   const { id } = Route.useParams();
@@ -71,9 +115,9 @@ function SimulationDetailPage() {
     withResolver: true,
   });
 
-  const parsed: ParsedSimulation | null = useMemo(
-    () => parseSimulationSteps(sim?.task_prompt),
-    [sim?.task_prompt],
+  const model: WizardModel | null = useMemo(
+    () => buildWizardModel(sim?.task_prompt, sim?.steps),
+    [sim?.task_prompt, sim?.steps],
   );
   const draftKey = `sim-draft-${id}`;
 
@@ -82,7 +126,7 @@ function SimulationDetailPage() {
 
     supabase
       .from("job_simulations")
-      .select("id, title, task_prompt, estimated_minutes, companies(name)")
+      .select("id, title, task_prompt, steps, estimated_minutes, companies(name)")
       .eq("id", id)
       .eq("is_public", true)
       .is("deleted_at", null)
@@ -93,6 +137,7 @@ function SimulationDetailPage() {
             id: string;
             title: string;
             task_prompt: string | null;
+            steps: unknown;
             estimated_minutes: number | null;
             companies: { name: string } | null;
           };
@@ -100,6 +145,7 @@ function SimulationDetailPage() {
             id: row.id,
             title: row.title,
             task_prompt: row.task_prompt,
+            steps: row.steps,
             estimated_minutes: row.estimated_minutes,
             company_name: row.companies?.name ?? "",
           });
@@ -110,30 +156,30 @@ function SimulationDetailPage() {
 
   // 위저드 임시저장 복원 (이탈 방지)
   useEffect(() => {
-    if (!parsed || typeof window === "undefined") return;
+    if (!model || typeof window === "undefined") return;
     try {
       const raw = window.localStorage.getItem(draftKey);
       if (raw) {
         const saved = JSON.parse(raw) as { answers?: Record<string, string>; stepIdx?: number };
         if (saved.answers) setAnswers(saved.answers);
         if (typeof saved.stepIdx === "number") {
-          setStepIdx(Math.min(Math.max(saved.stepIdx, 0), parsed.steps.length - 1));
+          setStepIdx(Math.min(Math.max(saved.stepIdx, 0), model.steps.length - 1));
         }
       }
     } catch {
       // 무시
     }
-  }, [parsed, draftKey]);
+  }, [model, draftKey]);
 
   // 위저드 임시저장
   useEffect(() => {
-    if (!parsed || typeof window === "undefined" || submittedAt) return;
+    if (!model || typeof window === "undefined" || submittedAt) return;
     try {
       window.localStorage.setItem(draftKey, JSON.stringify({ answers, stepIdx }));
     } catch {
       // 무시
     }
-  }, [answers, stepIdx, parsed, draftKey, submittedAt]);
+  }, [answers, stepIdx, model, draftKey, submittedAt]);
 
   const setAnswer = (qid: string, value: string) =>
     setAnswers((prev) => ({ ...prev, [qid]: value }));
@@ -144,13 +190,13 @@ function SimulationDetailPage() {
     let response_text: string;
     let response_json: ReturnType<typeof buildResponseJson> | null = null;
 
-    if (parsed) {
-      if (!allAnswered(parsed, answers)) {
+    if (model) {
+      if (!allAnswered(model, answers)) {
         toast.error("모든 항목에 답변을 작성해주세요.");
         return;
       }
-      response_text = buildResponseText(parsed, answers);
-      response_json = buildResponseJson(parsed, answers);
+      response_text = buildResponseText(model, answers);
+      response_json = buildResponseJson(model, answers);
     } else {
       if (!responseText.trim()) {
         toast.error("답안을 작성해주세요.");
@@ -313,7 +359,7 @@ function SimulationDetailPage() {
       {sim.estimated_minutes && (
         <div className="mt-2 flex items-center gap-1 text-xs text-zinc-400">
           <Clock className="h-3.5 w-3.5" />약 {sim.estimated_minutes}분
-          {parsed && <span className="text-zinc-300">· 스텝별로 나눠서 진행돼요</span>}
+          {model && <span className="text-zinc-300">· 단계별로 나눠서 진행돼요</span>}
         </div>
       )}
     </div>
@@ -384,10 +430,11 @@ function SimulationDetailPage() {
   );
 
   // ---------- 스텝 위저드 ----------
-  if (parsed) {
-    const step = parsed.steps[stepIdx];
-    const isLast = stepIdx === parsed.steps.length - 1;
+  if (model) {
+    const step = model.steps[stepIdx];
+    const isLast = stepIdx === model.steps.length - 1;
     const canAdvance = stepAnswered(step, answers);
+    const showCompletion = canAdvance && step.completionMessage;
 
     return (
       <div className="mx-auto max-w-6xl px-4 py-12">
@@ -395,25 +442,26 @@ function SimulationDetailPage() {
         {header}
 
         <div className="mt-8 grid gap-8 lg:grid-cols-2">
-          {/* 왼쪽: 과제 배경·자료 (모든 스텝에서 참고) */}
+          {/* 왼쪽: 이 단계의 자료 (단계마다 다름) */}
           <div className="lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:self-start lg:overflow-y-auto">
-            <details open className="group">
-              <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-wide text-zinc-400">
-                과제 배경·자료 <span className="text-zinc-300 group-open:hidden">펼치기</span>
-              </summary>
-              <Card className="mt-3 p-6">
-                <div className="prose prose-sm prose-zinc max-w-none prose-table:text-sm">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{parsed.background}</ReactMarkdown>
-                </div>
-              </Card>
-            </details>
+            <div className="flex flex-col gap-5">
+              {step.situation && <MaterialSection label="상황 안내" markdown={step.situation} />}
+              {step.prevSummary && (
+                <MaterialSection label="이전 단계 요약" markdown={step.prevSummary} />
+              )}
+              {step.materials && <MaterialSection label="제공 자료" markdown={step.materials} />}
+              {/* 자동 분할(폴백): 전 단계 공통 배경 */}
+              {model.sharedBackground && (
+                <MaterialSection label="과제 배경·자료" markdown={model.sharedBackground} />
+              )}
+            </div>
           </div>
 
           {/* 오른쪽: 현재 스텝 질문 */}
           <div className="flex flex-col">
             {/* 진행바 */}
             <div className="flex gap-1.5">
-              {parsed.steps.map((s, i) => (
+              {model.steps.map((s, i) => (
                 <div
                   key={i}
                   className={cn(
@@ -424,30 +472,59 @@ function SimulationDetailPage() {
               ))}
             </div>
             <p className="mt-2 text-xs text-zinc-400">
-              Step {stepIdx + 1} / {parsed.steps.length}
+              Step {stepIdx + 1} / {model.steps.length}
             </p>
 
+            {/* 저작 스텝: 단계 제목 + 메타 */}
+            {model.authored && (
+              <div className="mt-3">
+                <h2 className="text-lg font-bold text-zinc-900">{step.title}</h2>
+                <StepMeta step={step} />
+              </div>
+            )}
+
             {/* 질문들 */}
-            <div className="mt-4 flex flex-col gap-8">
-              {step.questions.map((q) => (
-                <div key={q.id}>
-                  <h2 className="text-base font-bold text-zinc-900">
-                    {q.num}. {q.title}
-                  </h2>
-                  {q.bodyMarkdown && (
+            <div className="mt-5 flex flex-col gap-8">
+              {step.prompts.map((p) => (
+                <div key={p.id}>
+                  <h3 className="text-base font-bold text-zinc-900">{p.label}</h3>
+                  {p.bodyMarkdown && (
                     <div className="prose prose-sm prose-zinc mt-2 max-w-none prose-table:text-sm prose-headings:text-sm prose-headings:font-semibold">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{q.bodyMarkdown}</ReactMarkdown>
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{p.bodyMarkdown}</ReactMarkdown>
                     </div>
                   )}
                   <Textarea
-                    value={answers[q.id] ?? ""}
-                    onChange={(e) => setAnswer(q.id, e.target.value)}
+                    value={answers[p.id] ?? ""}
+                    onChange={(e) => setAnswer(p.id, e.target.value)}
                     placeholder="여기에 답안을 작성해주세요"
                     className="mt-3 min-h-40 resize-none"
                   />
                 </div>
               ))}
             </div>
+
+            {/* 초심자용 힌트 */}
+            {step.hint && (
+              <details className="mt-6 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+                <summary className="cursor-pointer list-none text-sm font-semibold text-zinc-700">
+                  💡 초심자용 힌트 보기
+                </summary>
+                <div className="prose prose-sm prose-zinc mt-3 max-w-none prose-table:text-sm">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{step.hint}</ReactMarkdown>
+                </div>
+              </details>
+            )}
+
+            {/* 단계 완료 메시지 */}
+            {showCompletion && (
+              <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                <div className="prose prose-sm prose-emerald max-w-none">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {step.completionMessage as string}
+                  </ReactMarkdown>
+                </div>
+              </div>
+            )}
 
             {/* 마지막 스텝: 동의 */}
             {isLast && consentBlock}
@@ -479,7 +556,7 @@ function SimulationDetailPage() {
                 <Button
                   onClick={() => {
                     if (!canAdvance) {
-                      toast.error("이 스텝의 답변을 먼저 작성해주세요.");
+                      toast.error("이 단계의 답변을 먼저 작성해주세요.");
                       return;
                     }
                     setStepIdx((i) => i + 1);
@@ -489,7 +566,7 @@ function SimulationDetailPage() {
                   size="lg"
                   className="flex-1 rounded-xl bg-zinc-900 text-white hover:bg-zinc-700"
                 >
-                  다음 스텝 →
+                  다음 단계 →
                 </Button>
               )}
             </div>
