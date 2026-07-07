@@ -349,16 +349,6 @@ function SimulationsPage() {
           </Link>
         </div>
       )}
-
-      {/* 하단 안내 */}
-      {!loading && !isGuest && sims.length > 0 && (
-        <p className="mt-6 text-center text-xs text-zinc-400">
-          관심 직무·기업 기반으로 추천한 시뮬레이션입니다 ·{" "}
-          <Link to="/onboarding" className="underline underline-offset-2 hover:text-zinc-600">
-            기준 수정하기
-          </Link>
-        </p>
-      )}
     </div>
   );
 }
