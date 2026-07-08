@@ -64,6 +64,7 @@ export type Applicant = {
   employmentType: string;
   resumeTitle: string;
   resumeSourceType: string;
+  aiChatLog: AiChatMessage[];
 };
 
 export type Company = {
