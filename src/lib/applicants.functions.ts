@@ -32,6 +32,12 @@ export type SimulationStep = {
   answer: string;
 };
 
+export type AiChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+  at: string;
+};
+
 export type Applicant = {
   id: string;
   name: string;
@@ -58,6 +64,7 @@ export type Applicant = {
   employmentType: string;
   resumeTitle: string;
   resumeSourceType: string;
+  aiChatLog: AiChatMessage[];
 };
 
 export type Company = {
@@ -142,6 +149,13 @@ const applicantSchema = z.object({
   employmentType: z.string(),
   resumeTitle: z.string(),
   resumeSourceType: z.string(),
+  aiChatLog: z.array(
+    z.object({
+      role: z.enum(["user", "assistant"]),
+      content: z.string(),
+      at: z.string(),
+    }),
+  ),
 });
 
 const companyApplicantsSchema = z.object({
@@ -319,6 +333,7 @@ function mapApplicant(row: Record<string, unknown>): Applicant {
       normalizeEmploymentType(String(row.employment_type ?? "")) || "근무 형태 미입력",
     resumeTitle: String(row.resume_title ?? "기본 프로필"),
     resumeSourceType: String(row.resume_source_type ?? ""),
+    aiChatLog: [],
   };
 }
 
@@ -387,6 +402,40 @@ export const getApplicantsByCompanyCode = createServerFn({ method: "GET" })
     }
 
     const applicants = ((rows ?? []) as Record<string, unknown>[]).map(mapApplicant);
+
+    // AI 어시스트 대화 로그를 submission id로 조회해 응시자 데이터에 병합
+    const applicantIds = applicants.map((a) => a.id);
+    if (applicantIds.length > 0) {
+      const { data: chatRows, error: chatError } = await supabase
+        .from("submissions")
+        .select("id, ai_chat_log")
+        .in("id", applicantIds);
+
+      if (chatError) {
+        console.error("Failed to load ai chat logs:", chatError);
+      } else {
+        const chatMap = new Map<string, AiChatMessage[]>();
+        for (const row of (chatRows ?? []) as { id: string; ai_chat_log: unknown }[]) {
+          const raw = Array.isArray(row.ai_chat_log) ? row.ai_chat_log : [];
+          const parsed: AiChatMessage[] = [];
+          for (const m of raw) {
+            if (typeof m !== "object" || m === null) continue;
+            const rec = m as Record<string, unknown>;
+            const role = rec.role === "user" || rec.role === "assistant" ? rec.role : null;
+            if (!role) continue;
+            parsed.push({
+              role,
+              content: String(rec.content ?? ""),
+              at: String(rec.at ?? ""),
+            });
+          }
+          chatMap.set(String(row.id), parsed);
+        }
+        for (const a of applicants) {
+          a.aiChatLog = chatMap.get(a.id) ?? [];
+        }
+      }
+    }
 
     const { data: reviewStateRows, error: reviewStateError } = await supabase
       .from("company_applicant_review_states")

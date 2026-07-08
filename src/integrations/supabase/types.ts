@@ -121,6 +121,61 @@ export type Database = {
         }
         Relationships: []
       }
+      company_applicant_review_states: {
+        Row: {
+          applicant_id: string
+          company_id: string
+          created_at: string
+          id: string
+          mail_sent_at: string | null
+          read_at: string | null
+          submission_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          applicant_id: string
+          company_id: string
+          created_at?: string
+          id?: string
+          mail_sent_at?: string | null
+          read_at?: string | null
+          submission_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          applicant_id?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          mail_sent_at?: string | null
+          read_at?: string | null
+          submission_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_applicant_review_states_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_applicant_review_states_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "company_visible_submissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_applicant_review_states_submission_id_fkey"
+            columns: ["submission_id"]
+            isOneToOne: false
+            referencedRelation: "submissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_saved_applicants: {
         Row: {
           applicant_id: string | null
@@ -362,6 +417,7 @@ export type Database = {
       }
       submissions: {
         Row: {
+          ai_chat_log: Json
           answer_transmission_consent: boolean | null
           created_at: string | null
           duration_sec: number | null
@@ -376,6 +432,7 @@ export type Database = {
           submitted_at: string | null
         }
         Insert: {
+          ai_chat_log?: Json
           answer_transmission_consent?: boolean | null
           created_at?: string | null
           duration_sec?: number | null
@@ -390,6 +447,7 @@ export type Database = {
           submitted_at?: string | null
         }
         Update: {
+          ai_chat_log?: Json
           answer_transmission_consent?: boolean | null
           created_at?: string | null
           duration_sec?: number | null
@@ -456,6 +514,7 @@ export type Database = {
           desired_salary: string
           duration: string
           education: string
+          educations: Json
           email: string
           employment_type: string
           experience: string
