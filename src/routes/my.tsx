@@ -636,6 +636,10 @@ function normalizeEducationStatus(value: string) {
   return "";
 }
 
+function formatEducationLevelLabel(value: string) {
+  return value.replace(/^대학교(?=\s|$)/, "학부");
+}
+
 function buildEducationDescription(form: ResumeForm) {
   const school = form.education_school.trim();
   const major = form.education_major.trim();
@@ -2032,12 +2036,14 @@ function MyPage() {
                 {profileForm.university_name && (
                   <span className="text-sm text-zinc-800">{profileForm.university_name}</span>
                 )}
-                {profileForm.education_level && (
-                  <span className="text-sm text-zinc-800">{profileForm.education_level}</span>
-                )}
                 {profileForm.majors.map((m) => (
                   <Tag key={m}>{m}</Tag>
                 ))}
+                {profileForm.education_level && (
+                  <span className="text-sm text-zinc-800">
+                    {formatEducationLevelLabel(profileForm.education_level)}
+                  </span>
+                )}
                 {profileForm.academic_mark && (
                   <span className="text-sm text-zinc-500">
                     학점 {profileForm.academic_mark}/4.5
