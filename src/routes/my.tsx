@@ -10,6 +10,8 @@ import {
   type ReactNode,
 } from "react";
 import {
+  ArrowDown,
+  ArrowUp,
   Camera,
   FileText,
   CheckCircle2,
@@ -119,14 +121,18 @@ type ResumeForm = {
   desired_salary: string;
   preferred_region: string;
   employment_type: string;
-  education: string;
-  education_school: string;
-  education_major: string;
-  education_status: string;
+  educations: ResumeEducationForm[];
   experiences: ResumeExperienceForm[];
   skills: string;
   tools: string;
   activities: ResumeActivityForm[];
+};
+
+type ResumeEducationForm = {
+  id: string;
+  school: string;
+  major: string;
+  status: string;
 };
 
 type ResumeExperienceForm = {
@@ -162,10 +168,7 @@ const EMPTY_RESUME_FORM: ResumeForm = {
   desired_salary: "",
   preferred_region: "",
   employment_type: "",
-  education: "",
-  education_school: "",
-  education_major: "",
-  education_status: "",
+  educations: [],
   experiences: [],
   skills: "",
   tools: "",
@@ -390,6 +393,16 @@ const UNIVERSITY_OPTIONS = [
   "홍익대학교",
   "화성의과학대학교",
 ];
+
+function createResumeEducation(overrides: Partial<ResumeEducationForm> = {}): ResumeEducationForm {
+  return {
+    id: crypto.randomUUID(),
+    school: "",
+    major: "",
+    status: "",
+    ...overrides,
+  };
+}
 
 function createResumeExperience(
   overrides: Partial<ResumeExperienceForm> = {},
@@ -640,10 +653,10 @@ function formatEducationLevelLabel(value: string) {
   return value.replace(/^대학교(?=\s|$)/, "학부");
 }
 
-function buildEducationDescription(form: ResumeForm) {
-  const school = form.education_school.trim();
-  const major = form.education_major.trim();
-  const status = form.education_status.trim();
+function buildEducationDescription(education: ResumeEducationForm) {
+  const school = education.school.trim();
+  const major = education.major.trim();
+  const status = education.status.trim();
   const schoolAndMajor = [school, major].filter(Boolean).join(" ");
   if (schoolAndMajor && status) return `${schoolAndMajor} (${status})`;
   return schoolAndMajor || status;
@@ -708,6 +721,15 @@ function splitTags(value: string) {
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function moveArrayItem<T>(items: T[], index: number, direction: -1 | 1) {
+  const nextIndex = index + direction;
+  if (nextIndex < 0 || nextIndex >= items.length) return items;
+  const next = [...items];
+  const [item] = next.splice(index, 1);
+  next.splice(nextIndex, 0, item);
+  return next;
 }
 
 function fallbackDisplayName(userEmail: string) {
@@ -794,10 +816,13 @@ function buildBlankResumeForm(userEmail: string, seeker: JobSeeker | null): Resu
     target_role: seeker?.job_interests?.[0] ?? "",
     preferred_region: seeker?.work_regions?.join(", ") ?? "",
     employment_type: normalizeEmploymentTypeValues(seeker?.employment_types).join(", "),
-    education: [educationSchool, educationMajor].filter(Boolean).join(" "),
-    education_school: educationSchool,
-    education_major: educationMajor,
-    education_status: educationStatus,
+    educations: [
+      createResumeEducation({
+        school: educationSchool,
+        major: educationMajor,
+        status: educationStatus,
+      }),
+    ],
     experiences: [createResumeExperience()],
     activities: [createResumeActivity()],
   };
@@ -806,11 +831,10 @@ function buildBlankResumeForm(userEmail: string, seeker: JobSeeker | null): Resu
 function formFromResume(resume: Resume, userEmail: string, seeker: JobSeeker | null): ResumeForm {
   const basics = asRecord(resume.basics);
   const conditions = asRecord(resume.job_conditions);
-  const education = firstRecord(resume.educations);
+  const educationRows = recordsFromJson(resume.educations);
+  const firstEducation = firstRecord(resume.educations);
   const experienceRows = recordsFromJson(resume.experiences);
   const activityRows = recordsFromJson(resume.portfolios);
-  const educationDescription = asString(education.description);
-  const parsedEducation = splitEducationDescription(educationDescription);
 
   return {
     ...buildBlankResumeForm(userEmail, seeker),
@@ -827,10 +851,24 @@ function formFromResume(resume: Resume, userEmail: string, seeker: JobSeeker | n
     employment_type:
       normalizeEmploymentTypeText(asString(conditions.employment_type)) ||
       normalizeEmploymentTypeValues(seeker?.employment_types).join(", "),
-    education: educationDescription,
-    education_school: asString(education.school) || parsedEducation.school,
-    education_major: asString(education.major) || parsedEducation.major,
-    education_status: normalizeEducationStatus(asString(education.status) || parsedEducation.status),
+    educations: educationRows.length
+      ? educationRows.map((education) => {
+          const parsedEducation = splitEducationDescription(asString(education.description));
+          return createResumeEducation({
+            school: asString(education.school) || parsedEducation.school,
+            major: asString(education.major) || parsedEducation.major,
+            status: normalizeEducationStatus(asString(education.status) || parsedEducation.status),
+          });
+        })
+      : firstEducation.description || firstEducation.school || firstEducation.major || firstEducation.status
+        ? [
+            createResumeEducation({
+              school: asString(firstEducation.school),
+              major: asString(firstEducation.major),
+              status: normalizeEducationStatus(asString(firstEducation.status)),
+            }),
+          ]
+        : buildBlankResumeForm(userEmail, seeker).educations,
     experiences: experienceRows.length
       ? experienceRows.map((experience) => {
           const periodParts = parsePeriodParts(asString(experience.period));
@@ -861,8 +899,6 @@ function formFromResume(resume: Resume, userEmail: string, seeker: JobSeeker | n
 function patchFromResumeForm(
   form: ResumeForm,
 ): Omit<TablesUpdate<"resumes">, "id" | "user_id" | "created_at" | "updated_at"> {
-  const educationDescription = buildEducationDescription(form);
-
   return {
     title: form.title.trim() || "새 이력서",
     memo: form.memo.trim() || null,
@@ -879,16 +915,17 @@ function patchFromResumeForm(
       preferred_region: form.preferred_region.trim(),
       employment_type: normalizeEmploymentTypeText(form.employment_type),
     },
-    educations: educationDescription
-      ? [
-          {
-            school: form.education_school.trim(),
-            major: form.education_major.trim(),
-            status: form.education_status.trim(),
-            description: educationDescription,
-          },
-        ]
-      : [],
+    educations: form.educations
+      .filter(
+        (education) =>
+          education.school.trim() || education.major.trim() || education.status.trim(),
+      )
+      .map((education) => ({
+        school: education.school.trim(),
+        major: education.major.trim(),
+        status: education.status.trim(),
+        description: buildEducationDescription(education),
+      })),
     experiences: form.experiences
       .filter(
         (experience) =>
@@ -1125,10 +1162,10 @@ function ResumeSchoolField({
   onChange,
   shared = false,
 }: {
-  id: keyof ResumeForm;
+  id: string;
   label: string;
   value: string;
-  onChange: (id: keyof ResumeForm, value: string) => void;
+  onChange: (value: string) => void;
   shared?: boolean;
 }) {
   const [query, setQuery] = useState("");
@@ -1180,7 +1217,7 @@ function ResumeSchoolField({
                 <button
                   key={school}
                   type="button"
-                  onClick={() => onChange(id, school)}
+                  onClick={() => onChange(school)}
                   className="flex w-full items-center justify-between rounded-md px-2 py-2 text-left text-sm hover:bg-zinc-100"
                 >
                   <span>{school}</span>
@@ -1194,6 +1231,45 @@ function ResumeSchoolField({
         </PopoverContent>
       </Popover>
     </div>
+  );
+}
+
+function ReorderButtons({
+  index,
+  length,
+  label,
+  onMove,
+}: {
+  index: number;
+  length: number;
+  label: string;
+  onMove: (index: number, direction: -1 | 1) => void;
+}) {
+  return (
+    <>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        onClick={() => onMove(index, -1)}
+        disabled={index === 0}
+        aria-label={`${label} 위로 이동`}
+        className="h-8 w-8 rounded-full disabled:opacity-30"
+      >
+        <ArrowUp className="h-4 w-4 text-zinc-400" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        onClick={() => onMove(index, 1)}
+        disabled={index === length - 1}
+        aria-label={`${label} 아래로 이동`}
+        className="h-8 w-8 rounded-full disabled:opacity-30"
+      >
+        <ArrowDown className="h-4 w-4 text-zinc-400" />
+      </Button>
+    </>
   );
 }
 
@@ -1589,6 +1665,43 @@ function MyPage() {
     setResumeForm((prev) => ({ ...prev, [key]: value }));
   };
 
+  const updateResumeEducation = (
+    id: string,
+    key: keyof Omit<ResumeEducationForm, "id">,
+    value: string,
+  ) => {
+    setResumeForm((prev) => ({
+      ...prev,
+      educations: prev.educations.map((education) =>
+        education.id === id ? { ...education, [key]: value } : education,
+      ),
+    }));
+  };
+
+  const addResumeEducation = () => {
+    setResumeForm((prev) => ({
+      ...prev,
+      educations: [...prev.educations, createResumeEducation()],
+    }));
+  };
+
+  const removeResumeEducation = (id: string) => {
+    setResumeForm((prev) => ({
+      ...prev,
+      educations:
+        prev.educations.length > 1
+          ? prev.educations.filter((education) => education.id !== id)
+          : [createResumeEducation()],
+    }));
+  };
+
+  const moveResumeEducation = (index: number, direction: -1 | 1) => {
+    setResumeForm((prev) => ({
+      ...prev,
+      educations: moveArrayItem(prev.educations, index, direction),
+    }));
+  };
+
   const updateResumeExperience = (
     id: string,
     key: keyof Omit<ResumeExperienceForm, "id">,
@@ -1619,6 +1732,13 @@ function MyPage() {
     }));
   };
 
+  const moveResumeExperience = (index: number, direction: -1 | 1) => {
+    setResumeForm((prev) => ({
+      ...prev,
+      experiences: moveArrayItem(prev.experiences, index, direction),
+    }));
+  };
+
   const updateResumeActivity = (
     id: string,
     key: keyof Omit<ResumeActivityForm, "id">,
@@ -1646,6 +1766,13 @@ function MyPage() {
         prev.activities.length > 1
           ? prev.activities.filter((activity) => activity.id !== id)
           : [createResumeActivity()],
+    }));
+  };
+
+  const moveResumeActivity = (index: number, direction: -1 | 1) => {
+    setResumeForm((prev) => ({
+      ...prev,
+      activities: moveArrayItem(prev.activities, index, direction),
     }));
   };
 
@@ -2509,32 +2636,96 @@ function MyPage() {
             </section>
 
             <section>
-              <h3 className="text-sm font-bold text-zinc-900">학력</h3>
-              <div className="mt-4 grid gap-4 md:grid-cols-3">
-                <ResumeSchoolField
-                  id="education_school"
-                  label="학교명"
-                  value={resumeForm.education_school}
-                  onChange={updateResumeForm}
-                  shared
-                />
-                <ResumeField
-                  id="education_major"
-                  label="전공"
-                  value={resumeForm.education_major}
-                  onChange={updateResumeForm}
-                  placeholder="예: 경영학과"
-                  shared
-                />
-                <ResumeSelectField
-                  id="education_status"
-                  label="상태"
-                  value={resumeForm.education_status}
-                  onChange={updateResumeForm}
-                  options={EDUCATION_STATUS_OPTIONS}
-                  placeholder="상태 선택"
-                  shared
-                />
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-sm font-bold text-zinc-900">학력</h3>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addResumeEducation}
+                  className="h-8 rounded-xl px-3 text-xs"
+                >
+                  <FilePlus2 className="mr-1.5 h-3.5 w-3.5" /> 추가
+                </Button>
+              </div>
+              <div className="mt-4 space-y-4">
+                {resumeForm.educations.map((education, index) => (
+                  <div
+                    key={education.id}
+                    className="rounded-xl border border-zinc-200 bg-zinc-50 p-4"
+                  >
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                      <p className="text-xs font-semibold text-zinc-500">학력 {index + 1}</p>
+                      <div className="flex items-center gap-1">
+                        <ReorderButtons
+                          index={index}
+                          length={resumeForm.educations.length}
+                          label="학력"
+                          onMove={moveResumeEducation}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeResumeEducation(education.id)}
+                          aria-label="학력 삭제"
+                          className="h-8 w-8 rounded-full"
+                        >
+                          <Trash2 className="h-4 w-4 text-zinc-400" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <ResumeSchoolField
+                        id={`education-school-${education.id}`}
+                        label="학교명"
+                        value={education.school}
+                        onChange={(value) => updateResumeEducation(education.id, "school", value)}
+                        shared
+                      />
+                      <div>
+                        <ResumeLabel htmlFor={`education-major-${education.id}`} shared>
+                          전공
+                        </ResumeLabel>
+                        <Input
+                          id={`education-major-${education.id}`}
+                          value={education.major}
+                          onChange={(e) =>
+                            updateResumeEducation(education.id, "major", e.target.value)
+                          }
+                          placeholder="예: 경영학과"
+                          className="mt-2"
+                        />
+                      </div>
+                      <div>
+                        <ResumeLabel htmlFor={`education-status-${education.id}`} shared>
+                          상태
+                        </ResumeLabel>
+                        <Select
+                          value={education.status || EMPTY_SELECT_VALUE}
+                          onValueChange={(next) =>
+                            updateResumeEducation(
+                              education.id,
+                              "status",
+                              next === EMPTY_SELECT_VALUE ? "" : next,
+                            )
+                          }
+                        >
+                          <SelectTrigger id={`education-status-${education.id}`} className="mt-2 h-9">
+                            <SelectValue placeholder="상태 선택" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={EMPTY_SELECT_VALUE}>선택 안 함</SelectItem>
+                            {EDUCATION_STATUS_OPTIONS.map((option) => (
+                              <SelectItem key={option} value={option}>
+                                {option}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </section>
 
@@ -2569,10 +2760,16 @@ function MyPage() {
                   >
                     <div className="mb-4 flex items-center justify-between gap-3">
                       <p className="text-xs font-semibold text-zinc-500">경력 {index + 1}</p>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
                         <span className="rounded bg-white px-2 py-1 text-xs font-semibold text-zinc-600">
                           {formatDuration(experienceMonths(experience))}
                         </span>
+                        <ReorderButtons
+                          index={index}
+                          length={resumeForm.experiences.length}
+                          label="경력"
+                          onMove={moveResumeExperience}
+                        />
                         <Button
                           type="button"
                           variant="ghost"
@@ -2748,16 +2945,24 @@ function MyPage() {
                   >
                     <div className="mb-4 flex items-center justify-between gap-3">
                       <p className="text-xs font-semibold text-zinc-500">활동 {index + 1}</p>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeResumeActivity(activity.id)}
-                        aria-label="활동 삭제"
-                        className="h-8 w-8 rounded-full"
-                      >
-                        <Trash2 className="h-4 w-4 text-zinc-400" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <ReorderButtons
+                          index={index}
+                          length={resumeForm.activities.length}
+                          label="활동"
+                          onMove={moveResumeActivity}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeResumeActivity(activity.id)}
+                          aria-label="활동 삭제"
+                          className="h-8 w-8 rounded-full"
+                        >
+                          <Trash2 className="h-4 w-4 text-zinc-400" />
+                        </Button>
+                      </div>
                     </div>
                     <div className="grid gap-4">
                       <div>

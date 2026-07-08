@@ -19,6 +19,13 @@ export type ExperienceItem = {
   description: string;
 };
 
+export type EducationItem = {
+  school: string;
+  major: string;
+  status: string;
+  description: string;
+};
+
 export type SimulationStep = {
   step: number;
   title: string;
@@ -37,6 +44,7 @@ export type Applicant = {
   location: string;
   headline: string;
   education: string;
+  educations: EducationItem[];
   recentJob: string;
   experiences: ExperienceItem[];
   skills: string[];
@@ -93,6 +101,13 @@ const experienceItemSchema = z.object({
   description: z.string(),
 });
 
+const educationItemSchema = z.object({
+  school: z.string(),
+  major: z.string(),
+  status: z.string(),
+  description: z.string(),
+});
+
 const simulationStepSchema = z.object({
   step: z.number(),
   title: z.string(),
@@ -111,6 +126,7 @@ const applicantSchema = z.object({
   location: z.string(),
   headline: z.string(),
   education: z.string(),
+  educations: z.array(educationItemSchema),
   recentJob: z.string(),
   experiences: z.array(experienceItemSchema),
   skills: z.array(z.string()),
@@ -193,8 +209,33 @@ function formatSubmittedAt(iso: string): string {
 
 function mapApplicant(row: Record<string, unknown>): Applicant {
   const portfolio = Array.isArray(row.portfolio) ? row.portfolio : [];
+  const educationRows = Array.isArray(row.educations) ? row.educations : [];
   const experienceRows = Array.isArray(row.experiences) ? row.experiences : [];
   const simulation = Array.isArray(row.simulation) ? row.simulation : [];
+  const educations = educationRows.map((item) =>
+    educationItemSchema.parse({
+      school: String(
+        typeof item === "object" && item !== null && "school" in item
+          ? (item as { school?: unknown }).school
+          : "",
+      ),
+      major: String(
+        typeof item === "object" && item !== null && "major" in item
+          ? (item as { major?: unknown }).major
+          : "",
+      ),
+      status: String(
+        typeof item === "object" && item !== null && "status" in item
+          ? (item as { status?: unknown }).status
+          : "",
+      ),
+      description: String(
+        typeof item === "object" && item !== null && "description" in item
+          ? (item as { description?: unknown }).description
+          : "",
+      ),
+    }),
+  );
   const experiences = experienceRows.map((item) =>
     experienceItemSchema.parse({
       company: String(
@@ -237,6 +278,7 @@ function mapApplicant(row: Record<string, unknown>): Applicant {
     location: String(row.location),
     headline: String(row.headline),
     education: String(row.education),
+    educations,
     recentJob: String(row.recent_job),
     experiences,
     skills: Array.isArray(row.skills) ? row.skills.map(String) : [],

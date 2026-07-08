@@ -129,8 +129,15 @@ function BizReview() {
   const schoolOptions = useMemo(() => {
     const schools = new Set<string>();
     for (const applicant of data?.applicants ?? []) {
-      const school = extractSchoolName(applicant.education);
-      if (school) schools.add(school);
+      const educationSchools = applicant.educations
+        .map((education) => education.school || extractSchoolName(education.description))
+        .filter(Boolean);
+      if (educationSchools.length) {
+        for (const school of educationSchools) schools.add(school);
+        continue;
+      }
+      const fallbackSchool = extractSchoolName(applicant.education);
+      if (fallbackSchool) schools.add(fallbackSchool);
     }
     return Array.from(schools).sort((a, b) => a.localeCompare(b, "ko-KR"));
   }, [data]);
@@ -393,7 +400,11 @@ function matchesApplicantFilters(applicant: Applicant, filters: ApplicantFilters
   }
 
   if (filters.school) {
-    if (extractSchoolName(applicant.education) !== filters.school) return false;
+    const applicantSchools = applicant.educations
+      .map((education) => education.school || extractSchoolName(education.description))
+      .filter(Boolean);
+    const fallbackSchool = extractSchoolName(applicant.education);
+    if (![...applicantSchools, fallbackSchool].includes(filters.school)) return false;
   }
 
   const experienceFilterActive =
@@ -797,9 +808,27 @@ function ApplicantDetail({ applicant }: { applicant: Applicant }) {
             </InfoBlock>
 
             <InfoBlock title="학력">
-              <p className="text-sm font-medium leading-6 text-neutral-900">
-                {applicant.education}
-              </p>
+              {applicant.educations.length ? (
+                <div className="space-y-2">
+                  {applicant.educations.map((education, index) => (
+                    <div
+                      key={`${education.school}-${education.major}-${education.status}-${index}`}
+                      className="rounded-md border border-neutral-200 p-3"
+                    >
+                      <p className="text-sm font-medium leading-6 text-neutral-900">
+                        {education.description ||
+                          [education.school, education.major, education.status]
+                            .filter(Boolean)
+                            .join(" ")}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm font-medium leading-6 text-neutral-900">
+                  {applicant.education}
+                </p>
+              )}
             </InfoBlock>
 
             <InfoBlock
