@@ -2021,7 +2021,7 @@ function MyPage() {
         <>
           <SectionRow
             icon={GraduationCap}
-            label="학력"
+            label="최종 학력"
             isEditing={editingSection === "education"}
             onEdit={() => startEditSection("education")}
             onCancel={cancelEditSection}
