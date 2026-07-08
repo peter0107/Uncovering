@@ -25,7 +25,7 @@ export const Route = createFileRoute("/onboarding")({
 type OnboardingData = ProfileFormData;
 const INITIAL = INITIAL_PROFILE_FORM;
 
-const STEP_LABELS = ["학력", "관심 직무", "관심 기업", "근무 선호", "공개 동의"];
+const STEP_LABELS = ["최종 학력", "관심 직무", "관심 기업", "근무 선호", "공개 동의"];
 
 // ─── 메인 페이지 ─────────────────────────────────────────────
 

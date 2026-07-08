@@ -347,7 +347,7 @@ export function EducationFields({
   return (
     <div>
       {showHeader && (
-        <SectionHeader title="학력을 알려주세요" subtitle="맞춤 시뮬레이션 추천에 활용됩니다" />
+        <SectionHeader title="최종 학력을 알려주세요" subtitle="맞춤 시뮬레이션 추천에 활용됩니다" />
       )}
 
       {/* 학교명 */}
