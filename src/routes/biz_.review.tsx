@@ -25,6 +25,23 @@ const STATUS_LABEL: Record<Status, string> = {
 const SALARY_RANGE = [500, 20000] as const;
 const EXPERIENCE_RANGE = [0, 360] as const;
 
+type ApplicantSortKey =
+  | "submitted_desc"
+  | "name_asc"
+  | "experience_desc"
+  | "experience_asc"
+  | "salary_asc"
+  | "salary_desc";
+
+const SORT_OPTIONS: Array<{ value: ApplicantSortKey; label: string }> = [
+  { value: "submitted_desc", label: "최신 제출순" },
+  { value: "name_asc", label: "이름순" },
+  { value: "experience_desc", label: "경력 높은 순" },
+  { value: "experience_asc", label: "경력 낮은 순" },
+  { value: "salary_asc", label: "희망 연봉 낮은순" },
+  { value: "salary_desc", label: "희망 연봉 높은순" },
+];
+
 type ApplicantFilters = {
   salaryRange: [number, number];
   employmentTypes: string[];
@@ -62,6 +79,7 @@ function BizReview() {
   const [roleFilter, setRoleFilter] = useState("all");
   const [filters, setFilters] = useState<ApplicantFilters>(DEFAULT_FILTERS);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [sortKey, setSortKey] = useState<ApplicantSortKey>("submitted_desc");
 
   useEffect(() => {
     let alive = true;
@@ -106,7 +124,7 @@ function BizReview() {
     return Array.from(roles.values());
   }, [data]);
 
-  const visibleApplicants = useMemo(() => {
+  const filteredApplicants = useMemo(() => {
     const applicants = data?.applicants ?? [];
     return applicants.filter((applicant) => {
       if (roleFilter !== "all" && applicant.role !== roleFilter) return false;
@@ -115,6 +133,11 @@ function BizReview() {
       return true;
     });
   }, [data, filters, roleFilter, savedIds, showSavedOnly]);
+
+  const visibleApplicants = useMemo(
+    () => sortApplicants(filteredApplicants, sortKey),
+    [filteredApplicants, sortKey],
+  );
 
   const employmentOptions = useMemo(() => {
     const options = new Set<string>();
@@ -293,19 +316,33 @@ function BizReview() {
             </button>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setIsFilterOpen(true)}
-            className="mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-neutral-300 bg-white px-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50"
-          >
-            <Filter className="h-4 w-4" />
-            필터
-            {activeFilterCount > 0 && (
-              <span className="rounded-full bg-neutral-900 px-2 py-0.5 text-xs font-semibold text-white">
-                {activeFilterCount}
-              </span>
-            )}
-          </button>
+          <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr]">
+            <button
+              type="button"
+              onClick={() => setIsFilterOpen(true)}
+              className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-neutral-300 bg-white px-3 text-sm font-medium text-neutral-900 hover:bg-neutral-50"
+            >
+              <Filter className="h-4 w-4" />
+              필터
+              {activeFilterCount > 0 && (
+                <span className="rounded-full bg-neutral-900 px-2 py-0.5 text-xs font-semibold text-white">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+            <select
+              value={sortKey}
+              onChange={(event) => setSortKey(event.target.value as ApplicantSortKey)}
+              aria-label="지원자 정렬"
+              className="h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm font-medium text-neutral-900 outline-none hover:bg-neutral-50 focus:border-neutral-900"
+            >
+              {SORT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <div className="mt-6 space-y-2">
             {visibleApplicants.map((applicant) => (
@@ -422,6 +459,79 @@ function matchesApplicantFilters(applicant: Applicant, filters: ApplicantFilters
   }
 
   return true;
+}
+
+function sortApplicants(applicants: Applicant[], sortKey: ApplicantSortKey) {
+  return [...applicants].sort((a, b) => {
+    const fallback = compareSubmittedAtDesc(a, b);
+
+    if (sortKey === "name_asc") {
+      return a.name.localeCompare(b.name, "ko-KR") || fallback;
+    }
+
+    if (sortKey === "experience_desc") {
+      return (
+        compareNullableNumbers(
+          parseExperienceMonths(a.experience),
+          parseExperienceMonths(b.experience),
+          "desc",
+        ) ||
+        fallback
+      );
+    }
+
+    if (sortKey === "experience_asc") {
+      return (
+        compareNullableNumbers(
+          parseExperienceMonths(a.experience),
+          parseExperienceMonths(b.experience),
+          "asc",
+        ) ||
+        fallback
+      );
+    }
+
+    if (sortKey === "salary_asc") {
+      return (
+        compareNullableNumbers(
+          parseSalaryManwon(a.desiredSalary),
+          parseSalaryManwon(b.desiredSalary),
+          "asc",
+        ) ||
+        fallback
+      );
+    }
+
+    if (sortKey === "salary_desc") {
+      return (
+        compareNullableNumbers(
+          parseSalaryManwon(a.desiredSalary),
+          parseSalaryManwon(b.desiredSalary),
+          "desc",
+        ) ||
+        fallback
+      );
+    }
+
+    return fallback;
+  });
+}
+
+function compareNullableNumbers(a: number | null, b: number | null, direction: "asc" | "desc") {
+  if (a === null && b === null) return 0;
+  if (a === null) return 1;
+  if (b === null) return -1;
+  return direction === "asc" ? a - b : b - a;
+}
+
+function compareSubmittedAtDesc(a: Applicant, b: Applicant) {
+  return parseSubmittedAt(b.submittedAt) - parseSubmittedAt(a.submittedAt);
+}
+
+function parseSubmittedAt(value: string) {
+  const normalized = value.replace(" ", "T");
+  const timestamp = Date.parse(normalized);
+  return Number.isNaN(timestamp) ? 0 : timestamp;
 }
 
 function countActiveFilters(filters: ApplicantFilters) {
