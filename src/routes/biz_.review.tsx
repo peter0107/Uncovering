@@ -1,14 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Bookmark, Filter, Search, X } from "lucide-react";
+import { Bookmark, Filter, Search, Send, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 
 import {
   getApplicantsByCompanyCode,
+  markApplicantReadByCompanyCode,
+  setApplicantMailSentByCompanyCode,
   setSavedApplicantByCompanyCode,
   type Applicant,
   type CompanyApplicants,
-  type Status,
 } from "@/lib/applicants.functions";
 import { WORK_REGIONS } from "@/lib/profile-fields";
 import { toast } from "sonner";
@@ -16,12 +17,6 @@ import { toast } from "sonner";
 const searchSchema = z.object({
   code: z.string().catch(""),
 });
-
-const STATUS_LABEL: Record<Status, string> = {
-  submitted: "신규 제출",
-  in_review: "검토 중",
-  completed: "검토 완료",
-};
 
 const SALARY_RANGE = [500, 20000] as const;
 const EXPERIENCE_RANGE = [0, 360] as const;
@@ -78,6 +73,10 @@ function BizReview() {
   const [isLoading, setIsLoading] = useState(true);
   const [savedIds, setSavedIds] = useState<Set<string>>(() => new Set());
   const [savingIds, setSavingIds] = useState<Set<string>>(() => new Set());
+  const [readIds, setReadIds] = useState<Set<string>>(() => new Set());
+  const [readingIds, setReadingIds] = useState<Set<string>>(() => new Set());
+  const [mailSentIds, setMailSentIds] = useState<Set<string>>(() => new Set());
+  const [mailingIds, setMailingIds] = useState<Set<string>>(() => new Set());
   const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [roleFilter, setRoleFilter] = useState("all");
   const [filters, setFilters] = useState<ApplicantFilters>(DEFAULT_FILTERS);
@@ -101,6 +100,8 @@ function BizReview() {
         if (!alive) return;
         setData(result);
         setSavedIds(new Set(result.savedApplicantIds));
+        setReadIds(new Set(result.readApplicantIds));
+        setMailSentIds(new Set(result.mailSentApplicantIds));
         setSelectedId(result.applicants[0]?.id ?? null);
       } catch {
         if (!alive) return;
@@ -221,6 +222,77 @@ function BizReview() {
       toast.error("관심 지원자 저장 중 오류가 발생했습니다.");
     } finally {
       setSavingIds((current) => {
+        const next = new Set(current);
+        next.delete(id);
+        return next;
+      });
+    }
+  }
+
+  async function markRead(id: string) {
+    if (readIds.has(id) || readingIds.has(id)) return;
+
+    setReadIds((current) => new Set(current).add(id));
+    setReadingIds((current) => new Set(current).add(id));
+
+    try {
+      await markApplicantReadByCompanyCode({
+        data: {
+          code,
+          applicantId: id,
+        },
+      });
+    } catch {
+      setReadIds((current) => {
+        const rollback = new Set(current);
+        rollback.delete(id);
+        return rollback;
+      });
+      toast.error("지원자 읽음 처리 중 오류가 발생했습니다.");
+    } finally {
+      setReadingIds((current) => {
+        const next = new Set(current);
+        next.delete(id);
+        return next;
+      });
+    }
+  }
+
+  function selectApplicant(id: string) {
+    setSelectedId(id);
+    void markRead(id);
+  }
+
+  async function toggleMailSent(id: string) {
+    if (mailingIds.has(id)) return;
+    const nextMailSent = !mailSentIds.has(id);
+
+    setMailSentIds((current) => {
+      const next = new Set(current);
+      if (nextMailSent) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+    setMailingIds((current) => new Set(current).add(id));
+
+    try {
+      await setApplicantMailSentByCompanyCode({
+        data: {
+          code,
+          applicantId: id,
+          isMailSent: nextMailSent,
+        },
+      });
+    } catch {
+      setMailSentIds((current) => {
+        const rollback = new Set(current);
+        if (nextMailSent) rollback.delete(id);
+        else rollback.add(id);
+        return rollback;
+      });
+      toast.error("메일 발송 상태 저장 중 오류가 발생했습니다.");
+    } finally {
+      setMailingIds((current) => {
         const next = new Set(current);
         next.delete(id);
         return next;
@@ -371,33 +443,56 @@ function BizReview() {
               >
                 <button
                   type="button"
-                  onClick={() => setSelectedId(applicant.id)}
+                  onClick={() => selectApplicant(applicant.id)}
                   className="min-w-0 p-4 text-left"
                 >
-                  <div className="font-medium text-neutral-900">{applicant.name}</div>
+                  <div className="flex items-center gap-2 font-medium text-neutral-900">
+                    {!readIds.has(applicant.id) && (
+                      <span
+                        aria-label="새 제출"
+                        className="h-2 w-2 shrink-0 rounded-full bg-red-500"
+                      />
+                    )}
+                    <span>{applicant.name}</span>
+                  </div>
                   <div className="mt-1 text-xs text-neutral-500">
                     {applicant.role} · {applicant.experience}
                   </div>
-                  <div className="mt-3">
-                    <span className="rounded bg-neutral-100 px-2 py-1 text-xs text-neutral-600">
-                      {STATUS_LABEL[applicant.status]}
-                    </span>
-                  </div>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => toggleSaved(applicant.id)}
-                  disabled={savingIds.has(applicant.id)}
-                  aria-label={`${applicant.name} 관심 지원자`}
-                  aria-pressed={savedIds.has(applicant.id)}
-                  className="mr-3 mt-3 grid h-8 w-8 place-items-center rounded-md text-neutral-400 hover:bg-white hover:text-neutral-900 disabled:opacity-50"
-                >
-                  <Bookmark
-                    className={`h-4 w-4 ${
-                      savedIds.has(applicant.id) ? "fill-neutral-900 text-neutral-900" : ""
+                <div className="mr-3 mt-3 flex items-start gap-1">
+                  <button
+                    type="button"
+                    onClick={() => toggleMailSent(applicant.id)}
+                    disabled={mailingIds.has(applicant.id)}
+                    aria-label={`${applicant.name} 메일 발송 표시`}
+                    aria-pressed={mailSentIds.has(applicant.id)}
+                    className={`grid h-8 w-8 place-items-center rounded-md transition-colors hover:bg-white disabled:opacity-50 ${
+                      mailSentIds.has(applicant.id)
+                        ? "text-blue-600"
+                        : "text-pink-500 hover:text-pink-600"
                     }`}
-                  />
-                </button>
+                  >
+                    <Send
+                      className={`h-4 w-4 ${
+                        mailSentIds.has(applicant.id) ? "fill-blue-600" : "fill-pink-500"
+                      }`}
+                    />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleSaved(applicant.id)}
+                    disabled={savingIds.has(applicant.id)}
+                    aria-label={`${applicant.name} 관심 지원자`}
+                    aria-pressed={savedIds.has(applicant.id)}
+                    className="grid h-8 w-8 place-items-center rounded-md text-neutral-400 hover:bg-white hover:text-neutral-900 disabled:opacity-50"
+                  >
+                    <Bookmark
+                      className={`h-4 w-4 ${
+                        savedIds.has(applicant.id) ? "fill-neutral-900 text-neutral-900" : ""
+                      }`}
+                    />
+                  </button>
+                </div>
               </div>
             ))}
 

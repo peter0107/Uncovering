@@ -82,6 +82,8 @@ export type CompanyApplicants = {
   applicants: Applicant[];
   simulations: CompanySimulation[];
   savedApplicantIds: string[];
+  readApplicantIds: string[];
+  mailSentApplicantIds: string[];
 };
 
 const statusEnum = z.enum(["submitted", "in_review", "completed"]);
@@ -162,6 +164,8 @@ const companyApplicantsSchema = z.object({
     }),
   ),
   savedApplicantIds: z.array(z.string().uuid()),
+  readApplicantIds: z.array(z.string().uuid()),
+  mailSentApplicantIds: z.array(z.string().uuid()),
 });
 
 const companyCodeInputSchema = z.object({
@@ -172,6 +176,15 @@ const savedApplicantInputSchema = z.object({
   code: z.string().min(1),
   applicantId: z.string().uuid(),
   isSaved: z.boolean(),
+});
+
+const applicantStateInputSchema = z.object({
+  code: z.string().min(1),
+  applicantId: z.string().uuid(),
+});
+
+const applicantMailStateInputSchema = applicantStateInputSchema.extend({
+  isMailSent: z.boolean(),
 });
 
 const EMPLOYMENT_TYPES = ["인턴", "신입", "계약직", "경력직"] as const;
@@ -322,6 +335,32 @@ function mapSimulation(row: Record<string, unknown>): CompanySimulation {
   };
 }
 
+async function assertCompanyApplicant(
+  supabase: Awaited<typeof import("@/integrations/supabase/client.server")>["supabaseAdmin"],
+  companyId: string,
+  applicantId: string,
+) {
+  const { data: submission, error } = await supabase
+    .from("submissions")
+    .select("id, job_simulations!inner(company_id)")
+    .eq("id", applicantId)
+    .eq("job_simulations.company_id", companyId)
+    .not("submitted_at", "is", null)
+    .eq("answer_transmission_consent", true)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Failed to validate company applicant:", error);
+    throw new Error("Failed to validate company applicant");
+  }
+
+  if (!submission) {
+    throw new Error("Invalid company applicant");
+  }
+
+  return String(submission.id);
+}
+
 export const getApplicantsByCompanyCode = createServerFn({ method: "GET" })
   .inputValidator(companyCodeInputSchema)
   .handler(async ({ data }): Promise<CompanyApplicants> => {
@@ -348,6 +387,16 @@ export const getApplicantsByCompanyCode = createServerFn({ method: "GET" })
     }
 
     const applicants = ((rows ?? []) as Record<string, unknown>[]).map(mapApplicant);
+
+    const { data: reviewStateRows, error: reviewStateError } = await supabase
+      .from("company_applicant_review_states")
+      .select("applicant_id, read_at, mail_sent_at")
+      .eq("company_id", company.id);
+
+    if (reviewStateError) {
+      console.error("Failed to load applicant review states:", reviewStateError);
+      throw new Error("Failed to load applicant review states");
+    }
 
     const { data: savedRows, error: savedError } = await supabase.rpc(
       "get_saved_applicant_ids_by_company_code",
@@ -386,6 +435,12 @@ export const getApplicantsByCompanyCode = createServerFn({ method: "GET" })
       savedApplicantIds: ((savedRows ?? []) as { submission_id: string }[]).map(
         (row) => row.submission_id,
       ),
+      readApplicantIds: ((reviewStateRows ?? []) as Record<string, unknown>[])
+        .filter((row) => row.read_at)
+        .map((row) => String(row.applicant_id)),
+      mailSentApplicantIds: ((reviewStateRows ?? []) as Record<string, unknown>[])
+        .filter((row) => row.mail_sent_at)
+        .map((row) => String(row.applicant_id)),
     });
   });
 
@@ -407,4 +462,78 @@ export const setSavedApplicantByCompanyCode = createServerFn({ method: "POST" })
     }
 
     return { saved: Boolean(saved) };
+  });
+
+export const markApplicantReadByCompanyCode = createServerFn({ method: "POST" })
+  .inputValidator(applicantStateInputSchema)
+  .handler(async ({ data }): Promise<{ read: boolean }> => {
+    const { supabaseAdmin: supabase } = await import("@/integrations/supabase/client.server");
+
+    const { data: company, error: companyError } = await supabase
+      .from("companies")
+      .select("id")
+      .or(`code.eq.${data.code},unique_code.eq.${data.code}`)
+      .single();
+
+    if (companyError || !company) {
+      throw new Error("Invalid company code");
+    }
+
+    const submissionId = await assertCompanyApplicant(supabase, String(company.id), data.applicantId);
+    const now = new Date().toISOString();
+
+    const { error } = await supabase.from("company_applicant_review_states").upsert(
+      {
+        company_id: company.id,
+        applicant_id: data.applicantId,
+        submission_id: submissionId,
+        read_at: now,
+        updated_at: now,
+      },
+      { onConflict: "company_id,applicant_id" },
+    );
+
+    if (error) {
+      console.error("Failed to mark applicant as read:", error);
+      throw new Error("Failed to mark applicant as read");
+    }
+
+    return { read: true };
+  });
+
+export const setApplicantMailSentByCompanyCode = createServerFn({ method: "POST" })
+  .inputValidator(applicantMailStateInputSchema)
+  .handler(async ({ data }): Promise<{ mailSent: boolean }> => {
+    const { supabaseAdmin: supabase } = await import("@/integrations/supabase/client.server");
+
+    const { data: company, error: companyError } = await supabase
+      .from("companies")
+      .select("id")
+      .or(`code.eq.${data.code},unique_code.eq.${data.code}`)
+      .single();
+
+    if (companyError || !company) {
+      throw new Error("Invalid company code");
+    }
+
+    const submissionId = await assertCompanyApplicant(supabase, String(company.id), data.applicantId);
+    const now = new Date().toISOString();
+
+    const { error } = await supabase.from("company_applicant_review_states").upsert(
+      {
+        company_id: company.id,
+        applicant_id: data.applicantId,
+        submission_id: submissionId,
+        mail_sent_at: data.isMailSent ? now : null,
+        updated_at: now,
+      },
+      { onConflict: "company_id,applicant_id" },
+    );
+
+    if (error) {
+      console.error("Failed to update applicant mail state:", error);
+      throw new Error("Failed to update applicant mail state");
+    }
+
+    return { mailSent: data.isMailSent };
   });
