@@ -625,6 +625,19 @@ function asRecord(value: Json | null): JsonRecord {
   return value && !Array.isArray(value) && typeof value === "object" ? value : {};
 }
 
+function compactJsonRecord(record: JsonRecord): Record<string, Json> {
+  return Object.fromEntries(
+    Object.entries(record).filter((entry): entry is [string, Json] => entry[1] !== undefined),
+  );
+}
+
+function resumeBasicsWithName(basics: Json | null, name: string): Json {
+  return {
+    ...compactJsonRecord(asRecord(basics)),
+    name,
+  };
+}
+
 function firstRecord(value: Json | null): JsonRecord {
   if (!Array.isArray(value)) return {};
   const first = value[0];
@@ -813,6 +826,7 @@ function buildBlankResumeForm(userEmail: string, seeker: JobSeeker | null): Resu
   return {
     ...EMPTY_RESUME_FORM,
     title: "새 이력서",
+    name: seeker?.display_name ?? fallbackDisplayName(userEmail),
     email: seeker?.email ?? userEmail,
     headline: seeker?.one_line_intro ?? "",
     target_role: seeker?.job_interests?.[0] ?? "",
@@ -843,7 +857,7 @@ function formFromResume(resume: Resume, userEmail: string, seeker: JobSeeker | n
     title: resume.title,
     memo: resume.memo ?? "",
     target_role: resume.target_role ?? "",
-    name: asString(basics.name),
+    name: asString(basics.name) || seeker?.display_name || fallbackDisplayName(userEmail),
     email: asString(basics.email) || userEmail,
     phone: asString(basics.phone),
     location: asString(basics.location),
@@ -1545,33 +1559,59 @@ function MyPage() {
     if (!user) return;
 
     const nextLinks = normalizeExternalLinks(draftLinks);
+    const nextDisplayName = draftDisplayName.trim() || fallbackDisplayName(userEmail);
 
     setSavingProfileCard(true);
     const patch: TablesUpdate<"job_seekers"> = {
-      display_name: draftDisplayName.trim() || null,
+      display_name: nextDisplayName,
       external_links: nextLinks,
     };
     const { error } = await supabase.from("job_seekers").update(patch).eq("id", user.id);
-    setSavingProfileCard(false);
 
     if (error) {
+      setSavingProfileCard(false);
       toast.error("저장 중 오류가 발생했어요.");
       return;
     }
 
-    const nextDisplayName = draftDisplayName.trim() || fallbackDisplayName(userEmail);
+    const resumeUpdates = await Promise.all(
+      resumes.map((resume) =>
+        supabase
+          .from("resumes")
+          .update({ basics: resumeBasicsWithName(resume.basics, nextDisplayName) })
+          .eq("id", resume.id),
+      ),
+    );
+    const resumeSyncError = resumeUpdates.some((result) => result.error);
+
+    setSavingProfileCard(false);
     setDisplayName(nextDisplayName);
     setLinks(nextLinks);
+    setSeeker((prev) => (prev ? { ...prev, display_name: nextDisplayName } : prev));
+    setResumeForm((prev) => ({ ...prev, name: nextDisplayName }));
+    const nextResumes = resumes.map((resume) => ({
+      ...resume,
+      basics: resumeBasicsWithName(resume.basics, nextDisplayName),
+    }));
+    setResumes(nextResumes);
+    resumeCache.set(user.id, nextResumes);
     const currentCache = profileCache.get(user.id);
     if (currentCache) {
       profileCache.set(user.id, {
         ...currentCache,
+        seeker: currentCache.seeker
+          ? { ...currentCache.seeker, display_name: nextDisplayName }
+          : currentCache.seeker,
         displayName: nextDisplayName,
         links: nextLinks,
       });
     }
     setEditingProfileCard(false);
-    toast.success("저장됐어요.");
+    toast.success(
+      resumeSyncError
+        ? "프로필 이름은 저장됐지만 일부 이력서 이름 동기화에 실패했어요."
+        : "저장됐어요.",
+    );
   };
 
   const startEditSection = (sectionKey: SectionKey) => {
@@ -1796,7 +1836,11 @@ function MyPage() {
     if (!user) return;
     setSavingResume(true);
 
-    const patch = patchFromResumeForm(resumeForm);
+    const normalizedResumeForm = {
+      ...resumeForm,
+      name: resumeForm.name.trim() || displayName,
+    };
+    const patch = patchFromResumeForm(normalizedResumeForm);
     const result = editingResume
       ? await supabase.from("resumes").update(patch).eq("id", editingResume.id).select("*").single()
       : await supabase
@@ -1815,6 +1859,31 @@ function MyPage() {
     if (result.error) {
       toast.error("이력서 저장 중 오류가 발생했어요.");
       return;
+    }
+
+    const nextResumeName = normalizedResumeForm.name.trim();
+    if (nextResumeName && nextResumeName !== displayName) {
+      const { error: profileNameError } = await supabase
+        .from("job_seekers")
+        .update({ display_name: nextResumeName })
+        .eq("id", user.id);
+
+      if (profileNameError) {
+        toast.error("이력서는 저장됐지만 프로필 이름 동기화에 실패했어요.");
+      } else {
+        setDisplayName(nextResumeName);
+        setSeeker((prev) => (prev ? { ...prev, display_name: nextResumeName } : prev));
+        const currentCache = profileCache.get(user.id);
+        if (currentCache) {
+          profileCache.set(user.id, {
+            ...currentCache,
+            seeker: currentCache.seeker
+              ? { ...currentCache.seeker, display_name: nextResumeName }
+              : currentCache.seeker,
+            displayName: nextResumeName,
+          });
+        }
+      }
     }
 
     setResumeEditorOpen(false);
@@ -1870,7 +1939,11 @@ function MyPage() {
       uploaded_file_type: file.type,
       uploaded_file_size: file.size,
       is_default: resumes.length === 0,
-      basics: { email: userEmail, headline: seeker?.one_line_intro ?? "" },
+      basics: {
+        name: displayName,
+        email: userEmail,
+        headline: seeker?.one_line_intro ?? "",
+      },
       target_role: seeker?.job_interests?.[0] ?? null,
     } as TablesInsert<"resumes">);
 
