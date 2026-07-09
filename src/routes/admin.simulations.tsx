@@ -1,6 +1,14 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Building2, ListChecks, Pencil, Plus, RefreshCw, Save, Trash2, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+} from "react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/hooks/use-auth";
@@ -231,6 +239,12 @@ function AdminSimulations() {
     } else {
       startNewSimulation(companyCode);
     }
+  }
+
+  function activateCard(event: KeyboardEvent<HTMLDivElement>, onActivate: () => void) {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    onActivate();
   }
 
   async function submitCompany(event: FormEvent) {
@@ -487,27 +501,30 @@ function AdminSimulations() {
             {companiesWithCounts.map((company) => (
               <div
                 key={company.code}
-                className={`grid grid-cols-[1fr_auto] gap-2 rounded-md border p-4 text-left transition-colors ${
+                role="button"
+                tabIndex={0}
+                onClick={() => selectCompany(company.code)}
+                onKeyDown={(event) => activateCard(event, () => selectCompany(company.code))}
+                className={`grid cursor-pointer grid-cols-[1fr_auto] gap-2 rounded-md border p-4 text-left transition-colors ${
                   company.code === selectedCompanyCode
                     ? "border-neutral-900 bg-neutral-50"
                     : "border-neutral-200 hover:bg-neutral-50"
                 }`}
               >
-                <button
-                  type="button"
-                  onClick={() => selectCompany(company.code)}
-                  className="min-w-0 text-left"
-                >
+                <div className="min-w-0 text-left">
                   <div className="text-sm font-semibold text-neutral-900">{company.name}</div>
                   <div className="mt-1 truncate text-xs text-neutral-500">{company.code}</div>
                   <div className="mt-3 text-xs text-neutral-400">
                     시뮬레이션 {company.simulationCount}개
                   </div>
-                </button>
+                </div>
                 <div className="flex shrink-0 flex-col gap-1">
                   <button
                     type="button"
-                    onClick={() => startEditCompany(company)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      startEditCompany(company);
+                    }}
                     disabled={actioningCompanyId === company.id}
                     aria-label={`${company.name} 기업 수정`}
                     className="grid h-8 w-8 place-items-center rounded-md text-neutral-400 transition-colors hover:bg-white hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-50"
@@ -516,7 +533,10 @@ function AdminSimulations() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => removeCompany(company)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      removeCompany(company);
+                    }}
                     disabled={actioningCompanyId === company.id}
                     aria-label={`${company.name} 기업 삭제`}
                     className="grid h-8 w-8 place-items-center rounded-md text-neutral-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
@@ -525,7 +545,11 @@ function AdminSimulations() {
                   </button>
                 </div>
                 {editingCompanyId === company.id && (
-                  <div className="col-span-2 mt-2 border-t border-neutral-200 pt-3">
+                  <div
+                    className="col-span-2 mt-2 border-t border-neutral-200 pt-3"
+                    onClick={(event) => event.stopPropagation()}
+                    onKeyDown={(event) => event.stopPropagation()}
+                  >
                     <CompanyFormEditor
                       title="기업 정보 수정"
                       form={companyForm}
@@ -576,26 +600,29 @@ function AdminSimulations() {
             {companySimulations.map((simulation) => (
               <div
                 key={simulation.id}
-                className={`w-full rounded-md border p-4 text-left transition-colors ${
+                role="button"
+                tabIndex={0}
+                onClick={() => selectSimulation(simulation)}
+                onKeyDown={(event) => activateCard(event, () => selectSimulation(simulation))}
+                className={`w-full cursor-pointer rounded-md border p-4 text-left transition-colors ${
                   simulation.id === selectedSimulationId
                     ? "border-neutral-900 bg-neutral-50"
                     : "border-neutral-200 hover:bg-neutral-50"
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <button
-                    type="button"
-                    onClick={() => selectSimulation(simulation)}
-                    className="min-w-0 flex-1 text-left"
-                  >
+                  <div className="min-w-0 flex-1 text-left">
                     <h3 className="text-sm font-semibold text-neutral-900">
                       {simulation.roleLabel}
                     </h3>
                     <p className="mt-1 line-clamp-2 text-xs text-neutral-500">{simulation.title}</p>
-                  </button>
+                  </div>
                   <button
                     type="button"
-                    onClick={() => deleteSimulation(simulation)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      deleteSimulation(simulation);
+                    }}
                     disabled={actioningSimulationId === simulation.id}
                     aria-label={`${simulation.roleLabel} 삭제`}
                     className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-neutral-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
@@ -609,7 +636,10 @@ function AdminSimulations() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => toggleSimulationVisibility(simulation)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      toggleSimulationVisibility(simulation);
+                    }}
                     disabled={actioningSimulationId === simulation.id}
                     aria-pressed={simulation.isPublic}
                     className={`inline-flex h-6 shrink-0 items-center gap-1 rounded-full border px-1 pr-1.5 text-[11px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
