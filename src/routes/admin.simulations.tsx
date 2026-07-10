@@ -1173,7 +1173,7 @@ function AdminSimulations() {
           </div>
         </section>
 
-        <section className="rounded-md border border-neutral-200">
+        <section className="min-w-0 rounded-md border border-neutral-200">
           <div className="border-b border-neutral-200 p-4">
             <h2 className="text-sm font-semibold text-neutral-900">
               {isEditing ? "시뮬레이션 수정" : "시뮬레이션 추가"}

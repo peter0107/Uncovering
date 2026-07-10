@@ -3,11 +3,9 @@ import {
   Code2,
   Columns3,
   Heading2,
-  Highlighter,
   Italic,
   List,
   ListOrdered,
-  Palette,
   Quote,
   Redo2,
   Rows3,
@@ -279,73 +277,6 @@ function ToolbarButton({
   );
 }
 
-const TEXT_COLORS = [
-  "#18181b",
-  "#dc2626",
-  "#ea580c",
-  "#ca8a04",
-  "#16a34a",
-  "#2563eb",
-  "#7c3aed",
-  "#db2777",
-];
-const HIGHLIGHT_COLORS = [
-  "#ffffff",
-  "#fecaca",
-  "#fed7aa",
-  "#fef08a",
-  "#bbf7d0",
-  "#bfdbfe",
-  "#ddd6fe",
-  "#fbcfe8",
-];
-
-function ColorPalette({
-  colors,
-  activeColor,
-  onSelect,
-  onClear,
-  clearLabel,
-}: {
-  colors: string[];
-  activeColor: string | null;
-  onSelect: (color: string) => void;
-  onClear: () => void;
-  clearLabel: string;
-}) {
-  return (
-    <div className="absolute left-0 top-10 z-20 w-48 rounded-md border border-neutral-200 bg-white p-2 shadow-lg">
-      <div className="grid grid-cols-4 gap-1.5">
-        {colors.map((color) => (
-          <button
-            key={color}
-            type="button"
-            title={color}
-            aria-label={`${color} 적용`}
-            aria-pressed={activeColor === color}
-            onMouseDown={(event) => event.preventDefault()}
-            onClick={() => onSelect(color)}
-            className={`h-7 rounded-sm border transition-transform hover:scale-110 ${
-              activeColor === color
-                ? "border-neutral-900 ring-1 ring-neutral-900"
-                : "border-neutral-200"
-            }`}
-            style={{ backgroundColor: color }}
-          />
-        ))}
-      </div>
-      <button
-        type="button"
-        onMouseDown={(event) => event.preventDefault()}
-        onClick={onClear}
-        className="mt-2 w-full rounded-sm border border-neutral-200 px-2 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50"
-      >
-        {clearLabel}
-      </button>
-    </div>
-  );
-}
-
 export function RichTextEditor({
   label,
   value,
@@ -360,15 +291,14 @@ export function RichTextEditor({
   minHeight?: string;
 }) {
   const editorRef = useRef<HTMLDivElement>(null);
+  const selectionRangeRef = useRef<Range | null>(null);
   const initialHtml = toEditorHtml(value);
-  const [activePalette, setActivePalette] = useState<"text" | "highlight" | "table" | null>(null);
+  const [activePalette, setActivePalette] = useState<"table" | null>(null);
   const [tableGridSize, setTableGridSize] = useState({ rows: 3, columns: 3 });
   const [isUnderlined, setIsUnderlined] = useState(false);
   const [isStruckThrough, setIsStruckThrough] = useState(false);
   const [isInlineCode, setIsInlineCode] = useState(false);
   const [isCodeBlock, setIsCodeBlock] = useState(false);
-  const [textColor, setTextColor] = useState<string | null>(null);
-  const [highlightColor, setHighlightColor] = useState<string | null>(null);
   const [activeTable, setActiveTable] = useState<{
     tableIndex: number;
     rowIndex: number;
@@ -380,6 +310,26 @@ export function RichTextEditor({
       editorRef.current.innerHTML = initialHtml;
     }
   }, [initialHtml]);
+
+  const rememberSelection = () => {
+    const editor = editorRef.current;
+    const selection = window.getSelection();
+    if (!editor || !selection?.rangeCount) return;
+    const range = selection.getRangeAt(0);
+    if (editor.contains(range.commonAncestorContainer)) {
+      selectionRangeRef.current = range.cloneRange();
+    }
+  };
+
+  const restoreSelection = () => {
+    const editor = editorRef.current;
+    const range = selectionRangeRef.current;
+    editor?.focus();
+    if (!range) return;
+    const selection = window.getSelection();
+    selection?.removeAllRanges();
+    selection?.addRange(range);
+  };
 
   const getSelectionElement = () => {
     const selection = window.getSelection();
@@ -423,13 +373,8 @@ export function RichTextEditor({
     setIsInlineCode(Boolean(element.closest("code:not(pre code)")));
     setIsCodeBlock(Boolean(element.closest("pre")));
 
-    const nextTextColor = document.queryCommandValue("foreColor");
-    const nextHighlightColor = document.queryCommandValue("hiliteColor");
-    setTextColor(nextTextColor && nextTextColor !== "false" ? String(nextTextColor) : null);
-    setHighlightColor(
-      nextHighlightColor && nextHighlightColor !== "false" ? String(nextHighlightColor) : null,
-    );
     setActiveTable(getTableSelection());
+    rememberSelection();
   };
 
   const commitChange = () => {
@@ -438,7 +383,7 @@ export function RichTextEditor({
   };
 
   const command = (name: string, commandValue?: string) => {
-    editorRef.current?.focus();
+    restoreSelection();
     document.execCommand(name, false, commandValue);
     commitChange();
   };
@@ -598,10 +543,10 @@ export function RichTextEditor({
   };
 
   return (
-    <div>
+    <div className="min-w-0 max-w-full">
       <p className="mb-2 text-xs font-medium text-neutral-700">{label}</p>
       <div className="overflow-hidden rounded-md border border-neutral-300 bg-white focus-within:border-neutral-900 focus-within:ring-1 focus-within:ring-neutral-900">
-        <div className="overflow-x-auto border-b border-neutral-200 bg-neutral-50">
+        <div className="max-w-full overflow-x-auto border-b border-neutral-200 bg-neutral-50">
           <div className="flex min-w-max items-center gap-0.5 px-2 py-1">
             <ToolbarButton label="굵게" onClick={() => command("bold")}>
               <Bold className="h-4 w-4" />
@@ -632,70 +577,6 @@ export function RichTextEditor({
             >
               <Strikethrough className="h-4 w-4" />
             </ToolbarButton>
-            <div className="relative">
-              <ToolbarButton
-                label="글자 색상"
-                active={activePalette === "text"}
-                onClick={() => setActivePalette((current) => (current === "text" ? null : "text"))}
-              >
-                <span className="relative grid place-items-center">
-                  <Palette className="h-4 w-4" />
-                  <span
-                    className="absolute -bottom-1 h-0.5 w-3 rounded-full"
-                    style={{ backgroundColor: textColor ?? "#18181b" }}
-                  />
-                </span>
-              </ToolbarButton>
-              {activePalette === "text" && (
-                <ColorPalette
-                  colors={TEXT_COLORS}
-                  activeColor={textColor}
-                  onSelect={(color) => {
-                    command("foreColor", color);
-                    setActivePalette(null);
-                  }}
-                  onClear={() => {
-                    command("foreColor", "inherit");
-                    setActivePalette(null);
-                  }}
-                  clearLabel="글자색 초기화"
-                />
-              )}
-            </div>
-            <div className="relative">
-              <ToolbarButton
-                label="글자 배경색"
-                active={activePalette === "highlight"}
-                onClick={() =>
-                  setActivePalette((current) => (current === "highlight" ? null : "highlight"))
-                }
-              >
-                <span className="relative grid place-items-center">
-                  <Highlighter className="h-4 w-4" />
-                  {highlightColor && (
-                    <span
-                      className="absolute -bottom-1 h-0.5 w-3 rounded-full"
-                      style={{ backgroundColor: highlightColor }}
-                    />
-                  )}
-                </span>
-              </ToolbarButton>
-              {activePalette === "highlight" && (
-                <ColorPalette
-                  colors={HIGHLIGHT_COLORS}
-                  activeColor={highlightColor}
-                  onSelect={(color) => {
-                    command("hiliteColor", color);
-                    setActivePalette(null);
-                  }}
-                  onClear={() => {
-                    command("hiliteColor", "transparent");
-                    setActivePalette(null);
-                  }}
-                  clearLabel="배경색 제거"
-                />
-              )}
-            </div>
             <span className="mx-1 h-4 w-px bg-neutral-200" />
             <ToolbarButton label="인라인 코드" active={isInlineCode} onClick={toggleInlineCode}>
               <Code2 className="h-4 w-4" />
@@ -782,12 +663,13 @@ export function RichTextEditor({
           onKeyUp={refreshToolbarState}
           onMouseUp={refreshToolbarState}
           onFocus={refreshToolbarState}
+          onSelect={rememberSelection}
           onPaste={(event) => {
             event.preventDefault();
             const text = event.clipboardData.getData("text/plain");
             document.execCommand("insertText", false, text);
           }}
-          className="prose prose-sm prose-neutral max-w-none overflow-x-auto px-3 py-2 outline-none empty:before:pointer-events-none empty:before:content-[attr(data-placeholder)] empty:before:text-neutral-400 prose-code:rounded-sm prose-code:bg-neutral-100 prose-code:px-1 prose-code:py-0.5 prose-code:font-mono prose-code:before:content-none prose-code:after:content-none prose-pre:rounded-md prose-pre:bg-neutral-900 prose-pre:px-3 prose-pre:py-3 prose-pre:font-mono prose-table:border-collapse prose-th:border prose-th:border-neutral-300 prose-th:bg-neutral-50 prose-th:px-2 prose-th:py-1 prose-td:border prose-td:border-neutral-300 prose-td:px-2 prose-td:py-1"
+          className="prose prose-sm prose-neutral min-w-0 max-w-none overflow-x-auto px-3 py-2 outline-none empty:before:pointer-events-none empty:before:content-[attr(data-placeholder)] empty:before:text-neutral-400 prose-code:rounded-sm prose-code:bg-neutral-100 prose-code:px-1 prose-code:py-0.5 prose-code:font-mono prose-code:before:content-none prose-code:after:content-none prose-pre:rounded-md prose-pre:bg-neutral-900 prose-pre:px-3 prose-pre:py-3 prose-pre:font-mono [&_pre_code]:!bg-transparent [&_pre_code]:!p-0 [&_pre_code]:!text-neutral-50 prose-table:border-collapse prose-th:border prose-th:border-neutral-300 prose-th:bg-neutral-50 prose-th:px-2 prose-th:py-1 prose-td:border prose-td:border-neutral-300 prose-td:px-2 prose-td:py-1"
           style={{ minHeight }}
         />
       </div>
@@ -799,7 +681,7 @@ export function RichTextContent({ value, className = "" }: { value: string; clas
   if (value.startsWith(RICH_TEXT_PREFIX)) {
     return (
       <div
-        className={`${className} [&_code]:rounded-sm [&_code]:bg-neutral-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-neutral-900 [&_pre]:px-3 [&_pre]:py-3 [&_pre]:font-mono [&_pre]:text-neutral-50 [&_table]:border-collapse [&_th]:border [&_th]:border-neutral-300 [&_th]:bg-neutral-50 [&_th]:px-2 [&_th]:py-1 [&_td]:border [&_td]:border-neutral-300 [&_td]:px-2 [&_td]:py-1`}
+        className={`${className} [&_code]:rounded-sm [&_code]:bg-neutral-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-neutral-900 [&_pre]:px-3 [&_pre]:py-3 [&_pre]:font-mono [&_pre]:text-neutral-50 [&_pre_code]:!bg-transparent [&_pre_code]:!p-0 [&_pre_code]:!text-neutral-50 [&_table]:border-collapse [&_th]:border [&_th]:border-neutral-300 [&_th]:bg-neutral-50 [&_th]:px-2 [&_th]:py-1 [&_td]:border [&_td]:border-neutral-300 [&_td]:px-2 [&_td]:py-1`}
         dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(value.slice(RICH_TEXT_PREFIX.length)) }}
       />
     );
