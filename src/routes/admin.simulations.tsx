@@ -170,6 +170,43 @@ function loadAssetImage(src: string) {
   });
 }
 
+function getAssetImageGeometry({
+  imageWidth,
+  imageHeight,
+  frameWidth,
+  frameHeight,
+  zoom,
+  offsetX,
+  offsetY,
+}: {
+  imageWidth: number;
+  imageHeight: number;
+  frameWidth: number;
+  frameHeight: number;
+  zoom: number;
+  offsetX: number;
+  offsetY: number;
+}) {
+  const baseScale = Math.max(frameWidth / imageWidth, frameHeight / imageHeight);
+  const baseWidth = imageWidth * baseScale;
+  const baseHeight = imageHeight * baseScale;
+  const scaledWidth = baseWidth * zoom;
+  const scaledHeight = baseHeight * zoom;
+  const overflowX = Math.max(0, scaledWidth - frameWidth);
+  const overflowY = Math.max(0, scaledHeight - frameHeight);
+  const translateX = -(overflowX * offsetX) / 100;
+  const translateY = -(overflowY * offsetY) / 100;
+
+  return {
+    baseWidth,
+    baseHeight,
+    scaledWidth,
+    scaledHeight,
+    translateX,
+    translateY,
+  };
+}
+
 async function createCroppedAssetBlob(
   src: string,
   preset: AssetEditorPreset,
@@ -183,20 +220,21 @@ async function createCroppedAssetBlob(
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Canvas is not available");
 
-  const baseScale = Math.max(
-    preset.width / image.naturalWidth,
-    preset.height / image.naturalHeight,
-  );
-  const drawWidth = image.naturalWidth * baseScale * options.zoom;
-  const drawHeight = image.naturalHeight * baseScale * options.zoom;
-  const overflowX = Math.max(0, drawWidth - preset.width);
-  const overflowY = Math.max(0, drawHeight - preset.height);
-  const drawX = (preset.width - drawWidth) / 2 - (overflowX * options.offsetX) / 100;
-  const drawY = (preset.height - drawHeight) / 2 - (overflowY * options.offsetY) / 100;
+  const geometry = getAssetImageGeometry({
+    imageWidth: image.naturalWidth,
+    imageHeight: image.naturalHeight,
+    frameWidth: preset.width,
+    frameHeight: preset.height,
+    zoom: options.zoom,
+    offsetX: options.offsetX,
+    offsetY: options.offsetY,
+  });
+  const drawX = (preset.width - geometry.scaledWidth) / 2 + geometry.translateX;
+  const drawY = (preset.height - geometry.scaledHeight) / 2 + geometry.translateY;
 
   context.fillStyle = "#ffffff";
   context.fillRect(0, 0, preset.width, preset.height);
-  context.drawImage(image, drawX, drawY, drawWidth, drawHeight);
+  context.drawImage(image, drawX, drawY, geometry.scaledWidth, geometry.scaledHeight);
 
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(
@@ -211,22 +249,23 @@ async function createCroppedAssetBlob(
 }
 
 function getAssetEditorImageStyle(editor: AssetEditorState, preset: AssetEditorPreset) {
-  const baseScale = Math.max(
-    preset.previewWidth / editor.imageWidth,
-    preset.previewHeight / editor.imageHeight,
-  );
-  const imageWidth = editor.imageWidth * baseScale * editor.zoom;
-  const imageHeight = editor.imageHeight * baseScale * editor.zoom;
-  const overflowX = Math.max(0, imageWidth - preset.previewWidth);
-  const overflowY = Math.max(0, imageHeight - preset.previewHeight);
-  const imageX = (preset.previewWidth - imageWidth) / 2 - (overflowX * editor.offsetX) / 100;
-  const imageY = (preset.previewHeight - imageHeight) / 2 - (overflowY * editor.offsetY) / 100;
+  const geometry = getAssetImageGeometry({
+    imageWidth: editor.imageWidth,
+    imageHeight: editor.imageHeight,
+    frameWidth: preset.previewWidth,
+    frameHeight: preset.previewHeight,
+    zoom: editor.zoom,
+    offsetX: editor.offsetX,
+    offsetY: editor.offsetY,
+  });
 
   return {
-    left: `${(imageX / preset.previewWidth) * 100}%`,
-    top: `${(imageY / preset.previewHeight) * 100}%`,
-    width: `${(imageWidth / preset.previewWidth) * 100}%`,
-    height: `${(imageHeight / preset.previewHeight) * 100}%`,
+    left: `calc(50% + ${geometry.translateX}px)`,
+    top: `calc(50% + ${geometry.translateY}px)`,
+    width: `${(geometry.baseWidth / preset.previewWidth) * 100}%`,
+    height: `${(geometry.baseHeight / preset.previewHeight) * 100}%`,
+    transform: `translate(-50%, -50%) scale(${editor.zoom})`,
+    transformOrigin: "center center",
   };
 }
 
