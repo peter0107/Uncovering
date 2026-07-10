@@ -717,9 +717,7 @@ function normalizeEmploymentTypeValues(values: string[] | null | undefined) {
       const trimmed = item.trim();
       if (!trimmed) continue;
       const mapped =
-        trimmed === "정규직" || trimmed === "하이브리드" || trimmed === "경력"
-          ? "경력직"
-          : trimmed;
+        trimmed === "정규직" || trimmed === "하이브리드" || trimmed === "경력" ? "경력직" : trimmed;
       if (EMPLOYMENT_TYPES.includes(mapped)) normalized.add(mapped);
     }
   }
@@ -876,7 +874,10 @@ function formFromResume(resume: Resume, userEmail: string, seeker: JobSeeker | n
             status: normalizeEducationStatus(asString(education.status) || parsedEducation.status),
           });
         })
-      : firstEducation.description || firstEducation.school || firstEducation.major || firstEducation.status
+      : firstEducation.description ||
+          firstEducation.school ||
+          firstEducation.major ||
+          firstEducation.status
         ? [
             createResumeEducation({
               school: asString(firstEducation.school),
@@ -933,8 +934,7 @@ function patchFromResumeForm(
     },
     educations: form.educations
       .filter(
-        (education) =>
-          education.school.trim() || education.major.trim() || education.status.trim(),
+        (education) => education.school.trim() || education.major.trim() || education.status.trim(),
       )
       .map((education) => ({
         school: education.school.trim(),
@@ -1084,7 +1084,7 @@ function ResumeSelectField({
         value={value || EMPTY_SELECT_VALUE}
         onValueChange={(next) => onChange(id, next === EMPTY_SELECT_VALUE ? "" : next)}
       >
-        <SelectTrigger id={id} className="mt-2 h-9">
+        <SelectTrigger id={id} className="mt-2 h-9 rounded-sm shadow-none">
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
@@ -1137,7 +1137,7 @@ function ResumeMultiSelectField({
             id={id}
             type="button"
             variant="outline"
-            className="mt-2 h-9 w-full justify-between rounded-md border-neutral-300 px-3 text-left font-normal"
+            className="mt-2 h-9 w-full justify-between rounded-sm border-neutral-300 px-3 text-left font-normal shadow-none"
           >
             <span className={selected.length ? "truncate text-neutral-900" : "text-neutral-400"}>
               {selected.length ? selected.join(", ") : placeholder}
@@ -1209,7 +1209,7 @@ function ResumeSchoolField({
             id={id}
             type="button"
             variant="outline"
-            className="mt-2 h-9 w-full justify-between rounded-md border-neutral-300 px-3 text-left font-normal"
+            className="mt-2 h-9 w-full justify-between rounded-sm border-neutral-300 px-3 text-left font-normal shadow-none"
           >
             <span className={value ? "truncate text-neutral-900" : "text-neutral-400"}>
               {value || "학교명 검색"}
@@ -1225,7 +1225,7 @@ function ResumeSchoolField({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="학교명 검색"
-            className="mb-2 h-9"
+            className="mb-2 h-9 rounded-sm shadow-none"
           />
           <div className="max-h-60 overflow-y-auto">
             {filteredSchools.length ? (
@@ -1338,33 +1338,36 @@ function MyPage() {
   const setDraftForm = (partial: Partial<ProfileFormData>) =>
     setDraftFormRaw((prev) => ({ ...prev, ...partial }));
 
-  const refreshResumes = useCallback(async (options?: { showLoading?: boolean }) => {
-    if (!user) return;
-    const cached = resumeCache.get(user.id);
-    const showLoading = options?.showLoading ?? !cached;
+  const refreshResumes = useCallback(
+    async (options?: { showLoading?: boolean }) => {
+      if (!user) return;
+      const cached = resumeCache.get(user.id);
+      const showLoading = options?.showLoading ?? !cached;
 
-    if (cached) {
-      setResumes(cached);
+      if (cached) {
+        setResumes(cached);
+        setResumesLoading(false);
+      } else if (showLoading) {
+        setResumesLoading(true);
+      }
+
+      const { data, error } = await supabase
+        .from("resumes")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("updated_at", { ascending: false });
+
+      if (error) {
+        toast.error("이력서를 불러오지 못했어요. Supabase SQL 적용 여부를 확인해주세요.");
+      } else {
+        const nextResumes = data ?? [];
+        resumeCache.set(user.id, nextResumes);
+        setResumes(nextResumes);
+      }
       setResumesLoading(false);
-    } else if (showLoading) {
-      setResumesLoading(true);
-    }
-
-    const { data, error } = await supabase
-      .from("resumes")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("updated_at", { ascending: false });
-
-    if (error) {
-      toast.error("이력서를 불러오지 못했어요. Supabase SQL 적용 여부를 확인해주세요.");
-    } else {
-      const nextResumes = data ?? [];
-      resumeCache.set(user.id, nextResumes);
-      setResumes(nextResumes);
-    }
-    setResumesLoading(false);
-  }, [user]);
+    },
+    [user],
+  );
 
   useEffect(() => {
     if (authLoading) return;
@@ -1631,9 +1634,9 @@ function MyPage() {
     if (!section) return;
 
     if (editingSection === "education") {
-      const hasSchoolType = EDUCATION_SCHOOL_TYPES.some((item) =>
-        draftForm.education_level.includes(item),
-      ) || draftForm.education_level.includes("대학교");
+      const hasSchoolType =
+        EDUCATION_SCHOOL_TYPES.some((item) => draftForm.education_level.includes(item)) ||
+        draftForm.education_level.includes("대학교");
       const hasStatus = EDUCATION_STATUS_OPTIONS.some((item) =>
         draftForm.education_level.includes(item),
       );
@@ -2412,7 +2415,6 @@ function MyPage() {
                       )}
                     </div>
 
-
                     <div className="flex shrink-0 items-center gap-0.5">
                       <Button
                         type="button"
@@ -2465,7 +2467,6 @@ function MyPage() {
                     수정 {toDateLabel(resume.updated_at)}
                   </div>
                 </Card>
-
               );
             })}
           </div>
@@ -2587,13 +2588,14 @@ function MyPage() {
       </Dialog>
 
       <Dialog open={resumeEditorOpen} onOpenChange={setResumeEditorOpen}>
-        <DialogContent className="flex max-h-[88vh] max-w-4xl flex-col overflow-hidden p-0">
+        <DialogContent className="flex max-h-[88vh] max-w-4xl flex-col overflow-hidden rounded-md p-0 sm:rounded-md [&_input]:!rounded-sm [&_input]:!shadow-none [&_textarea]:!rounded-sm [&_textarea]:!shadow-none [&_[role=combobox]]:!rounded-sm [&_[role=combobox]]:!shadow-none">
           <DialogHeader className="shrink-0 px-6 pt-6">
             <DialogTitle>{editingResume ? "이력서 수정" : "새 이력서 작성"}</DialogTitle>
             <DialogDescription>
               회사나 직무별로 다른 내용을 저장할 수 있어요. 비어 있는 항목은 저장해도 괜찮아요.
               <span className="mt-1 block">
-                <span className="font-semibold text-red-500">*</span> 항목은 동의 시 기업에 공유됩니다.
+                <span className="font-semibold text-red-500">*</span> 항목은 동의 시 기업에
+                공유됩니다.
               </span>
             </DialogDescription>
           </DialogHeader>
@@ -2778,7 +2780,10 @@ function MyPage() {
                             )
                           }
                         >
-                          <SelectTrigger id={`education-status-${education.id}`} className="mt-2 h-9">
+                          <SelectTrigger
+                            id={`education-status-${education.id}`}
+                            className="mt-2 h-9"
+                          >
                             <SelectValue placeholder="상태 선택" />
                           </SelectTrigger>
                           <SelectContent>
