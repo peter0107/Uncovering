@@ -10,8 +10,7 @@ import {
   X,
   MessageCircle,
 } from "lucide-react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { RichTextContent } from "@/components/RichTextEditor";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -61,7 +60,7 @@ function MaterialSection({ label, markdown }: { label: string; markdown: string 
       <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">{label}</p>
       <Card className="mt-2 p-6">
         <div className="prose prose-sm prose-zinc max-w-none prose-table:text-sm">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
+          <RichTextContent value={markdown} />
         </div>
       </Card>
     </div>
@@ -630,7 +629,7 @@ function SimulationDetailPage() {
                   <h3 className="text-base font-bold text-zinc-900">{p.label}</h3>
                   {p.bodyMarkdown && (
                     <div className="prose prose-sm prose-zinc mt-2 max-w-none prose-table:text-sm prose-headings:text-sm prose-headings:font-semibold">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{p.bodyMarkdown}</ReactMarkdown>
+                      <RichTextContent value={p.bodyMarkdown} />
                     </div>
                   )}
                   <Textarea
@@ -650,7 +649,7 @@ function SimulationDetailPage() {
                   💡 초심자용 힌트 보기
                 </summary>
                 <div className="prose prose-sm prose-zinc mt-3 max-w-none prose-table:text-sm">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{step.hint}</ReactMarkdown>
+                  <RichTextContent value={step.hint} />
                 </div>
               </details>
             )}
@@ -659,9 +658,7 @@ function SimulationDetailPage() {
             {showCompletion && (
               <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
                 <div className="prose prose-sm prose-emerald max-w-none">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {step.completionMessage as string}
-                  </ReactMarkdown>
+                  <RichTextContent value={step.completionMessage as string} />
                 </div>
               </div>
             )}
@@ -728,7 +725,7 @@ function SimulationDetailPage() {
           {header}
           <Card className="mt-6 p-6">
             <div className="prose prose-sm sm:prose-base prose-zinc max-w-none prose-table:text-sm">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{sim.task_prompt ?? ""}</ReactMarkdown>
+              <RichTextContent value={sim.task_prompt ?? ""} />
             </div>
           </Card>
         </div>

@@ -24,6 +24,7 @@ import {
 import { toast } from "sonner";
 
 import { SimulationCardPreview } from "@/components/SimulationCardPreview";
+import { RichTextEditor } from "@/components/RichTextEditor";
 import {
   Dialog,
   DialogContent,
@@ -1221,11 +1222,12 @@ function AdminSimulations() {
               rows={3}
             />
 
-            <TextareaField
+            <RichTextEditor
               label="기존 단일형 과제 본문"
               value={form.taskPrompt}
               onChange={(value) => updateForm("taskPrompt", value)}
-              rows={16}
+              placeholder="단계별 구성을 사용하지 않는 시뮬레이션의 과제 본문을 작성하세요."
+              minHeight="20rem"
             />
 
             <StepEditor steps={form.steps} onChange={updateSteps} />
@@ -1496,29 +1498,30 @@ function StepEditor({
             />
 
             <div className="mt-4 grid gap-4">
-              <TextareaField
+              <RichTextEditor
                 label="상황 안내"
                 value={step.situation ?? ""}
                 onChange={(value) => updateStep(stepIndex, { situation: value })}
-                rows={5}
+                placeholder="이 단계에서 알아야 할 상황을 작성하세요."
               />
-              <TextareaField
+              <RichTextEditor
                 label="제공 자료"
                 value={step.materials ?? ""}
                 onChange={(value) => updateStep(stepIndex, { materials: value })}
-                rows={7}
+                placeholder="데이터, 표, 참고 자료를 작성하세요."
+                minHeight="14rem"
               />
-              <TextareaField
+              <RichTextEditor
                 label="힌트"
                 value={step.hint ?? ""}
                 onChange={(value) => updateStep(stepIndex, { hint: value })}
-                rows={4}
+                placeholder="필요한 힌트를 작성하세요."
               />
-              <TextareaField
+              <RichTextEditor
                 label="단계 완료 메시지"
                 value={step.completionMessage ?? ""}
                 onChange={(value) => updateStep(stepIndex, { completionMessage: value })}
-                rows={3}
+                placeholder="답변을 완료한 유저에게 보여줄 메시지를 작성하세요."
               />
             </div>
 
@@ -1616,11 +1619,11 @@ function StepEditor({
                         placeholder="예: 핵심 문제를 정의해주세요"
                         required
                       />
-                      <TextareaField
+                      <RichTextEditor
                         label="질문 설명"
                         value={prompt.body}
                         onChange={(value) => updatePrompt(stepIndex, promptIndex, { body: value })}
-                        rows={5}
+                        placeholder="유저가 작성해야 할 내용을 안내하세요."
                       />
                     </div>
                   </div>
