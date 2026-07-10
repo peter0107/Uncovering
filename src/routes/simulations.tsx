@@ -115,15 +115,11 @@ export async function fetchAll(): Promise<Simulation[]> {
 
 // ─── 카드 컴포넌트 ────────────────────────────────────────────
 
-export function SimCard({ sim, rank }: { sim: Simulation; rank?: number }) {
+export function SimCard({ sim }: { sim: Simulation }) {
   const roleLine = sim.role_label || sim.job_family || sim.title;
 
   return (
-    <Link
-      to="/simulation/$id"
-      params={{ id: sim.id }}
-      className="block h-full"
-    >
+    <Link to="/simulation/$id" params={{ id: sim.id }} className="block h-full">
       <SimulationCardPreview
         companyName={sim.company_name}
         companyLogoUrl={sim.company_logo_url}
@@ -133,7 +129,6 @@ export function SimCard({ sim, rank }: { sim: Simulation; rank?: number }) {
         description={sim.description}
         domain={sim.domain}
         estimatedMinutes={sim.estimated_minutes}
-        rank={rank}
         className="h-full"
       />
     </Link>
@@ -144,15 +139,15 @@ export function SimCard({ sim, rank }: { sim: Simulation; rank?: number }) {
 
 export function CardSkeleton() {
   return (
-    <div className="overflow-hidden rounded-2xl border border-zinc-100 bg-white">
-      <Skeleton className="h-32 w-full" />
-      <div className="p-5">
-        <Skeleton className="h-6 w-36" />
-        <Skeleton className="mt-3 h-4 w-5/6" />
+    <div className="overflow-hidden rounded-xl border border-zinc-100 bg-white">
+      <Skeleton className="h-24 w-full" />
+      <div className="p-4">
+        <Skeleton className="h-5 w-32" />
+        <Skeleton className="mt-3 h-3.5 w-5/6" />
         <Skeleton className="mt-2 h-4 w-2/3" />
-        <div className="mt-6 flex items-center justify-between">
-          <Skeleton className="h-5 w-24" />
-          <Skeleton className="h-5 w-20" />
+        <div className="mt-5 flex items-center justify-between">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-4 w-16" />
         </div>
       </div>
     </div>
@@ -286,7 +281,7 @@ function SimulationsPage() {
       <div
         className={cn(
           "mt-8 grid gap-4",
-          sims.length === 1 ? "md:max-w-xl" : "md:grid-cols-2",
+          sims.length === 1 ? "md:max-w-sm" : "sm:grid-cols-2 lg:grid-cols-3",
         )}
       >
         {loading ? (
@@ -296,9 +291,7 @@ function SimulationsPage() {
             <CardSkeleton />
           </>
         ) : sims.length > 0 ? (
-          sims.map((sim, i) => (
-            <SimCard key={sim.id} sim={sim} rank={isGuest ? undefined : i + 1} />
-          ))
+          sims.map((sim) => <SimCard key={sim.id} sim={sim} />)
         ) : (
           <div className="col-span-full">
             <EmptyState hasOnboarding={hasOnboarding} />

@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Building2, ListChecks, Pencil, Plus, RefreshCw, Save, Trash2, X } from "lucide-react";
 import {
   useCallback,
+  type ChangeEvent,
   useEffect,
   useMemo,
   useRef,
@@ -13,6 +14,7 @@ import { toast } from "sonner";
 
 import { SimulationCardPreview } from "@/components/SimulationCardPreview";
 import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
 import {
   createCompany,
   createCompanySimulation,
@@ -45,6 +47,10 @@ type CompanyForm = {
   logoUrl: string;
   roleLabel: string;
 };
+
+type AssetUploadTarget =
+  | { kind: "logo"; companyId: string }
+  | { kind: "cardImage"; simulationId: string };
 
 const EMPTY_COMPANY_FORM: CompanyForm = {
   name: "",
@@ -92,6 +98,32 @@ const EMPTY_FORM: SimulationForm = {
   taskPrompt: "",
 };
 
+function getUploadKey(target: AssetUploadTarget) {
+  return target.kind === "logo" ? `logo:${target.companyId}` : `cardImage:${target.simulationId}`;
+}
+
+function getFileExtension(file: File) {
+  const safeNameExtension = file.name
+    .split(".")
+    .pop()
+    ?.toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+
+  if (safeNameExtension && ["jpg", "jpeg", "png", "webp", "gif"].includes(safeNameExtension)) {
+    return safeNameExtension;
+  }
+
+  const mimeExtension = file.type.split("/").pop()?.toLowerCase();
+  if (mimeExtension === "jpeg") return "jpg";
+  return mimeExtension || "jpg";
+}
+
+function getDomainCategory(value: string): DomainCategory {
+  return DOMAIN_CATEGORIES.includes(value as DomainCategory)
+    ? (value as DomainCategory)
+    : DOMAIN_CATEGORIES[0];
+}
+
 export const Route = createFileRoute("/admin/simulations")({
   head: () => ({
     meta: [
@@ -119,7 +151,10 @@ function AdminSimulations() {
   const [isCreatingCompany, setIsCreatingCompany] = useState(false);
   const [actioningCompanyId, setActioningCompanyId] = useState<string | null>(null);
   const [actioningSimulationId, setActioningSimulationId] = useState<string | null>(null);
+  const [assetUploadTarget, setAssetUploadTarget] = useState<AssetUploadTarget | null>(null);
+  const [uploadingAssetKey, setUploadingAssetKey] = useState<string | null>(null);
   const loadedUserIdRef = useRef<string | null>(null);
+  const assetInputRef = useRef<HTMLInputElement | null>(null);
   const userId = user?.id ?? null;
 
   const companiesWithCounts = useMemo(() => {
@@ -253,6 +288,121 @@ function AdminSimulations() {
     if (event.key !== "Enter" && event.key !== " ") return;
     event.preventDefault();
     onActivate();
+  }
+
+  function openAssetFilePicker(target: AssetUploadTarget) {
+    if (!userId) {
+      toast.error("로그인이 필요합니다.");
+      return;
+    }
+
+    setAssetUploadTarget(target);
+    if (assetInputRef.current) {
+      assetInputRef.current.value = "";
+      assetInputRef.current.click();
+    }
+  }
+
+  async function uploadAssetFile(file: File, target: AssetUploadTarget) {
+    if (!userId) throw new Error("로그인이 필요합니다.");
+
+    const targetId = target.kind === "logo" ? target.companyId : target.simulationId;
+    const extension = getFileExtension(file);
+    const objectPath = `${userId}/${target.kind}/${targetId}-${Date.now()}.${extension}`;
+
+    const { error } = await supabase.storage
+      .from("simulation-card-assets")
+      .upload(objectPath, file, {
+        contentType: file.type || "image/jpeg",
+        upsert: true,
+      });
+
+    if (error) throw error;
+
+    const { data } = supabase.storage.from("simulation-card-assets").getPublicUrl(objectPath);
+    if (!data.publicUrl) throw new Error("업로드한 이미지 주소를 만들지 못했습니다.");
+
+    return data.publicUrl;
+  }
+
+  async function handleAssetFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    const target = assetUploadTarget;
+    if (!file || !target) return;
+
+    if (file.type && !file.type.startsWith("image/")) {
+      toast.error("이미지 파일만 업로드할 수 있습니다.");
+      event.target.value = "";
+      return;
+    }
+
+    const uploadKey = getUploadKey(target);
+    setUploadingAssetKey(uploadKey);
+
+    try {
+      const publicUrl = await uploadAssetFile(file, target);
+
+      if (target.kind === "logo") {
+        const company = companies.find((item) => item.id === target.companyId);
+        if (!company) throw new Error("기업 정보를 찾지 못했습니다.");
+
+        await updateCompany({
+          data: {
+            id: company.id,
+            name: company.name,
+            code: company.code,
+            logoUrl: publicUrl,
+            roleLabel: company.roleLabel,
+          },
+        });
+
+        setCompanies((current) =>
+          current.map((item) => (item.id === company.id ? { ...item, logoUrl: publicUrl } : item)),
+        );
+        setSimulations((current) =>
+          current.map((item) =>
+            item.companyId === company.id ? { ...item, companyLogoUrl: publicUrl } : item,
+          ),
+        );
+        if (editingCompanyId === company.id) {
+          setCompanyForm((current) => ({ ...current, logoUrl: publicUrl }));
+        }
+        toast.success("기업 로고를 변경했습니다.");
+      } else {
+        const simulation = simulations.find((item) => item.id === target.simulationId);
+        if (!simulation) throw new Error("시뮬레이션 정보를 찾지 못했습니다.");
+
+        await updateCompanySimulation({
+          data: {
+            id: simulation.id,
+            companyCode: simulation.companyCode,
+            roleLabel: simulation.roleLabel,
+            title: simulation.title,
+            description: simulation.description,
+            cardImageUrl: publicUrl,
+            domain: getDomainCategory(simulation.domain),
+            estimatedMinutes: simulation.estimatedMinutes,
+            taskPrompt: simulation.taskPrompt,
+          },
+        });
+
+        setSimulations((current) =>
+          current.map((item) =>
+            item.id === simulation.id ? { ...item, cardImageUrl: publicUrl } : item,
+          ),
+        );
+        if (selectedSimulationId === simulation.id) {
+          setForm((current) => ({ ...current, cardImageUrl: publicUrl }));
+        }
+        toast.success("카드 이미지를 변경했습니다.");
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "이미지를 업로드하지 못했습니다.");
+    } finally {
+      setUploadingAssetKey(null);
+      setAssetUploadTarget(null);
+      event.target.value = "";
+    }
   }
 
   async function submitCompany(event: FormEvent) {
@@ -449,6 +599,13 @@ function AdminSimulations() {
 
   return (
     <AdminShell>
+      <input
+        ref={assetInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleAssetFileChange}
+      />
       <div className="flex flex-col gap-4 border-b border-neutral-200 pb-6 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-xs font-medium text-neutral-500">Beginner Admin</p>
@@ -515,12 +672,34 @@ function AdminSimulations() {
                 tabIndex={0}
                 onClick={() => selectCompany(company.code)}
                 onKeyDown={(event) => activateCard(event, () => selectCompany(company.code))}
-                className={`grid cursor-pointer grid-cols-[1fr_auto] gap-2 rounded-md border p-4 text-left transition-colors ${
+                className={`grid cursor-pointer grid-cols-[auto_1fr_auto] gap-3 rounded-md border p-3 text-left transition-colors ${
                   company.code === selectedCompanyCode
                     ? "border-neutral-900 bg-neutral-50"
                     : "border-neutral-200 hover:bg-neutral-50"
                 }`}
               >
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    openAssetFilePicker({ kind: "logo", companyId: company.id });
+                  }}
+                  disabled={
+                    uploadingAssetKey === getUploadKey({ kind: "logo", companyId: company.id })
+                  }
+                  aria-label={`${company.name} 로고 변경`}
+                  className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-lg bg-neutral-100 text-xs font-bold text-neutral-500 transition-colors hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {company.logoUrl ? (
+                    <img
+                      src={company.logoUrl}
+                      alt={`${company.name} 로고`}
+                      className="h-full w-full object-contain p-1.5"
+                    />
+                  ) : (
+                    company.name.trim().slice(0, 1) || "B"
+                  )}
+                </button>
                 <div className="min-w-0 text-left">
                   <div className="text-sm font-semibold text-neutral-900">{company.name}</div>
                   <div className="mt-1 truncate text-xs text-neutral-500">{company.code}</div>
@@ -556,7 +735,7 @@ function AdminSimulations() {
                 </div>
                 {editingCompanyId === company.id && (
                   <div
-                    className="col-span-2 mt-2 border-t border-neutral-200 pt-3"
+                    className="col-span-3 mt-2 border-t border-neutral-200 pt-3"
                     onClick={(event) => event.stopPropagation()}
                     onKeyDown={(event) => event.stopPropagation()}
                   >
@@ -631,6 +810,12 @@ function AdminSimulations() {
                   domain={simulation.domain}
                   estimatedMinutes={simulation.estimatedMinutes}
                   className="h-full shadow-none"
+                  onLogoClick={() =>
+                    openAssetFilePicker({ kind: "logo", companyId: simulation.companyId })
+                  }
+                  onImageClick={() =>
+                    openAssetFilePicker({ kind: "cardImage", simulationId: simulation.id })
+                  }
                   topRight={
                     <button
                       type="button"
@@ -714,13 +899,6 @@ function AdminSimulations() {
               onChange={(value) => updateForm("title", value)}
               placeholder="예: 마케팅 캠페인 A/B 테스트 결과 해석"
               required
-            />
-
-            <InputField
-              label="카드 이미지 URL"
-              value={form.cardImageUrl}
-              onChange={(value) => updateForm("cardImageUrl", value)}
-              placeholder="https://..."
             />
 
             <TextareaField
@@ -854,12 +1032,6 @@ function CompanyFormEditor({
         onChange={(value) => onChange("code", value)}
         placeholder="예: BGNR-2024-B"
         required
-      />
-      <InputField
-        label="기업 로고 URL"
-        value={form.logoUrl}
-        onChange={(value) => onChange("logoUrl", value)}
-        placeholder="https://..."
       />
       <InputField
         label="기업 화면 표시명"

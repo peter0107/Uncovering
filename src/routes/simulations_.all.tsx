@@ -2,12 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowLeft, LayoutGrid, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  CardSkeleton,
-  SimCard,
-  fetchAll,
-  type Simulation,
-} from "./simulations";
+import { CardSkeleton, SimCard, fetchAll, type Simulation } from "./simulations";
 
 export const Route = createFileRoute("/simulations_/all")({
   head: () => ({ meta: [{ title: "전체 직무 — Beginner" }] }),
@@ -62,7 +57,7 @@ function AllSimulationsPage() {
       )}
 
       {/* 카드 목록 */}
-      <div className="mt-8 grid gap-4 md:grid-cols-2">
+      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {loading ? (
           <>
             <CardSkeleton />

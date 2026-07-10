@@ -46,12 +46,13 @@ type SimulationCardPreviewProps = {
   description?: string | null;
   domain?: string | null;
   estimatedMinutes?: number | null;
-  rank?: number;
   compact?: boolean;
   showCta?: boolean;
   ctaLabel?: string;
   topRight?: ReactNode;
   bottomRight?: ReactNode;
+  onLogoClick?: () => void;
+  onImageClick?: () => void;
   className?: string;
 };
 
@@ -84,12 +85,13 @@ export function SimulationCardPreview({
   description,
   domain,
   estimatedMinutes,
-  rank,
   compact = false,
   showCta = true,
   ctaLabel = "시작하기",
   topRight,
   bottomRight,
+  onLogoClick,
+  onImageClick,
   className,
 }: SimulationCardPreviewProps) {
   const resolvedCompanyName = companyName.trim() || "Beginner";
@@ -98,72 +100,94 @@ export function SimulationCardPreview({
   const imageUrl = cardImageUrl?.trim() || getFallbackImage(domain ?? "", resolvedRole, title);
   const logoText = getLogoText(resolvedCompanyName);
   const logoTone = LOGO_TONES[hashText(resolvedCompanyName) % LOGO_TONES.length];
-  const topRightNode =
-    topRight ??
-    (rank ? (
-      <span className="grid h-9 w-9 place-items-center rounded-full bg-neutral-900 text-sm font-bold text-white shadow-sm">
-        {rank}
-      </span>
-    ) : null);
+  const logoContent = companyLogoUrl?.trim() ? (
+    <img
+      src={companyLogoUrl.trim()}
+      alt={`${resolvedCompanyName} 로고`}
+      className="h-full w-full object-contain p-1.5"
+    />
+  ) : (
+    <span className={cn("grid h-full w-full place-items-center", logoTone)}>{logoText}</span>
+  );
+  const logoClassName = cn(
+    "grid shrink-0 place-items-center overflow-hidden rounded-lg bg-white font-bold text-neutral-900 shadow-sm",
+    compact ? "h-9 w-9 text-sm" : "h-10 w-10 text-base",
+    onLogoClick && "cursor-pointer ring-1 ring-white/30 transition-transform hover:scale-105",
+  );
 
   return (
     <article
       className={cn(
-        "group overflow-hidden rounded-2xl border border-zinc-200 bg-white text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-zinc-900 hover:shadow-md",
+        "group overflow-hidden rounded-xl border border-zinc-200 bg-white text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-zinc-900 hover:shadow-md",
         className,
       )}
     >
-      <div className={cn("relative h-32 overflow-hidden", compact && "h-24")}>
+      <div
+        className={cn(
+          "relative h-24 overflow-hidden",
+          compact && "h-20",
+          onImageClick && "cursor-pointer",
+        )}
+        onClick={(event) => {
+          if (!onImageClick) return;
+          event.stopPropagation();
+          onImageClick();
+        }}
+      >
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{
             backgroundImage: `linear-gradient(90deg, rgba(0,0,0,0.68), rgba(0,0,0,0.28)), url("${imageUrl}")`,
           }}
         />
-        <div className="relative flex h-full items-end gap-3 p-4">
-          <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-white text-lg font-bold text-neutral-900 shadow-sm">
-            {companyLogoUrl?.trim() ? (
-              <img
-                src={companyLogoUrl.trim()}
-                alt={`${resolvedCompanyName} 로고`}
-                className="h-full w-full object-contain p-2"
-              />
-            ) : (
-              <span className={cn("grid h-full w-full place-items-center", logoTone)}>
-                {logoText}
-              </span>
+        <div className="relative flex h-full items-end gap-2.5 p-3">
+          {onLogoClick ? (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onLogoClick();
+              }}
+              className={logoClassName}
+              aria-label={`${resolvedCompanyName} 로고 변경`}
+            >
+              {logoContent}
+            </button>
+          ) : (
+            <div className={logoClassName}>{logoContent}</div>
+          )}
+          <div className="min-w-0 pb-0.5 text-white">
+            <p className="truncate text-sm font-bold leading-tight">{resolvedCompanyName}</p>
+            {domain && (
+              <p className="mt-0.5 truncate text-[11px] font-medium text-white/80">{domain}</p>
             )}
           </div>
-          <div className="min-w-0 pb-1 text-white">
-            <p className="truncate text-lg font-bold leading-tight">{resolvedCompanyName}</p>
-            {domain && <p className="mt-1 truncate text-xs font-medium text-white/80">{domain}</p>}
-          </div>
         </div>
-        {topRightNode && <div className="absolute right-4 top-4 z-10">{topRightNode}</div>}
+        {topRight && <div className="absolute right-3 top-3 z-10">{topRight}</div>}
       </div>
 
-      <div className={cn("flex min-h-[150px] flex-col p-5", compact && "min-h-[132px] p-4")}>
+      <div className={cn("flex min-h-[118px] flex-col p-4", compact && "min-h-[108px] p-3")}>
         <h3
           className={cn(
             "line-clamp-1 font-bold tracking-tight text-zinc-900",
-            compact ? "text-lg" : "text-xl",
+            compact ? "text-base" : "text-lg",
           )}
         >
           {resolvedRole}
         </h3>
-        <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-zinc-500">{summary}</p>
+        <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-zinc-500">{summary}</p>
 
-        <div className="mt-auto flex items-end justify-between gap-3 pt-4">
-          <div className="flex items-center gap-1 text-sm text-zinc-500">
-            <Clock className="h-4 w-4" />
+        <div className="mt-auto flex items-end justify-between gap-3 pt-3">
+          <div className="flex items-center gap-1 text-xs text-zinc-500">
+            <Clock className="h-3.5 w-3.5" />
             <span>약 {estimatedMinutes ?? 75}분 소요</span>
           </div>
 
           {bottomRight ??
             (showCta && (
-              <span className="inline-flex items-center gap-1 text-sm font-semibold text-blue-600 transition-colors group-hover:text-blue-700">
+              <span className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 transition-colors group-hover:text-blue-700">
                 {ctaLabel}
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
               </span>
             ))}
         </div>
