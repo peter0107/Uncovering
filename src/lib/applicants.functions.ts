@@ -1,6 +1,11 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
+import {
+  COMPANY_APPLICANT_REVIEW_PROMPT_KEY,
+  DEFAULT_COMPANY_APPLICANT_REVIEW_PROMPT,
+} from "@/lib/ai-prompt.defaults";
+
 export type Status = "submitted" | "in_review" | "completed";
 export type ApplicantReviewStage =
   | "document_review"
@@ -708,7 +713,20 @@ async function generateApplicantAiReview(applicant: Applicant, jobPosting: Compa
     simulationAnswers: applicant.simulation,
   };
 
-  const prompt = `당신은 채용 담당자를 돕는 평가 보조자입니다. 아래 채용 공고와 지원 자료를 비교하세요.\n\n규칙:\n- 보호 특성(나이, 성별, 출신, 건강, 가족상태 등)을 추정하거나 판단 근거로 사용하지 마세요.\n- 채용 합격/불합격을 결정하지 말고, 근거 기반의 검토 포인트만 제시하세요.\n- 점수는 0~100 정수로, 근거는 제공된 자료 안에서만 작성하세요.\n- 반드시 JSON만 반환하세요.\n\n반환 JSON 형식:\n{\n  "simulation": { "score": 0, "summary": "", "strengths": [""], "concerns": [""] },\n  "resumeFit": { "score": 0, "summary": "", "matched": [""], "gaps": [""] },\n  "interviewQuestions": [\n    { "category": "이력서·포트폴리오", "question": "", "intent": "" },\n    { "category": "시뮬레이션", "question": "", "intent": "" }\n  ]\n}\n\n채용 공고:\n제목: ${jobPosting.title}\n직무: ${jobPosting.roleLabel}\n내용:\n${jobPosting.content.slice(0, 14000)}\n\n지원자 자료:\n${JSON.stringify(applicantProfile).slice(0, 24000)}`;
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: promptSetting, error: promptError } = await supabaseAdmin
+    .from("ai_prompt_settings")
+    .select("prompt")
+    .eq("key", COMPANY_APPLICANT_REVIEW_PROMPT_KEY)
+    .maybeSingle();
+
+  if (promptError) {
+    console.warn("Failed to load AI prompt setting, using default:", promptError.message);
+  }
+
+  const promptInstructions =
+    promptSetting?.prompt?.trim() || DEFAULT_COMPANY_APPLICANT_REVIEW_PROMPT;
+  const prompt = `${promptInstructions}\n\n채용 공고:\n제목: ${jobPosting.title}\n직무: ${jobPosting.roleLabel}\n내용:\n${jobPosting.content.slice(0, 14000)}\n\n지원자 자료:\n${JSON.stringify(applicantProfile).slice(0, 24000)}`;
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",

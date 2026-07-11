@@ -3,6 +3,10 @@ import { getRequest } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
+import {
+  COMPANY_APPLICANT_REVIEW_PROMPT_KEY,
+  DEFAULT_COMPANY_APPLICANT_REVIEW_PROMPT,
+} from "@/lib/ai-prompt.defaults";
 import { DOMAIN_CATEGORIES } from "@/lib/domain-categories";
 
 export type AdminCompany = {
@@ -58,6 +62,29 @@ export type AdminSimulationStep = {
   hint?: string;
   completionMessage?: string;
   prompts: AdminSimulationPrompt[];
+};
+
+export type AdminSubmissionAnswer = {
+  id: string;
+  applicantName: string;
+  applicantEmail: string;
+  companyName: string;
+  companyCode: string;
+  simulationTitle: string;
+  roleLabel: string;
+  responseText: string;
+  responseAnswers: Array<{ id: string; label: string; answer: string }>;
+  aiChatLog: Array<{ role: "user" | "assistant"; content: string; at: string }>;
+  submittedAt: string;
+  durationSeconds: number | null;
+  isSharedWithCompany: boolean;
+};
+
+export type AdminAiPromptSetting = {
+  key: typeof COMPANY_APPLICANT_REVIEW_PROMPT_KEY;
+  label: string;
+  prompt: string;
+  updatedAt: string | null;
 };
 
 const domainCategorySchema = z.enum(DOMAIN_CATEGORIES);
@@ -125,6 +152,10 @@ const simulationIdInputSchema = z.object({
 
 const simulationVisibilityInputSchema = simulationIdInputSchema.extend({
   isPublic: z.boolean(),
+});
+
+const adminAiPromptInputSchema = z.object({
+  prompt: z.string().trim().min(1).max(30000),
 });
 
 function createPublicServerClient() {
@@ -238,6 +269,65 @@ function mapAdminCompany(row: Record<string, unknown>): AdminCompany {
   };
 }
 
+function firstRelation(value: unknown): Record<string, unknown> {
+  if (Array.isArray(value)) return (value[0] ?? {}) as Record<string, unknown>;
+  return (value ?? {}) as Record<string, unknown>;
+}
+
+function mapResponseAnswers(value: unknown): AdminSubmissionAnswer["responseAnswers"] {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return [];
+  const rawAnswers = (value as { answers?: unknown }).answers;
+  if (!Array.isArray(rawAnswers)) return [];
+
+  return rawAnswers.flatMap((item) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return [];
+    const row = item as Record<string, unknown>;
+    if (typeof row.answer !== "string") return [];
+    return [
+      {
+        id: String(row.id ?? ""),
+        label: String(row.label ?? "답변"),
+        answer: row.answer,
+      },
+    ];
+  });
+}
+
+function mapAiChatLog(value: unknown): AdminSubmissionAnswer["aiChatLog"] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) return [];
+    const row = item as Record<string, unknown>;
+    const role = row.role;
+    const content = row.content;
+    if ((role !== "user" && role !== "assistant") || typeof content !== "string") return [];
+    return [{ role, content, at: typeof row.at === "string" ? row.at : "" }];
+  });
+}
+
+function mapAdminSubmission(row: Record<string, unknown>): AdminSubmissionAnswer {
+  const seeker = firstRelation(row.job_seekers);
+  const simulation = firstRelation(row.job_simulations);
+  const company = firstRelation(simulation.companies);
+  const submittedAt = String(row.submitted_at ?? row.created_at ?? new Date(0).toISOString());
+
+  return {
+    id: String(row.id),
+    applicantName: String(seeker.display_name ?? "이름 미입력"),
+    applicantEmail: String(seeker.email ?? ""),
+    companyName: String(company.name ?? ""),
+    companyCode: String(company.code ?? company.unique_code ?? ""),
+    simulationTitle: String(simulation.title ?? ""),
+    roleLabel: String(simulation.role_label ?? simulation.job_family ?? simulation.title ?? ""),
+    responseText: String(row.response_text ?? ""),
+    responseAnswers: mapResponseAnswers(row.response_json),
+    aiChatLog: mapAiChatLog(row.ai_chat_log),
+    submittedAt: formatDateTime(submittedAt),
+    durationSeconds: typeof row.duration_sec === "number" ? row.duration_sec : null,
+    isSharedWithCompany: row.answer_transmission_consent === true,
+  };
+}
+
 export const getAdminCompanies = createServerFn({ method: "GET" }).handler(
   async (): Promise<AdminCompany[]> => {
     await assertAdmin();
@@ -278,6 +368,76 @@ export const getAdminCompanySimulations = createServerFn({ method: "GET" }).hand
     return ((data ?? []) as Record<string, unknown>[]).map(mapAdminSimulation);
   },
 );
+
+export const getAdminSubmissionAnswers = createServerFn({ method: "GET" }).handler(
+  async (): Promise<AdminSubmissionAnswer[]> => {
+    await assertAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data, error } = await supabaseAdmin
+      .from("submissions")
+      .select(
+        "id, response_text, response_json, ai_chat_log, duration_sec, submitted_at, created_at, answer_transmission_consent, job_seekers(display_name, email), job_simulations(title, role_label, job_family, companies(name, code, unique_code))",
+      )
+      .not("submitted_at", "is", null)
+      .order("submitted_at", { ascending: false });
+
+    if (error) {
+      console.error("Failed to load admin submission answers:", error);
+      throw new Error("제출 답변을 불러오지 못했습니다.");
+    }
+
+    return ((data ?? []) as Record<string, unknown>[]).map(mapAdminSubmission);
+  },
+);
+
+export const getAdminAiPromptSetting = createServerFn({ method: "GET" }).handler(
+  async (): Promise<AdminAiPromptSetting> => {
+    await assertAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
+      .from("ai_prompt_settings")
+      .select("prompt, updated_at")
+      .eq("key", COMPANY_APPLICANT_REVIEW_PROMPT_KEY)
+      .maybeSingle();
+
+    if (error) {
+      console.error("Failed to load AI prompt setting:", error);
+      throw new Error(
+        "AI 프롬프트 설정을 불러오지 못했습니다. SQL migration 적용 여부를 확인해주세요.",
+      );
+    }
+
+    return {
+      key: COMPANY_APPLICANT_REVIEW_PROMPT_KEY,
+      label: "지원자 평가 프롬프트",
+      prompt: data?.prompt ?? DEFAULT_COMPANY_APPLICANT_REVIEW_PROMPT,
+      updatedAt: data?.updated_at ? formatDateTime(data.updated_at) : null,
+    };
+  },
+);
+
+export const saveAdminAiPromptSetting = createServerFn({ method: "POST" })
+  .inputValidator(adminAiPromptInputSchema)
+  .handler(async ({ data }) => {
+    await assertAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("ai_prompt_settings").upsert(
+      {
+        key: COMPANY_APPLICANT_REVIEW_PROMPT_KEY,
+        prompt: data.prompt,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "key" },
+    );
+
+    if (error) {
+      console.error("Failed to save AI prompt setting:", error);
+      throw new Error("AI 프롬프트를 저장하지 못했습니다. SQL migration 적용 여부를 확인해주세요.");
+    }
+
+    return { ok: true };
+  });
 
 export const createCompany = createServerFn({ method: "POST" })
   .inputValidator(createCompanyInputSchema)

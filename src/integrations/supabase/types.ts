@@ -592,6 +592,24 @@ export type Database = {
           },
         ]
       }
+      ai_prompt_settings: {
+        Row: {
+          key: string
+          prompt: string
+          updated_at: string
+        }
+        Insert: {
+          key: string
+          prompt: string
+          updated_at?: string
+        }
+        Update: {
+          key?: string
+          prompt?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       company_visible_submissions: {
