@@ -1696,10 +1696,10 @@ function AdminShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-white text-neutral-900">
       <header className="flex h-14 items-center justify-between border-b border-neutral-300 bg-neutral-100 px-6">
-        <div>
+        <Link to="/admin" className="hover:text-neutral-600">
           <span className="text-sm font-semibold tracking-tight">Beginner</span>
           <span className="ml-2 text-xs text-neutral-500">Admin</span>
-        </div>
+        </Link>
         <Link to="/biz" className="text-xs font-medium text-neutral-500 hover:text-neutral-900">
           기업 페이지
         </Link>
