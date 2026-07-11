@@ -155,15 +155,27 @@ function Index() {
             <Link to="/biz" className="transition-colors hover:text-[#171C26]">
               기업용
             </Link>
-            <Link to="/login" search={{ redirect: "/" }} className="font-semibold text-[#171C26]">
-              로그인
-            </Link>
-            <Link
-              to="/start"
-              className="rounded-md bg-[#2B5CE7] px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#2149BD]"
-            >
-              시작하기
-            </Link>
+            {user ? (
+              <Link
+                to="/my"
+                aria-label="프로필"
+                className="grid h-9 w-9 place-items-center rounded-full border border-[#D9DEE8] bg-white text-[#171C26] transition-colors hover:bg-[#F7F8FA]"
+              >
+                <User className="h-4 w-4" />
+              </Link>
+            ) : (
+              <>
+                <Link to="/login" search={{ redirect: "/" }} className="font-semibold text-[#171C26]">
+                  로그인
+                </Link>
+                <Link
+                  to="/start"
+                  className="rounded-md bg-[#2B5CE7] px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#2149BD]"
+                >
+                  시작하기
+                </Link>
+              </>
+            )}
           </nav>
 
           <button
