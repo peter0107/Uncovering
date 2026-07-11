@@ -171,7 +171,7 @@ function Index() {
                 </Link>
                 <Link
                   to="/start"
-                  className="rounded-md bg-[#2B5CE7] px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#2149BD]"
+                  className="rounded-md bg-[#2B5CE7] px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#2149BD] hover:text-white"
                 >
                   시작하기
                 </Link>
@@ -256,7 +256,7 @@ function Index() {
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
             <Link
               to="/start"
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-[#2B5CE7] px-6 text-sm font-bold text-white shadow-md transition-all hover:bg-[#2149BD] hover:shadow-lg sm:text-base"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-[#2B5CE7] px-6 text-sm font-bold text-white shadow-md transition-all hover:bg-[#2149BD] hover:text-white hover:shadow-lg sm:text-base"
             >
               무료로 시작하기 <ArrowRight className="h-4 w-4" />
             </Link>
@@ -330,7 +330,7 @@ function Index() {
             </p>
             <Link
               to="/start"
-              className="mt-7 inline-flex h-12 items-center gap-2 rounded-md bg-[#2B5CE7] px-6 text-sm font-bold text-white transition-colors hover:bg-[#3E6DEE] sm:text-base"
+              className="mt-7 inline-flex h-12 items-center gap-2 rounded-md bg-[#2B5CE7] px-6 text-sm font-bold text-white transition-colors hover:bg-[#3E6DEE] hover:text-white sm:text-base"
             >
               시작하기 <ArrowRight className="h-4 w-4" />
             </Link>

@@ -48,7 +48,10 @@ export function SiteHeader() {
                   }
                 />
                 <Link to="/simulations">
-                  <Button size="sm" className="bg-brand text-brand-foreground hover:bg-brand/90">
+                  <Button
+                    size="sm"
+                    className="bg-brand text-brand-foreground hover:bg-brand/90 hover:text-white"
+                  >
                     시작하기
                   </Button>
                 </Link>
@@ -93,7 +96,7 @@ export function SiteHeader() {
                     }
                   />
                   <Link to="/simulations" onClick={() => setOpen(false)}>
-                    <Button className="mt-1 w-full bg-brand text-brand-foreground hover:bg-brand/90">
+                    <Button className="mt-1 w-full bg-brand text-brand-foreground hover:bg-brand/90 hover:text-white">
                       시작하기
                     </Button>
                   </Link>

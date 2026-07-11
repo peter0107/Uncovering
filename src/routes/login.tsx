@@ -151,7 +151,7 @@ function LoginPage() {
           <Button
             type="submit"
             disabled={!valid || submitting}
-            className="w-full bg-brand text-brand-foreground hover:bg-brand/90"
+            className="w-full bg-brand text-brand-foreground hover:bg-brand/90 hover:text-white"
             size="lg"
           >
             {submitting ? "처리 중..." : isSignup ? "가입하고 시작하기" : "로그인"}
