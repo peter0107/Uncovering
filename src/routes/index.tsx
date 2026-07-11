@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "uncovering - 직접 일해보고 확인하는 직무 시뮬레이션" },
+      { title: "Beginner - 직접 일해보고 확인하는 직무 시뮬레이션" },
       {
         name: "description",
         content:
@@ -21,13 +21,11 @@ export const Route = createFileRoute("/")({
 
 function Brand() {
   return (
-    <span className="inline-flex items-center gap-2" aria-label="uncovering 홈">
+    <span className="inline-flex items-center gap-2" aria-label="Beginner 홈">
       <span className="grid h-7 w-7 place-items-center rounded-full border-[3px] border-[#2B5CE7] border-t-transparent text-[10px] font-extrabold tracking-[-0.12em] text-[#171C26] [transform:rotate(18deg)]">
-        <span className="[transform:rotate(-18deg)]">uN</span>
+        <span className="[transform:rotate(-18deg)]">B</span>
       </span>
-      <span className="text-[17px] font-extrabold tracking-[-0.03em] text-[#171C26]">
-        uncovering
-      </span>
+      <span className="text-[17px] font-extrabold tracking-[-0.03em] text-[#171C26]">Beginner</span>
     </span>
   );
 }
@@ -142,8 +140,8 @@ function Index() {
   return (
     <div className="min-h-screen bg-white text-[#171C26]">
       <header className="sticky top-0 z-40 border-b border-[#EEF0F4] bg-white/95 backdrop-blur">
-        <div className="relative mx-auto flex h-16 max-w-[1160px] items-center justify-between px-5 sm:px-8">
-          <Link to="/" aria-label="uncovering 홈">
+        <div className="relative mx-auto flex h-14 max-w-[1160px] items-center justify-between px-5 sm:px-8">
+          <Link to="/" aria-label="Beginner 홈">
             <Brand />
           </Link>
 
