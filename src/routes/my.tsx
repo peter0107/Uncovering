@@ -3090,7 +3090,7 @@ function MyPage() {
                   />
                 </div>
 
-                <div className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
                   <ResumeField
                     id="name"
                     label="이름"
@@ -3119,14 +3119,16 @@ function MyPage() {
                     onChange={updateResumeForm}
                     shared
                   />
-                  <ResumeField
-                    id="headline"
-                    label="한 줄 소개"
-                    value={resumeForm.headline}
-                    onChange={updateResumeForm}
-                    placeholder="예: 데이터를 바탕으로 성장을 만드는 마케터"
-                    shared
-                  />
+                  <div className="md:col-span-2">
+                    <ResumeField
+                      id="headline"
+                      label="한 줄 소개"
+                      value={resumeForm.headline}
+                      onChange={updateResumeForm}
+                      placeholder="예: 데이터를 바탕으로 성장을 만드는 마케터"
+                      shared
+                    />
+                  </div>
                 </div>
               </div>
             </section>
