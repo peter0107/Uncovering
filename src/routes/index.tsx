@@ -32,7 +32,7 @@ function Brand() {
 
 function ProfilePreview() {
   return (
-    <div className="w-full max-w-[360px] border border-[#E7EAF0] bg-[#F7F8FA] p-5">
+    <div className="w-full rounded-2xl border border-[#E7EAF0] bg-[#F7F8FA] p-5">
       <p className="text-xs font-semibold text-[#6B7280]">프로필 등록</p>
       <div className="mt-4 flex flex-wrap gap-2">
         <span className="rounded-full border border-[#D9DEE8] bg-white px-3 py-1.5 text-xs text-[#4B5563]">
