@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Bookmark, ChevronRight, FileText, Filter, Search, Send, Sparkles, X } from "lucide-react";
+import { Bookmark, FileText, Filter, Search, Sparkles, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 
@@ -8,11 +8,11 @@ import {
   evaluateApplicantWithAiByCompanyCode,
   extractJobPostingFromUrl,
   getApplicantsByCompanyCode,
+  listJobPostingCandidatesFromUrl,
   markApplicantInterviewProposedByCompanyCode,
   markApplicantReadByCompanyCode,
   saveCompanyJobPostingByCode,
   setApplicantDecisionByCompanyCode,
-  setApplicantMailSentByCompanyCode,
   setSavedApplicantByCompanyCode,
   type Applicant,
   type ApplicantAiReview,
@@ -21,6 +21,7 @@ import {
   type ApplicantReviewState,
   type CompanyApplicants,
   type CompanyJobPosting,
+  type JobPostingCandidate,
 } from "@/lib/applicants.functions";
 import { WORK_REGIONS } from "@/lib/profile-fields";
 import { toast } from "sonner";
@@ -79,6 +80,8 @@ const DECISION_LABELS: Record<ApplicantDecisionStatus, string> = {
   rejected: "불합격",
 };
 
+const DECISION_ORDER: ApplicantDecisionStatus[] = ["undecided", "passed", "rejected"];
+
 const DEFAULT_REVIEW_STATE: Omit<ApplicantReviewState, "applicantId"> = {
   reviewStage: "document_review",
   decisionStatus: "undecided",
@@ -105,8 +108,6 @@ function BizReview() {
   const [savingIds, setSavingIds] = useState<Set<string>>(() => new Set());
   const [readIds, setReadIds] = useState<Set<string>>(() => new Set());
   const [readingIds, setReadingIds] = useState<Set<string>>(() => new Set());
-  const [mailSentIds, setMailSentIds] = useState<Set<string>>(() => new Set());
-  const [mailingIds, setMailingIds] = useState<Set<string>>(() => new Set());
   const [reviewStates, setReviewStates] = useState<ApplicantReviewState[]>([]);
   const [jobPostings, setJobPostings] = useState<CompanyJobPosting[]>([]);
   const [aiReviews, setAiReviews] = useState<ApplicantAiReview[]>([]);
@@ -138,7 +139,6 @@ function BizReview() {
         setData(result);
         setSavedIds(new Set(result.savedApplicantIds));
         setReadIds(new Set(result.readApplicantIds));
-        setMailSentIds(new Set(result.mailSentApplicantIds));
         setReviewStates(result.reviewStates);
         setJobPostings(result.jobPostings);
         setAiReviews(result.aiReviews);
@@ -331,43 +331,6 @@ function BizReview() {
     void markRead(id);
   }
 
-  async function toggleMailSent(id: string) {
-    if (mailingIds.has(id)) return;
-    const nextMailSent = !mailSentIds.has(id);
-
-    setMailSentIds((current) => {
-      const next = new Set(current);
-      if (nextMailSent) next.add(id);
-      else next.delete(id);
-      return next;
-    });
-    setMailingIds((current) => new Set(current).add(id));
-
-    try {
-      await setApplicantMailSentByCompanyCode({
-        data: {
-          code,
-          applicantId: id,
-          isMailSent: nextMailSent,
-        },
-      });
-    } catch {
-      setMailSentIds((current) => {
-        const rollback = new Set(current);
-        if (nextMailSent) rollback.delete(id);
-        else rollback.add(id);
-        return rollback;
-      });
-      toast.error("메일 발송 상태 저장 중 오류가 발생했습니다.");
-    } finally {
-      setMailingIds((current) => {
-        const next = new Set(current);
-        next.delete(id);
-        return next;
-      });
-    }
-  }
-
   async function advanceReviewStage(id: string) {
     if (advancingIds.has(id)) return;
     setAdvancingIds((current) => new Set(current).add(id));
@@ -412,12 +375,17 @@ function BizReview() {
     }
   }
 
+  function cycleDecision(id: string, currentDecision: ApplicantDecisionStatus) {
+    const currentIndex = DECISION_ORDER.indexOf(currentDecision);
+    const nextDecision = DECISION_ORDER[(currentIndex + 1) % DECISION_ORDER.length];
+    void setDecision(id, nextDecision);
+  }
+
   async function markInterviewProposed(id: string) {
     const nextState = await markApplicantInterviewProposedByCompanyCode({
       data: { code, applicantId: id },
     });
     updateReviewState(nextState);
-    setMailSentIds((current) => new Set(current).add(id));
   }
 
   async function evaluateApplicant(id: string) {
@@ -631,24 +599,6 @@ function BizReview() {
                   <div className="mr-3 mt-3 flex items-start gap-1">
                     <button
                       type="button"
-                      onClick={() => toggleMailSent(applicant.id)}
-                      aria-disabled={mailingIds.has(applicant.id)}
-                      aria-label={`${applicant.name} 메일 발송 표시`}
-                      aria-pressed={mailSentIds.has(applicant.id)}
-                      className={`grid h-8 w-8 place-items-center rounded-md transition-colors hover:bg-white ${
-                        mailSentIds.has(applicant.id)
-                          ? "text-blue-600"
-                          : "text-pink-500 hover:text-pink-600"
-                      }`}
-                    >
-                      <Send
-                        className={`h-4 w-4 ${
-                          mailSentIds.has(applicant.id) ? "fill-blue-600" : "fill-pink-500"
-                        }`}
-                      />
-                    </button>
-                    <button
-                      type="button"
                       onClick={() => toggleSaved(applicant.id)}
                       aria-disabled={savingIds.has(applicant.id)}
                       aria-label={`${applicant.name} 관심 지원자`}
@@ -663,39 +613,30 @@ function BizReview() {
                     </button>
                   </div>
                   <div className="col-span-2 flex flex-wrap items-center gap-2 border-t border-neutral-200 px-3 pb-3 pt-2">
-                    <span className="rounded bg-neutral-100 px-2 py-1 text-[11px] font-medium text-neutral-600">
-                      {REVIEW_STAGE_LABELS[reviewState.reviewStage]}
-                    </span>
-                    <select
-                      value={reviewState.decisionStatus}
-                      onChange={(event) =>
-                        void setDecision(
-                          applicant.id,
-                          event.target.value as ApplicantDecisionStatus,
-                        )
-                      }
-                      disabled={decisionIds.has(applicant.id)}
-                      aria-label={`${applicant.name} 지원 결과`}
-                      className="h-7 rounded border border-neutral-200 bg-white px-2 text-[11px] text-neutral-700 outline-none focus:border-neutral-900 disabled:opacity-50"
-                    >
-                      {Object.entries(DECISION_LABELS).map(([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
-                        </option>
-                      ))}
-                    </select>
                     <button
                       type="button"
                       onClick={() => void advanceReviewStage(applicant.id)}
                       disabled={!canAdvance || advancingIds.has(applicant.id)}
                       title={
                         reviewState.reviewStage === "document_review"
-                          ? "면접 제안 메일 템플릿 복사 후 진행할 수 있습니다"
-                          : undefined
+                          ? "면접 제안 메일 템플릿을 복사하면 면접 제안으로 변경됩니다"
+                          : reviewState.reviewStage === "final_review"
+                            ? "최종 검토 단계입니다"
+                            : "클릭하면 다음 지원 단계로 변경됩니다"
                       }
-                      className="ml-auto inline-flex h-7 items-center gap-1 rounded border border-neutral-300 px-2 text-[11px] font-medium text-neutral-700 hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
+                      className="h-7 rounded bg-neutral-100 px-2 text-[11px] font-medium text-neutral-700 transition-colors hover:bg-neutral-200 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      다음 <ChevronRight className="h-3.5 w-3.5" />
+                      {REVIEW_STAGE_LABELS[reviewState.reviewStage]}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => cycleDecision(applicant.id, reviewState.decisionStatus)}
+                      disabled={decisionIds.has(applicant.id)}
+                      aria-label={`${applicant.name} 지원 결과`}
+                      title="클릭하면 미정, 합격, 불합격 순서로 변경됩니다"
+                      className="h-7 rounded border border-neutral-200 bg-white px-2 text-[11px] font-medium text-neutral-700 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {DECISION_LABELS[reviewState.decisionStatus]}
                     </button>
                   </div>
                 </div>
@@ -1668,22 +1609,52 @@ function JobPostingDialog({
   const [title, setTitle] = useState(initialPosting?.title ?? "");
   const [content, setContent] = useState(initialPosting?.content ?? "");
   const [isExtracting, setIsExtracting] = useState(false);
+  const [candidates, setCandidates] = useState<JobPostingCandidate[]>([]);
+  const [selectingCandidateUrl, setSelectingCandidateUrl] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  async function extractPosting() {
+  async function selectCandidate(candidate: JobPostingCandidate) {
+    if (selectingCandidateUrl) return;
+    setSelectingCandidateUrl(candidate.sourceUrl);
+    try {
+      if (candidate.content.length >= 120) {
+        setSourceUrl(candidate.sourceUrl);
+        setTitle(candidate.title);
+        setContent(candidate.content);
+      } else {
+        const extracted = await extractJobPostingFromUrl({
+          data: { sourceUrl: candidate.sourceUrl },
+        });
+        setSourceUrl(extracted.sourceUrl);
+        setTitle(extracted.title);
+        setContent(extracted.content);
+      }
+      toast.success("선택한 공고 내용을 불러왔습니다. 저장 전 내용을 확인해주세요.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "공고 내용을 불러오지 못했습니다.");
+    } finally {
+      setSelectingCandidateUrl(null);
+    }
+  }
+
+  async function listPostings() {
     if (!sourceUrl.trim()) {
       toast.error("잡코리아 공고 링크를 입력해주세요.");
       return;
     }
     setIsExtracting(true);
     try {
-      const extracted = await extractJobPostingFromUrl({ data: { sourceUrl: sourceUrl.trim() } });
-      setSourceUrl(extracted.sourceUrl);
-      setTitle(extracted.title);
-      setContent(extracted.content);
-      toast.success("공고 내용을 불러왔습니다. 저장 전 내용을 확인해주세요.");
+      const nextCandidates = await listJobPostingCandidatesFromUrl({
+        data: { sourceUrl: sourceUrl.trim() },
+      });
+      setCandidates(nextCandidates);
+      if (nextCandidates.length === 1) {
+        await selectCandidate(nextCandidates[0]);
+      } else {
+        toast.success(`${nextCandidates.length}개 공고를 찾았습니다. 저장할 공고를 선택해주세요.`);
+      }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "공고를 불러오지 못했습니다.");
+      toast.error(error instanceof Error ? error.message : "공고 목록을 불러오지 못했습니다.");
     } finally {
       setIsExtracting(false);
     }
@@ -1738,7 +1709,7 @@ function JobPostingDialog({
 
         <div className="grid gap-4 p-5">
           <label className="block">
-            <span className="text-xs font-medium text-neutral-600">직무</span>
+            <span className="text-xs font-medium text-neutral-600">저장할 Beginner 직무</span>
             <select
               value={roleLabel}
               onChange={(event) => setRoleLabel(event.target.value)}
@@ -1757,20 +1728,44 @@ function JobPostingDialog({
               <input
                 type="url"
                 value={sourceUrl}
-                onChange={(event) => setSourceUrl(event.target.value)}
-                placeholder="https://www.jobkorea.co.kr/..."
+                onChange={(event) => {
+                  setSourceUrl(event.target.value);
+                  setCandidates([]);
+                }}
+                placeholder="채용 공고 또는 기업 채용 공고 모음 링크"
                 className="mt-2 h-10 w-full rounded-md border border-neutral-300 px-3 text-sm outline-none focus:border-neutral-900"
               />
             </label>
             <button
               type="button"
-              onClick={() => void extractPosting()}
+              onClick={() => void listPostings()}
               disabled={isExtracting}
               className="h-10 rounded-md border border-neutral-300 px-3 text-xs font-medium text-neutral-800 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isExtracting ? "불러오는 중..." : "공고 불러오기"}
+              {isExtracting ? "불러오는 중..." : "공고 목록 불러오기"}
             </button>
           </div>
+          {candidates.length > 1 && (
+            <div>
+              <p className="text-xs font-medium text-neutral-600">저장할 채용 공고 선택</p>
+              <div className="mt-2 max-h-56 space-y-2 overflow-y-auto rounded-md border border-neutral-200 p-2">
+                {candidates.map((candidate) => (
+                  <button
+                    key={candidate.sourceUrl}
+                    type="button"
+                    onClick={() => void selectCandidate(candidate)}
+                    disabled={Boolean(selectingCandidateUrl)}
+                    className="flex w-full items-center justify-between gap-3 rounded border border-neutral-200 px-3 py-2 text-left text-sm text-neutral-800 hover:border-neutral-900 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <span className="min-w-0 truncate">{candidate.title}</span>
+                    <span className="shrink-0 text-xs text-neutral-500">
+                      {selectingCandidateUrl === candidate.sourceUrl ? "불러오는 중..." : "선택"}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <label className="block">
             <span className="text-xs font-medium text-neutral-600">공고 제목</span>
             <input
@@ -1833,11 +1828,22 @@ function InterviewMailDialog({
     setIsCopying(true);
     try {
       await navigator.clipboard.writeText(`제목: ${subject}\n\n${body}`);
-      await onInterviewProposed();
-      toast.success("메일 템플릿을 복사했습니다.");
-      onClose();
     } catch {
       toast.error("메일 템플릿을 복사하지 못했습니다.");
+      setIsCopying(false);
+      return;
+    }
+
+    try {
+      await onInterviewProposed();
+      toast.success("메일 템플릿을 복사했고, 지원 단계를 면접 제안으로 변경했습니다.");
+      onClose();
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? `템플릿은 복사했지만 단계 변경에 실패했습니다: ${error.message}`
+          : "템플릿은 복사했지만 지원 단계 변경에 실패했습니다.",
+      );
     } finally {
       setIsCopying(false);
     }

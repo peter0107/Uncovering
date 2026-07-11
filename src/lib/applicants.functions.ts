@@ -25,6 +25,12 @@ export type CompanyJobPosting = {
   updatedAt: string;
 };
 
+export type JobPostingCandidate = {
+  title: string;
+  sourceUrl: string;
+  content: string;
+};
+
 export type ApplicantAiReview = {
   applicantId: string;
   jobPostingId: string;
@@ -572,6 +578,90 @@ function extractJobPostingText(html: string) {
   ).slice(0, 60000);
 }
 
+function getJobKoreaUrl(sourceUrl: string) {
+  const url = new URL(sourceUrl);
+  const hostname = url.hostname.toLowerCase();
+  if (hostname !== "jobkorea.co.kr" && !hostname.endsWith(".jobkorea.co.kr")) {
+    throw new Error("현재는 잡코리아 공고 링크만 불러올 수 있습니다.");
+  }
+  return url;
+}
+
+async function fetchJobKoreaHtml(url: URL) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12000);
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; BeginnerHiringReview/1.0)",
+        Accept: "text/html,application/xhtml+xml",
+      },
+      signal: controller.signal,
+    });
+  } catch {
+    throw new Error("잡코리아 공고를 불러오지 못했습니다. 공고 내용을 직접 입력해주세요.");
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  if (!response.ok) {
+    throw new Error("잡코리아 공고를 불러오지 못했습니다. 공고 내용을 직접 입력해주세요.");
+  }
+
+  return response.text();
+}
+
+function extractJobPostingTitle(html: string) {
+  return (
+    extractMetaContent(html, "og:title") ||
+    extractMetaContent(html, "twitter:title") ||
+    (html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]
+      ? decodeHtmlEntities(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? "").trim()
+      : "잡코리아 채용 공고")
+  );
+}
+
+function extractJobPostingCandidates(html: string, sourceUrl: URL): JobPostingCandidate[] {
+  const candidates = new Map<string, JobPostingCandidate>();
+  const anchorPattern =
+    /<a\b[^>]*href=["']([^"']*\/Recruit\/GI_Read\/[^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi;
+
+  for (const match of html.matchAll(anchorPattern)) {
+    const href = decodeHtmlEntities(match[1]);
+    let postingUrl: URL;
+    try {
+      postingUrl = new URL(href, sourceUrl);
+    } catch {
+      continue;
+    }
+
+    if (postingUrl.hostname.toLowerCase() !== "www.jobkorea.co.kr") continue;
+    const titleMarkup =
+      match[2].match(/<dt[^>]*class=["'][^"']*\btit\b[^"']*["'][^>]*>([\s\S]*?)<\/dt>/i)?.[1] ??
+      match[2];
+    const title = extractJobPostingText(titleMarkup).replace(/\s+/g, " ").trim();
+    if (!title || candidates.has(postingUrl.toString())) continue;
+
+    candidates.set(postingUrl.toString(), {
+      title: title.slice(0, 300),
+      sourceUrl: postingUrl.toString(),
+      content: "",
+    });
+  }
+
+  const listed = Array.from(candidates.values()).slice(0, 50);
+  if (listed.length > 0) return listed;
+
+  return [
+    {
+      title: extractJobPostingTitle(html),
+      sourceUrl: sourceUrl.toString(),
+      content: extractJobPostingText(html),
+    },
+  ];
+}
+
 function extractJsonObject(value: string) {
   const trimmed = value
     .trim()
@@ -585,33 +675,25 @@ function extractJsonObject(value: string) {
   return JSON.parse(trimmed.slice(start, end + 1)) as unknown;
 }
 
-function getOpenAiOutput(payload: Record<string, unknown>) {
-  if (typeof payload.output_text === "string" && payload.output_text.trim()) {
-    return payload.output_text;
-  }
-  const output = Array.isArray(payload.output) ? payload.output : [];
-  return output
-    .flatMap((item) => {
-      if (typeof item !== "object" || item === null) return [];
-      const content = Array.isArray((item as { content?: unknown }).content)
-        ? ((item as { content: unknown[] }).content ?? [])
-        : [];
-      return content.flatMap((part) =>
-        typeof part === "object" &&
-        part !== null &&
-        typeof (part as { text?: unknown }).text === "string"
-          ? [(part as { text: string }).text]
-          : [],
-      );
-    })
+function getClaudeOutput(payload: Record<string, unknown>) {
+  const content = Array.isArray(payload.content) ? payload.content : [];
+  return content
+    .flatMap((part) =>
+      typeof part === "object" &&
+      part !== null &&
+      (part as { type?: unknown }).type === "text" &&
+      typeof (part as { text?: unknown }).text === "string"
+        ? [(part as { text: string }).text]
+        : [],
+    )
     .join("\n")
     .trim();
 }
 
 async function generateApplicantAiReview(applicant: Applicant, jobPosting: CompanyJobPosting) {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    throw new Error("OPENAI_API_KEY 환경변수를 Lovable에 설정해주세요.");
+    throw new Error("ANTHROPIC_API_KEY 환경변수를 Lovable에 설정해주세요.");
   }
 
   const applicantProfile = {
@@ -628,15 +710,17 @@ async function generateApplicantAiReview(applicant: Applicant, jobPosting: Compa
 
   const prompt = `당신은 채용 담당자를 돕는 평가 보조자입니다. 아래 채용 공고와 지원 자료를 비교하세요.\n\n규칙:\n- 보호 특성(나이, 성별, 출신, 건강, 가족상태 등)을 추정하거나 판단 근거로 사용하지 마세요.\n- 채용 합격/불합격을 결정하지 말고, 근거 기반의 검토 포인트만 제시하세요.\n- 점수는 0~100 정수로, 근거는 제공된 자료 안에서만 작성하세요.\n- 반드시 JSON만 반환하세요.\n\n반환 JSON 형식:\n{\n  "simulation": { "score": 0, "summary": "", "strengths": [""], "concerns": [""] },\n  "resumeFit": { "score": 0, "summary": "", "matched": [""], "gaps": [""] },\n  "interviewQuestions": [\n    { "category": "이력서·포트폴리오", "question": "", "intent": "" },\n    { "category": "시뮬레이션", "question": "", "intent": "" }\n  ]\n}\n\n채용 공고:\n제목: ${jobPosting.title}\n직무: ${jobPosting.roleLabel}\n내용:\n${jobPosting.content.slice(0, 14000)}\n\n지원자 자료:\n${JSON.stringify(applicantProfile).slice(0, 24000)}`;
 
-  const response = await fetch("https://api.openai.com/v1/responses", {
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${apiKey}`,
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: process.env.OPENAI_MODEL || "gpt-4.1-mini",
-      input: prompt,
+      model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6",
+      max_tokens: 2400,
+      messages: [{ role: "user", content: prompt }],
     }),
   });
 
@@ -651,7 +735,7 @@ async function generateApplicantAiReview(applicant: Applicant, jobPosting: Compa
     throw new Error(message);
   }
 
-  const output = getOpenAiOutput(payload);
+  const output = getClaudeOutput(payload);
   if (!output) throw new Error("AI 평가 결과를 받지 못했습니다.");
   return aiReviewAnalysisSchema.parse(extractJsonObject(output));
 }
@@ -1079,50 +1163,29 @@ export const setApplicantDecisionByCompanyCode = createServerFn({ method: "POST"
     return { applicantId: data.applicantId, reviewStage, decisionStatus: data.decisionStatus };
   });
 
+export const listJobPostingCandidatesFromUrl = createServerFn({ method: "POST" })
+  .inputValidator(jobPostingExtractInputSchema)
+  .handler(async ({ data }): Promise<JobPostingCandidate[]> => {
+    const url = getJobKoreaUrl(data.sourceUrl);
+    const html = await fetchJobKoreaHtml(url);
+    const candidates = extractJobPostingCandidates(html, url);
+    if (candidates.length === 0) {
+      throw new Error("선택할 수 있는 공고를 찾지 못했습니다. 공고 내용을 직접 입력해주세요.");
+    }
+    return candidates;
+  });
+
 export const extractJobPostingFromUrl = createServerFn({ method: "POST" })
   .inputValidator(jobPostingExtractInputSchema)
   .handler(async ({ data }): Promise<{ sourceUrl: string; title: string; content: string }> => {
-    const url = new URL(data.sourceUrl);
-    const hostname = url.hostname.toLowerCase();
-    if (hostname !== "jobkorea.co.kr" && !hostname.endsWith(".jobkorea.co.kr")) {
-      throw new Error("현재는 잡코리아 공고 링크만 불러올 수 있습니다.");
-    }
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 12000);
-    let response: Response;
-    try {
-      response = await fetch(url, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (compatible; BeginnerHiringReview/1.0)",
-          Accept: "text/html,application/xhtml+xml",
-        },
-        signal: controller.signal,
-      });
-    } catch {
-      throw new Error("잡코리아 공고를 불러오지 못했습니다. 공고 내용을 직접 입력해주세요.");
-    } finally {
-      clearTimeout(timeout);
-    }
-
-    if (!response.ok) {
-      throw new Error("잡코리아 공고를 불러오지 못했습니다. 공고 내용을 직접 입력해주세요.");
-    }
-
-    const html = await response.text();
+    const url = getJobKoreaUrl(data.sourceUrl);
+    const html = await fetchJobKoreaHtml(url);
     const content = extractJobPostingText(html);
     if (content.length < 120) {
       throw new Error("공고 본문을 충분히 읽지 못했습니다. 공고 내용을 직접 입력해주세요.");
     }
 
-    const title =
-      extractMetaContent(html, "og:title") ||
-      extractMetaContent(html, "twitter:title") ||
-      (html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]
-        ? decodeHtmlEntities(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? "").trim()
-        : "잡코리아 채용 공고");
-
-    return { sourceUrl: url.toString(), title, content };
+    return { sourceUrl: url.toString(), title: extractJobPostingTitle(html), content };
   });
 
 export const saveCompanyJobPostingByCode = createServerFn({ method: "POST" })
