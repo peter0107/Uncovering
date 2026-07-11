@@ -112,48 +112,53 @@ function AdminAiPrompts() {
           AI 프롬프트를 불러오는 중입니다...
         </div>
       ) : (
-        <section className="mt-6 max-w-5xl space-y-4">
-          {settings.map((setting) => (
-            <div key={setting.key} className="rounded-md border border-neutral-200">
-              <div className="border-b border-neutral-200 p-5">
-                <div className="flex items-start gap-3">
-                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-neutral-900 text-white">
-                    <Sparkles className="h-5 w-5" />
+        <section className="mt-6 max-w-none">
+          <div className="grid gap-4 lg:grid-cols-3">
+            {settings.map((setting) => (
+              <div
+                key={setting.key}
+                className="flex min-w-0 flex-col rounded-md border border-neutral-200"
+              >
+                <div className="border-b border-neutral-200 p-5">
+                  <div className="flex items-start gap-3">
+                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-neutral-900 text-white">
+                      <Sparkles className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h2 className="text-base font-semibold">{setting.label}</h2>
+                      <p className="mt-1 text-sm text-neutral-500">{setting.description}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="text-base font-semibold">{setting.label}</h2>
-                    <p className="mt-1 text-sm text-neutral-500">{setting.description}</p>
+                </div>
+                <div className="flex flex-1 flex-col p-5">
+                  <label htmlFor={`ai-prompt-${setting.key}`} className="text-sm font-medium">
+                    프롬프트 지침
+                  </label>
+                  <textarea
+                    id={`ai-prompt-${setting.key}`}
+                    value={setting.prompt}
+                    onChange={(event) => updatePrompt(setting.key, event.target.value)}
+                    className="mt-2 min-h-[360px] w-full flex-1 resize-y rounded-md border border-neutral-300 bg-white p-4 font-mono text-sm leading-6 text-neutral-900 outline-none focus:border-neutral-900"
+                  />
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-xs text-neutral-500">
+                      {setting.updatedAt
+                        ? `마지막 저장 ${setting.updatedAt}`
+                        : "기본 프롬프트 사용 중"}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => resetPrompt(setting.key)}
+                      className="inline-flex h-9 items-center gap-2 rounded-md border border-neutral-300 px-3 text-xs font-medium hover:bg-neutral-50"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" /> 기본값으로 되돌리기
+                    </button>
                   </div>
                 </div>
               </div>
-              <div className="p-5">
-                <label htmlFor={`ai-prompt-${setting.key}`} className="text-sm font-medium">
-                  프롬프트 지침
-                </label>
-                <textarea
-                  id={`ai-prompt-${setting.key}`}
-                  value={setting.prompt}
-                  onChange={(event) => updatePrompt(setting.key, event.target.value)}
-                  className="mt-2 min-h-[260px] w-full resize-y rounded-md border border-neutral-300 bg-white p-4 font-mono text-sm leading-6 text-neutral-900 outline-none focus:border-neutral-900"
-                />
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-xs text-neutral-500">
-                    {setting.updatedAt
-                      ? `마지막 저장 ${setting.updatedAt}`
-                      : "기본 프롬프트 사용 중"}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => resetPrompt(setting.key)}
-                    className="inline-flex h-9 items-center gap-2 rounded-md border border-neutral-300 px-3 text-xs font-medium hover:bg-neutral-50"
-                  >
-                    <RotateCcw className="h-3.5 w-3.5" /> 기본값으로 되돌리기
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-          <div className="flex justify-end">
+            ))}
+          </div>
+          <div className="mt-4 flex justify-end">
             <button
               type="button"
               onClick={savePrompts}
