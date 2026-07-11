@@ -115,16 +115,6 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* Keep hover feedback consistent without overriding destructive text or icon colors. */
-  @media (hover: hover) {
-    [class*="hover:bg-"]:hover {
-      background-color: var(--brand) !important;
-    }
-
-    [data-radix-popper-content-wrapper] [data-highlighted] {
-      background-color: var(--brand) !important;
-    }
-  }
 }
 
 @layer components {
