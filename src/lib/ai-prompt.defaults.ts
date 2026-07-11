@@ -1,20 +1,64 @@
-export const COMPANY_SIMULATION_AI_REVIEW_PROMPT_KEY = "company_simulation_ai_review";
+export const COMPANY_AI_PROMPT_KEYS = [
+  "company_simulation_result_review",
+  "company_ai_utilization_review",
+  "company_interview_question_recommendation",
+] as const;
 
-export const DEFAULT_COMPANY_SIMULATION_AI_REVIEW_PROMPT = `당신은 채용 담당자를 돕는 평가 보조자입니다. 아래 지원자의 직무 시뮬레이션 결과물과 AI 어시스트 대화 로그를 검토하세요.
+export type CompanyAiPromptKey = (typeof COMPANY_AI_PROMPT_KEYS)[number];
 
-규칙:
-- 보호 특성(나이, 성별, 출신, 건강, 가족상태 등)을 추정하거나 판단 근거로 사용하지 마세요.
-- 채용 합격/불합격을 결정하지 말고, 근거 기반의 검토 포인트만 제시하세요.
-- 점수는 0~100 정수로, 근거는 제공된 자료 안에서만 작성하세요.
-- AI 활용 능력은 제공된 AI 어시스트 대화 로그에서 확인되는 질문의 구체성, 검증, 반복 개선을 기준으로만 평가하세요. 대화 로그가 없다면 활용 기록이 없다고 명시하고 점수는 0점으로 작성하세요.
-- 반드시 JSON만 반환하세요.
+export const DEFAULT_COMPANY_SIMULATION_RESULT_PROMPT = `지원자의 직무 시뮬레이션 제출 답변을 평가하세요.
 
-반환 JSON 형식:
-{
-  "simulation": { "score": 0, "summary": "", "strengths": [""], "concerns": [""] },
-  "aiUtilization": { "score": 0, "summary": "", "strengths": [""], "improvements": [""] },
-  "interviewQuestions": [
-    { "category": "시뮬레이션 결과물", "question": "", "intent": "" },
-    { "category": "AI 활용", "question": "", "intent": "" }
-  ]
-}`;
+평가 기준:
+- 문제 정의와 상황 이해가 명확한가
+- 답변이 직무 맥락과 제출 과제에 맞게 구체적인가
+- 근거, 실행 방향, 우선순위가 설득력 있게 제시되었는가
+- 과장된 추론 없이 제출된 답변 안에서 강점과 확인할 점을 제시하세요.
+
+반환 대상 JSON 필드:
+"simulation": { "score": 0, "summary": "", "strengths": [""], "concerns": [""] }`;
+
+export const DEFAULT_COMPANY_AI_UTILIZATION_PROMPT = `지원자가 시뮬레이션 수행 중 AI 어시스트를 어떻게 활용했는지 평가하세요.
+
+평가 기준:
+- 질문이 구체적이고 업무 목표와 연결되어 있는가
+- AI 답변을 그대로 수용하지 않고 검증하거나 개선했는가
+- 반복 질문을 통해 결과물을 발전시켰는가
+- AI 어시스트 대화 로그가 없다면 활용 기록이 없다고 명시하고 score는 0점으로 작성하세요.
+
+반환 대상 JSON 필드:
+"aiUtilization": { "score": 0, "summary": "", "strengths": [""], "improvements": [""] }`;
+
+export const DEFAULT_COMPANY_INTERVIEW_QUESTIONS_PROMPT = `지원자의 시뮬레이션 답변과 AI 활용 기록을 바탕으로 면접 질문을 추천하세요.
+
+작성 기준:
+- 답변의 근거, 의사결정 과정, 실제 업무 적용 가능성을 확인하는 질문을 포함하세요.
+- AI 활용 기록이 있다면 질문 의도와 검증 방식을 확인하는 질문을 포함하세요.
+- 채용 합격/불합격을 유도하는 질문이 아니라, 추가 확인이 필요한 검토 질문으로 작성하세요.
+- 질문은 4~6개를 추천하세요.
+
+반환 대상 JSON 필드:
+"interviewQuestions": [
+  { "category": "시뮬레이션 결과물", "question": "", "intent": "" },
+  { "category": "AI 활용", "question": "", "intent": "" }
+]`;
+
+export const COMPANY_AI_PROMPT_DEFAULTS: Record<
+  CompanyAiPromptKey,
+  { label: string; description: string; prompt: string }
+> = {
+  company_simulation_result_review: {
+    label: "시뮬레이션 결과물 평가",
+    description: "지원자가 제출한 시뮬레이션 답변의 완성도와 검토 포인트를 평가합니다.",
+    prompt: DEFAULT_COMPANY_SIMULATION_RESULT_PROMPT,
+  },
+  company_ai_utilization_review: {
+    label: "AI 활용 능력 평가",
+    description: "AI 어시스트 대화 로그를 바탕으로 질문·검증·개선 과정을 평가합니다.",
+    prompt: DEFAULT_COMPANY_AI_UTILIZATION_PROMPT,
+  },
+  company_interview_question_recommendation: {
+    label: "면접 질문 추천",
+    description: "시뮬레이션 답변과 AI 활용 기록을 바탕으로 면접 질문을 추천합니다.",
+    prompt: DEFAULT_COMPANY_INTERVIEW_QUESTIONS_PROMPT,
+  },
+};

@@ -4,8 +4,9 @@ import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
 import {
-  COMPANY_SIMULATION_AI_REVIEW_PROMPT_KEY,
-  DEFAULT_COMPANY_SIMULATION_AI_REVIEW_PROMPT,
+  COMPANY_AI_PROMPT_DEFAULTS,
+  COMPANY_AI_PROMPT_KEYS,
+  type CompanyAiPromptKey,
 } from "@/lib/ai-prompt.defaults";
 import { DOMAIN_CATEGORIES } from "@/lib/domain-categories";
 
@@ -81,8 +82,9 @@ export type AdminSubmissionAnswer = {
 };
 
 export type AdminAiPromptSetting = {
-  key: typeof COMPANY_SIMULATION_AI_REVIEW_PROMPT_KEY;
+  key: CompanyAiPromptKey;
   label: string;
+  description: string;
   prompt: string;
   updatedAt: string | null;
 };
@@ -154,8 +156,15 @@ const simulationVisibilityInputSchema = simulationIdInputSchema.extend({
   isPublic: z.boolean(),
 });
 
-const adminAiPromptInputSchema = z.object({
-  prompt: z.string().trim().min(1).max(30000),
+const adminAiPromptSettingsInputSchema = z.object({
+  settings: z
+    .array(
+      z.object({
+        key: z.enum(COMPANY_AI_PROMPT_KEYS),
+        prompt: z.string().trim().min(1).max(30000),
+      }),
+    )
+    .min(1),
 });
 
 function createPublicServerClient() {
@@ -391,15 +400,14 @@ export const getAdminSubmissionAnswers = createServerFn({ method: "GET" }).handl
   },
 );
 
-export const getAdminAiPromptSetting = createServerFn({ method: "GET" }).handler(
-  async (): Promise<AdminAiPromptSetting> => {
+export const getAdminAiPromptSettings = createServerFn({ method: "GET" }).handler(
+  async (): Promise<AdminAiPromptSetting[]> => {
     await assertAdmin();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin
       .from("ai_prompt_settings")
-      .select("prompt, updated_at")
-      .eq("key", COMPANY_SIMULATION_AI_REVIEW_PROMPT_KEY)
-      .maybeSingle();
+      .select("key, prompt, updated_at")
+      .in("key", [...COMPANY_AI_PROMPT_KEYS]);
 
     if (error) {
       console.error("Failed to load AI prompt setting:", error);
@@ -408,26 +416,38 @@ export const getAdminAiPromptSetting = createServerFn({ method: "GET" }).handler
       );
     }
 
-    return {
-      key: COMPANY_SIMULATION_AI_REVIEW_PROMPT_KEY,
-      label: "시뮬레이션 AI 평가 프롬프트",
-      prompt: data?.prompt ?? DEFAULT_COMPANY_SIMULATION_AI_REVIEW_PROMPT,
-      updatedAt: data?.updated_at ? formatDateTime(data.updated_at) : null,
-    };
+    const rows = new Map(
+      ((data ?? []) as Array<{ key: string; prompt: string; updated_at: string | null }>).map(
+        (row) => [row.key, row],
+      ),
+    );
+
+    return COMPANY_AI_PROMPT_KEYS.map((key) => {
+      const defaultSetting = COMPANY_AI_PROMPT_DEFAULTS[key];
+      const saved = rows.get(key);
+      return {
+        key,
+        label: defaultSetting.label,
+        description: defaultSetting.description,
+        prompt: saved?.prompt ?? defaultSetting.prompt,
+        updatedAt: saved?.updated_at ? formatDateTime(saved.updated_at) : null,
+      };
+    });
   },
 );
 
-export const saveAdminAiPromptSetting = createServerFn({ method: "POST" })
-  .inputValidator(adminAiPromptInputSchema)
+export const saveAdminAiPromptSettings = createServerFn({ method: "POST" })
+  .inputValidator(adminAiPromptSettingsInputSchema)
   .handler(async ({ data }) => {
     await assertAdmin();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const now = new Date().toISOString();
     const { error } = await supabaseAdmin.from("ai_prompt_settings").upsert(
-      {
-        key: COMPANY_SIMULATION_AI_REVIEW_PROMPT_KEY,
-        prompt: data.prompt,
-        updated_at: new Date().toISOString(),
-      },
+      data.settings.map((setting) => ({
+        key: setting.key,
+        prompt: setting.prompt,
+        updated_at: now,
+      })),
       { onConflict: "key" },
     );
 

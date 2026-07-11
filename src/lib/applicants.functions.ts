@@ -2,8 +2,9 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import {
-  COMPANY_SIMULATION_AI_REVIEW_PROMPT_KEY,
-  DEFAULT_COMPANY_SIMULATION_AI_REVIEW_PROMPT,
+  COMPANY_AI_PROMPT_DEFAULTS,
+  COMPANY_AI_PROMPT_KEYS,
+  type CompanyAiPromptKey,
 } from "@/lib/ai-prompt.defaults";
 
 export type Status = "submitted" | "in_review" | "completed";
@@ -831,18 +832,50 @@ async function generateApplicantAiReview(applicant: Applicant) {
   };
 
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data: promptSetting, error: promptError } = await supabaseAdmin
+  const { data: promptSettings, error: promptError } = await supabaseAdmin
     .from("ai_prompt_settings")
-    .select("prompt")
-    .eq("key", COMPANY_SIMULATION_AI_REVIEW_PROMPT_KEY)
-    .maybeSingle();
+    .select("key, prompt")
+    .in("key", [...COMPANY_AI_PROMPT_KEYS]);
 
   if (promptError) {
     console.warn("Failed to load AI prompt setting, using default:", promptError.message);
   }
 
-  const promptInstructions =
-    promptSetting?.prompt?.trim() || DEFAULT_COMPANY_SIMULATION_AI_REVIEW_PROMPT;
+  const savedPrompts = new Map(
+    ((promptSettings ?? []) as Array<{ key: string; prompt: string }>).map((setting) => [
+      setting.key,
+      setting.prompt,
+    ]),
+  );
+  const getPrompt = (key: CompanyAiPromptKey) =>
+    savedPrompts.get(key)?.trim() || COMPANY_AI_PROMPT_DEFAULTS[key].prompt;
+
+  const promptInstructions = `당신은 채용 담당자를 돕는 평가 보조자입니다. 아래 지원자의 직무 시뮬레이션 결과물과 AI 어시스트 대화 로그를 검토하세요.
+
+공통 규칙:
+- 보호 특성(나이, 성별, 출신, 건강, 가족상태 등)을 추정하거나 판단 근거로 사용하지 마세요.
+- 채용 합격/불합격을 결정하지 말고, 근거 기반의 검토 포인트만 제시하세요.
+- 점수는 0~100 정수로 작성하고, 근거는 제공된 자료 안에서만 작성하세요.
+- 반드시 JSON만 반환하세요.
+
+[1. 시뮬레이션 결과물 평가 프롬프트]
+${getPrompt("company_simulation_result_review")}
+
+[2. AI 활용 능력 평가 프롬프트]
+${getPrompt("company_ai_utilization_review")}
+
+[3. 면접 질문 추천 프롬프트]
+${getPrompt("company_interview_question_recommendation")}
+
+최종 반환 JSON 형식:
+{
+  "simulation": { "score": 0, "summary": "", "strengths": [""], "concerns": [""] },
+  "aiUtilization": { "score": 0, "summary": "", "strengths": [""], "improvements": [""] },
+  "interviewQuestions": [
+    { "category": "시뮬레이션 결과물", "question": "", "intent": "" },
+    { "category": "AI 활용", "question": "", "intent": "" }
+  ]
+}`;
   const prompt = `${promptInstructions}\n\n평가 자료:\n${JSON.stringify(evaluationMaterial).slice(0, 30000)}`;
 
   const response = await fetch("https://api.anthropic.com/v1/messages", {
