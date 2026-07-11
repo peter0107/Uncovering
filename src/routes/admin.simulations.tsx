@@ -113,6 +113,8 @@ type AssetDragState = {
   overflowY: number;
 };
 
+const ASSET_DRAG_SENSITIVITY = 1.4;
+
 const EMPTY_COMPANY_FORM: CompanyForm = {
   name: "",
   code: "",
@@ -463,13 +465,15 @@ function AdminSimulations() {
     const offsetX =
       drag.overflowX > 0
         ? clampAssetOffset(
-            drag.startOffsetX - ((event.clientX - drag.startX) * 100) / drag.overflowX,
+            drag.startOffsetX -
+              ((event.clientX - drag.startX) * 100 * ASSET_DRAG_SENSITIVITY) / drag.overflowX,
           )
         : drag.startOffsetX;
     const offsetY =
       drag.overflowY > 0
         ? clampAssetOffset(
-            drag.startOffsetY - ((event.clientY - drag.startY) * 100) / drag.overflowY,
+            drag.startOffsetY -
+              ((event.clientY - drag.startY) * 100 * ASSET_DRAG_SENSITIVITY) / drag.overflowY,
           )
         : drag.startOffsetY;
     updateAssetEditor({ offsetX, offsetY });

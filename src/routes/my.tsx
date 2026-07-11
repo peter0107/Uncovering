@@ -181,6 +181,7 @@ const MAX_RESUME_PHOTO_BYTES = 5 * 1024 * 1024;
 const AVATAR_EXPORT_SIZE = 512;
 const RESUME_PHOTO_EXPORT_WIDTH = 900;
 const RESUME_PHOTO_EXPORT_HEIGHT = 1200;
+const PHOTO_DRAG_SENSITIVITY = 1.4;
 
 const EMPTY_RESUME_FORM: ResumeForm = {
   title: "",
@@ -1472,12 +1473,18 @@ function MyPage() {
     event.preventDefault();
     if (drag.overflowX > 0) {
       setOffsetX(
-        clampCropOffset(drag.startOffsetX - ((event.clientX - drag.startX) * 100) / drag.overflowX),
+        clampCropOffset(
+          drag.startOffsetX -
+            ((event.clientX - drag.startX) * 100 * PHOTO_DRAG_SENSITIVITY) / drag.overflowX,
+        ),
       );
     }
     if (drag.overflowY > 0) {
       setOffsetY(
-        clampCropOffset(drag.startOffsetY - ((event.clientY - drag.startY) * 100) / drag.overflowY),
+        clampCropOffset(
+          drag.startOffsetY -
+            ((event.clientY - drag.startY) * 100 * PHOTO_DRAG_SENSITIVITY) / drag.overflowY,
+        ),
       );
     }
   };
