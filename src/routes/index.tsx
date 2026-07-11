@@ -348,15 +348,15 @@ function Index() {
             <Brand />
             <span>© 2026</span>
           </div>
-          <nav className="flex flex-wrap gap-x-5 gap-y-2">
-            <Link to="/simulations" className="hover:text-[#4B5563]">
-              시뮬레이션
+          <nav className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <a href="#faq" className="hover:text-[#4B5563]">
+              자주 묻는 질문
+            </a>
+            <Link to="/terms" className="hover:text-[#4B5563]">
+              이용약관
             </Link>
-            <Link to="/biz" className="hover:text-[#4B5563]">
-              기업용
-            </Link>
-            <Link to="/login" search={{ redirect: "/" }} className="hover:text-[#4B5563]">
-              로그인
+            <Link to="/privacy" className="hover:text-[#4B5563]">
+              개인정보처리방침
             </Link>
           </nav>
         </div>
