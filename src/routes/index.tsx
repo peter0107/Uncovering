@@ -276,9 +276,9 @@ function Index() {
         <section className="border-b border-[#EEF0F4]">
           <div className="mx-auto grid max-w-[760px] grid-cols-3 gap-3 px-5 pb-16 text-center sm:gap-12 sm:px-8 sm:pb-20">
             {[
-              ["3단계", "시작부터 제안까지"],
-              ["맞춤", "관심 정보 기반 추천"],
-              ["실무", "현업 과제 직접 경험"],
+              ["120+", "직무 시뮬레이션"],
+              ["80+", "참여 기업"],
+              ["1,400+", "전달된 채용 제안"],
             ].map(([value, label]) => (
               <div key={value}>
                 <p className="text-xl font-extrabold tracking-[-0.04em] text-[#2B5CE7] sm:text-3xl">
