@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "kill-ai-slop": {
+      "source": "yetone/kill-ai-slop",
+      "sourceType": "github",
+      "skillPath": "skill/SKILL.md",
+      "computedHash": "c5a6ed03f8334dc372705a3fcf904d132e9a208dec1143d4dc00d595314dddf4"
+    }
+  }
+}

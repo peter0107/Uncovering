@@ -112,7 +112,7 @@ function OnboardingPage() {
       {/* 상단 진행 바 */}
       <div className="h-1 bg-zinc-100">
         <div
-          className="h-full bg-zinc-900 transition-all duration-300"
+          className="h-full bg-zinc-900 transition-[width] duration-300"
           style={{ width: `${progress}%` }}
         />
       </div>
@@ -137,9 +137,7 @@ function OnboardingPage() {
               </div>
             ))}
           </div>
-          <span className="text-xs text-zinc-400">
-            {step} / 5
-          </span>
+          <span className="text-xs text-zinc-400">{step} / 5</span>
         </div>
 
         {/* 단계별 콘텐츠 */}

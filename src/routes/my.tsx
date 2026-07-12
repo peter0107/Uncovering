@@ -734,7 +734,9 @@ function splitEducationDescription(description: string) {
 
   const categoryMatch = description.match(/^\[(고등학교|학사|석사|박사|전문학사)\]\s*/);
   const category = categoryMatch?.[1] ?? "";
-  const withoutCategory = category ? description.slice(categoryMatch?.[0].length ?? 0).trim() : description;
+  const withoutCategory = category
+    ? description.slice(categoryMatch?.[0].length ?? 0).trim()
+    : description;
   const statusMatch = withoutCategory.match(/\((재학|휴학|졸업|졸업예정|중퇴|수료)\)$/);
   const status = statusMatch?.[1] ?? "";
   const withoutStatus = status
@@ -964,7 +966,9 @@ function formFromResume(resume: Resume, userEmail: string, seeker: JobSeeker | n
       ? educationRows.map((education) => {
           const parsedEducation = splitEducationDescription(asString(education.description));
           return createResumeEducation({
-            category: normalizeEducationCategory(asString(education.category) || parsedEducation.category),
+            category: normalizeEducationCategory(
+              asString(education.category) || parsedEducation.category,
+            ),
             school: asString(education.school) || parsedEducation.school,
             major: asString(education.major) || parsedEducation.major,
             status: normalizeEducationStatus(asString(education.status) || parsedEducation.status),
@@ -1956,7 +1960,7 @@ function MyPage() {
           <Button
             onClick={saveSection}
             disabled={savingSection}
-            className="rounded-xl bg-zinc-900 text-white hover:bg-zinc-700"
+            className="rounded-md bg-zinc-900 text-white hover:bg-zinc-700"
           >
             {savingSection ? "저장 중..." : "저장"}
           </Button>
@@ -1964,7 +1968,7 @@ function MyPage() {
             variant="outline"
             onClick={cancelEditSection}
             disabled={savingSection}
-            className="rounded-xl"
+            className="rounded-md"
           >
             취소
           </Button>
@@ -2375,7 +2379,7 @@ function MyPage() {
             온보딩을 완료하면 프로필과 추천 시뮬레이션을 볼 수 있어요.
           </p>
           <Link to="/onboarding">
-            <Button className="mt-6 rounded-xl bg-zinc-900 text-white hover:bg-zinc-700">
+            <Button className="mt-6 rounded-md bg-zinc-900 text-white hover:bg-zinc-700">
               온보딩 시작하기
             </Button>
           </Link>
@@ -2424,7 +2428,7 @@ function MyPage() {
                   value={draftDisplayName}
                   onChange={(e) => setDraftDisplayName(e.target.value)}
                   placeholder="이름을 입력해주세요"
-                  className="h-10 max-w-xs rounded-xl text-lg font-bold text-zinc-900"
+                  className="h-10 max-w-xs rounded-md text-lg font-bold text-zinc-900"
                 />
               ) : (
                 <p className="text-lg font-bold text-zinc-900">{displayName}</p>
@@ -2475,7 +2479,7 @@ function MyPage() {
                     <Button
                       onClick={saveProfileCard}
                       disabled={savingProfileCard}
-                      className="rounded-xl bg-zinc-900 text-white hover:bg-zinc-700"
+                      className="rounded-md bg-zinc-900 text-white hover:bg-zinc-700"
                     >
                       {savingProfileCard ? "저장 중..." : "저장"}
                     </Button>
@@ -2483,7 +2487,7 @@ function MyPage() {
                       variant="outline"
                       onClick={cancelEditProfileCard}
                       disabled={savingProfileCard}
-                      className="rounded-xl"
+                      className="rounded-md"
                     >
                       취소
                     </Button>
@@ -2684,7 +2688,7 @@ function MyPage() {
           </div>
           <Button
             onClick={openNewResume}
-            className="shrink-0 rounded-xl bg-zinc-900 text-white hover:bg-zinc-700"
+            className="shrink-0 rounded-md bg-zinc-900 text-white hover:bg-zinc-700"
           >
             <FilePlus2 className="mr-2 h-4 w-4" /> 새 이력서
           </Button>
@@ -2751,7 +2755,7 @@ function MyPage() {
                     </span>
                     <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
                       {resume.is_default && (
-                        <span className="whitespace-nowrap rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-600">
+                        <span className="whitespace-nowrap rounded-sm border border-zinc-200 bg-white px-2.5 py-1 text-xs font-semibold text-zinc-600">
                           기본
                         </span>
                       )}
@@ -3193,17 +3197,14 @@ function MyPage() {
                   type="button"
                   variant="outline"
                   onClick={addResumeEducation}
-                  className="h-8 rounded-xl px-3 text-xs"
+                  className="h-8 rounded-md px-3 text-xs"
                 >
                   <FilePlus2 className="mr-1.5 h-3.5 w-3.5" /> 추가
                 </Button>
               </div>
               <div className="mt-4 divide-y divide-zinc-200">
                 {resumeForm.educations.map((education, index) => (
-                  <div
-                    key={education.id}
-                    className="py-6 first:pt-0 last:pb-0"
-                  >
+                  <div key={education.id} className="py-6 first:pt-0 last:pb-0">
                     <div className="mb-4 flex items-center justify-between gap-3">
                       <p className="text-xs font-semibold text-zinc-500">학력 {index + 1}</p>
                       <div className="flex items-center gap-1">
@@ -3317,7 +3318,7 @@ function MyPage() {
               <div className="flex items-center justify-between gap-3">
                 <h3 className="text-sm font-bold text-zinc-900">
                   경력
-                  <span className="ml-2 rounded bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-600">
+                  <span className="ml-2 rounded-sm border border-zinc-200 bg-white px-2 py-1 text-xs font-semibold text-zinc-600">
                     총{" "}
                     {formatDuration(
                       resumeForm.experiences.reduce(
@@ -3331,17 +3332,14 @@ function MyPage() {
                   type="button"
                   variant="outline"
                   onClick={addResumeExperience}
-                  className="h-8 rounded-xl px-3 text-xs"
+                  className="h-8 rounded-md px-3 text-xs"
                 >
                   <FilePlus2 className="mr-1.5 h-3.5 w-3.5" /> 추가
                 </Button>
               </div>
               <div className="mt-4 divide-y divide-zinc-200">
                 {resumeForm.experiences.map((experience, index) => (
-                  <div
-                    key={experience.id}
-                    className="py-6 first:pt-0 last:pb-0"
-                  >
+                  <div key={experience.id} className="py-6 first:pt-0 last:pb-0">
                     <div className="mb-4 flex items-center justify-between gap-3">
                       <p className="text-xs font-semibold text-zinc-500">경력 {index + 1}</p>
                       <div className="flex items-center gap-1">
@@ -3516,17 +3514,14 @@ function MyPage() {
                   type="button"
                   variant="outline"
                   onClick={addResumeActivity}
-                  className="h-8 rounded-xl px-3 text-xs"
+                  className="h-8 rounded-md px-3 text-xs"
                 >
                   <FilePlus2 className="mr-1.5 h-3.5 w-3.5" /> 추가
                 </Button>
               </div>
               <div className="mt-4 divide-y divide-zinc-200">
                 {resumeForm.activities.map((activity, index) => (
-                  <div
-                    key={activity.id}
-                    className="py-6 first:pt-0 last:pb-0"
-                  >
+                  <div key={activity.id} className="py-6 first:pt-0 last:pb-0">
                     <div className="mb-4 flex items-center justify-between gap-3">
                       <p className="text-xs font-semibold text-zinc-500">활동 {index + 1}</p>
                       <div className="flex items-center gap-1">

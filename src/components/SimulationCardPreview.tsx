@@ -29,14 +29,6 @@ const DEFAULT_CARD_IMAGES = [
 const DEFAULT_CARD_IMAGE =
   "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=900&q=80";
 
-const LOGO_TONES = [
-  "bg-indigo-100 text-indigo-700",
-  "bg-sky-100 text-sky-700",
-  "bg-emerald-100 text-emerald-700",
-  "bg-amber-100 text-amber-700",
-  "bg-rose-100 text-rose-700",
-];
-
 type SimulationCardPreviewProps = {
   companyName: string;
   companyDescription?: string | null;
@@ -56,10 +48,6 @@ type SimulationCardPreviewProps = {
   onImageClick?: () => void;
   className?: string;
 };
-
-function hashText(value: string) {
-  return Array.from(value).reduce((sum, char) => sum + char.charCodeAt(0), 0);
-}
 
 function getLogoText(companyName: string) {
   const trimmed = companyName.trim();
@@ -102,7 +90,6 @@ export function SimulationCardPreview({
   const summary = (description?.trim() || title.trim()).replace(/\s+/g, " ");
   const imageUrl = cardImageUrl?.trim() || getFallbackImage(domain ?? "", resolvedRole, title);
   const logoText = getLogoText(resolvedCompanyName);
-  const logoTone = LOGO_TONES[hashText(resolvedCompanyName) % LOGO_TONES.length];
   const logoContent = companyLogoUrl?.trim() ? (
     <img
       src={companyLogoUrl.trim()}
@@ -110,13 +97,14 @@ export function SimulationCardPreview({
       className="h-full w-full object-cover"
     />
   ) : (
-    <span className={cn("grid h-full w-full place-items-center", logoTone)}>{logoText}</span>
+    <span className="grid h-full w-full place-items-center bg-brand-soft text-brand">
+      {logoText}
+    </span>
   );
   const logoClassName = cn(
     "grid shrink-0 place-items-center overflow-hidden rounded-md bg-white font-bold text-neutral-900",
     compact ? "h-9 w-9 text-sm" : "h-10 w-10 text-base",
-    onLogoClick &&
-      "cursor-pointer ring-1 ring-white/30 transition-all hover:scale-105 hover:ring-2 hover:ring-white",
+    onLogoClick && "cursor-pointer ring-1 ring-white/30 transition-colors hover:ring-white",
   );
 
   return (
@@ -137,10 +125,13 @@ export function SimulationCardPreview({
           onImageClick();
         }}
       >
-        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url("${imageUrl}")` }} />
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url("${imageUrl}")` }}
+        />
         <div className="absolute inset-0 bg-black/45" />
         {onImageClick && (
-          <div className="pointer-events-none absolute inset-0 bg-white/0 ring-0 ring-inset ring-white/0 transition-all group-hover/image:bg-white/10 group-hover/image:ring-2 group-hover/image:ring-white/60" />
+          <div className="pointer-events-none absolute inset-0 bg-white/0 ring-0 ring-inset ring-white/0 transition-colors group-hover/image:bg-white/10 group-hover/image:ring-2 group-hover/image:ring-white/60" />
         )}
         <div className="relative flex h-full items-end gap-2.5 p-3">
           {onLogoClick ? (

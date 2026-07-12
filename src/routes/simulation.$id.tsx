@@ -46,7 +46,7 @@ export const Route = createFileRoute("/simulation/$id")({
     preview: z
       .union([z.literal("1"), z.literal(1), z.literal(true)])
       .optional()
-      .transform((v) => (v == null ? undefined : "1" as const)),
+      .transform((v) => (v == null ? undefined : ("1" as const))),
   }),
   component: SimulationDetailPage,
 });
@@ -119,7 +119,7 @@ function StepMeta({ step }: { step: WizardStep }) {
         </span>
       )}
       {step.difficulty != null && (
-        <span className="text-amber-500">
+        <span className="text-zinc-700">
           {"★".repeat(Math.max(0, Math.min(5, step.difficulty)))}
           <span className="text-zinc-200">
             {"★".repeat(Math.max(0, 5 - Math.min(5, step.difficulty)))}

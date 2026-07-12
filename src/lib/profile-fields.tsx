@@ -295,7 +295,7 @@ export function Chip({
       type="button"
       onClick={onClick}
       className={cn(
-        "rounded-full border px-4 py-2 text-sm font-medium transition-all",
+        "rounded-md border px-4 py-2 text-sm font-medium transition-colors",
         selected
           ? "border-zinc-900 bg-zinc-900 text-white"
           : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-400",
@@ -320,9 +320,9 @@ function splitEducationLevel(value: string) {
     EDUCATION_SCHOOL_TYPES.find((item) => value.includes(item)) ??
     (value.includes("대학교") ? "학부" : "");
   const status =
-    [...EDUCATION_STATUS_OPTIONS].sort((a, b) => b.length - a.length).find((item) =>
-      value.includes(item),
-    ) ?? "";
+    [...EDUCATION_STATUS_OPTIONS]
+      .sort((a, b) => b.length - a.length)
+      .find((item) => value.includes(item)) ?? "";
   return { schoolType, status };
 }
 
@@ -347,7 +347,10 @@ export function EducationFields({
   return (
     <div>
       {showHeader && (
-        <SectionHeader title="최종 학력을 알려주세요" subtitle="맞춤 시뮬레이션 추천에 활용됩니다" />
+        <SectionHeader
+          title="최종 학력을 알려주세요"
+          subtitle="맞춤 시뮬레이션 추천에 활용됩니다"
+        />
       )}
 
       {/* 학교명 */}
@@ -359,7 +362,7 @@ export function EducationFields({
           placeholder="예: 연세대학교"
           value={data.university_name}
           onChange={(e) => setData({ university_name: e.target.value })}
-          className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-900"
+          className="w-full rounded-md border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-900"
         />
         <datalist id="profile-university-options">
           {UNIVERSITY_OPTIONS.map((school) => (
@@ -379,7 +382,7 @@ export function EducationFields({
             const value = e.target.value;
             setData({ majors: value.trim() ? [value] : [] });
           }}
-          className="w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-900"
+          className="w-full rounded-md border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-900"
         />
       </div>
 
@@ -424,7 +427,7 @@ export function EducationFields({
           placeholder="예: 3.8"
           value={data.academic_mark}
           onChange={(e) => setData({ academic_mark: e.target.value })}
-          className="w-32 rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-900"
+          className="w-32 rounded-md border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-zinc-900"
         />
         <span className="ml-2 text-sm text-zinc-400">/ 4.5</span>
       </div>
@@ -584,7 +587,7 @@ export function WorkPreferenceFields({
           type="button"
           onClick={() => setData({ willing_to_relocate: !data.willing_to_relocate })}
           className={cn(
-            "flex items-center gap-3 rounded-xl border-2 px-5 py-4 text-sm font-medium transition-all",
+            "flex items-center gap-3 rounded-md border-2 px-5 py-4 text-sm font-medium transition-colors",
             data.willing_to_relocate
               ? "border-zinc-900 bg-zinc-900 text-white"
               : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300",
@@ -616,7 +619,7 @@ export function DiscoveryConsentFields({
     <div>
       <SectionHeader title="채용 제안을 받아볼까요?" />
 
-      <div className="mb-8 rounded-2xl bg-zinc-50 p-6 text-sm leading-relaxed text-zinc-600">
+      <div className="mb-8 border-y border-zinc-200 py-5 text-sm leading-relaxed text-zinc-600">
         <p>
           내가 수행한 시뮬레이션 답안과 프로필을 기반으로, 관심 기업의 담당자가
           <strong className="text-zinc-900"> 이메일로 채용 제안</strong>을 보낼 수 있게 됩니다.
@@ -632,7 +635,7 @@ export function DiscoveryConsentFields({
           type="button"
           onClick={() => setData({ discovery_consent: true })}
           className={cn(
-            "w-full rounded-xl border-2 px-6 py-5 text-left transition-all",
+            "w-full rounded-md border-2 px-6 py-5 text-left transition-colors",
             data.discovery_consent
               ? "border-zinc-900 bg-zinc-900 text-white"
               : "border-zinc-200 bg-white text-zinc-800 hover:border-zinc-400",
@@ -653,7 +656,7 @@ export function DiscoveryConsentFields({
           type="button"
           onClick={() => setData({ discovery_consent: false })}
           className={cn(
-            "w-full rounded-xl border-2 px-6 py-5 text-left transition-all",
+            "w-full rounded-md border-2 px-6 py-5 text-left transition-colors",
             !data.discovery_consent
               ? "border-zinc-900 bg-zinc-900 text-white"
               : "border-zinc-200 bg-white text-zinc-800 hover:border-zinc-400",
