@@ -298,7 +298,7 @@ export function Chip({
       onClick={onClick}
       className={cn(
         "px-4 py-2 text-sm font-medium transition-colors",
-        appearance === "filled" ? "rounded-lg" : "rounded-full border",
+        appearance === "filled" ? "rounded-full" : "rounded-full border",
         selected
           ? appearance === "filled"
             ? "bg-zinc-900 text-white"
