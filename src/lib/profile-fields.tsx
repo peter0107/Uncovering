@@ -295,7 +295,7 @@ export function Chip({
       type="button"
       onClick={onClick}
       className={cn(
-        "rounded-md border px-4 py-2 text-sm font-medium transition-colors",
+        "rounded-full border px-4 py-2 text-sm font-medium transition-colors",
         selected
           ? "border-zinc-900 bg-zinc-900 text-white"
           : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-400",
