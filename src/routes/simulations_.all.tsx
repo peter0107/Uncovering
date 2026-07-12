@@ -83,7 +83,7 @@ function AllSimulationsPage() {
               type="button"
               onClick={() => setSelectedDomain(null)}
               className={cn(
-                "rounded-full border px-3 py-1 text-xs transition-colors",
+                "rounded-md border px-3 py-1 text-xs transition-colors",
                 selectedDomain === null
                   ? "border-zinc-900 bg-zinc-900 text-white"
                   : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-500",
