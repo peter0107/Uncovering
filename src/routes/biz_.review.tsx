@@ -1288,7 +1288,7 @@ function ApplicantDetail({
               title={
                 <span className="inline-flex flex-wrap items-center gap-2">
                   경력
-                  <span className="rounded-sm border border-neutral-200 bg-white px-2 py-1 text-xs font-semibold text-neutral-600">
+                  <span className="rounded bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-600">
                     {applicant.experience}
                   </span>
                 </span>
@@ -1307,7 +1307,7 @@ function ApplicantDetail({
                             "경력"}
                         </p>
                         {experience.duration && (
-                          <span className="rounded-sm border border-neutral-200 bg-white px-2 py-1 text-xs font-semibold text-neutral-600">
+                          <span className="rounded bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-600">
                             {experience.duration}
                           </span>
                         )}
