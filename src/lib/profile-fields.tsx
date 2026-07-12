@@ -285,27 +285,18 @@ export function Chip({
   label,
   selected,
   onClick,
-  appearance = "outlined",
 }: {
   label: string;
   selected: boolean;
   onClick: () => void;
-  appearance?: "outlined" | "filled";
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        "px-4 py-2 text-sm font-medium transition-colors",
-        appearance === "filled" ? "rounded-full" : "rounded-full border",
-        selected
-          ? appearance === "filled"
-            ? "bg-zinc-900 text-white"
-            : "border-zinc-900 bg-zinc-900 text-white"
-          : appearance === "filled"
-            ? "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
-            : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-400",
+        "rounded-full px-4 py-2 text-sm font-medium transition-colors",
+        selected ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
       )}
     >
       {label}
@@ -476,7 +467,6 @@ export function JobInterestFields({
             label={job}
             selected={data.job_interests.includes(job)}
             onClick={() => toggle(job)}
-            appearance="filled"
           />
         ))}
       </div>
