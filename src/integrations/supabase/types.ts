@@ -712,6 +712,7 @@ export type Database = {
           location: string
           name: string
           phone: string
+          photo_path: string
           portfolio: Json
           preferred_region: string
           recent_job: string
