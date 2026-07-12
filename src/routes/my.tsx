@@ -2755,7 +2755,7 @@ function MyPage() {
                     </span>
                     <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
                       {resume.is_default && (
-                        <span className="whitespace-nowrap rounded-sm border border-zinc-200 bg-white px-2.5 py-1 text-xs font-semibold text-zinc-600">
+                        <span className="whitespace-nowrap rounded bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-600">
                           기본
                         </span>
                       )}
