@@ -3182,7 +3182,7 @@ function MyPage() {
                 {resumeForm.educations.map((education, index) => (
                   <div
                     key={education.id}
-                    className="rounded-xl border border-zinc-200 bg-zinc-50 p-4"
+                    className="rounded-[6px] border border-zinc-200 bg-zinc-50 p-4"
                   >
                     <div className="mb-4 flex items-center justify-between gap-3">
                       <p className="text-xs font-semibold text-zinc-500">학력 {index + 1}</p>
@@ -3290,7 +3290,7 @@ function MyPage() {
                 {resumeForm.experiences.map((experience, index) => (
                   <div
                     key={experience.id}
-                    className="rounded-xl border border-zinc-200 bg-zinc-50 p-4"
+                    className="rounded-[6px] border border-zinc-200 bg-zinc-50 p-4"
                   >
                     <div className="mb-4 flex items-center justify-between gap-3">
                       <p className="text-xs font-semibold text-zinc-500">경력 {index + 1}</p>
@@ -3475,7 +3475,7 @@ function MyPage() {
                 {resumeForm.activities.map((activity, index) => (
                   <div
                     key={activity.id}
-                    className="rounded-xl border border-zinc-200 bg-zinc-50 p-4"
+                    className="rounded-[6px] border border-zinc-200 bg-zinc-50 p-4"
                   >
                     <div className="mb-4 flex items-center justify-between gap-3">
                       <p className="text-xs font-semibold text-zinc-500">활동 {index + 1}</p>
