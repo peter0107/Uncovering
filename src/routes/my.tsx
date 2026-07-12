@@ -2351,7 +2351,7 @@ function MyPage() {
   if (!hasProfile) {
     return (
       <div className="mx-auto max-w-md px-4 py-16">
-        <Card className="p-8 text-center shadow-none">
+        <Card className="rounded-[6px] p-8 text-center shadow-none">
           <h1 className="text-xl font-bold text-zinc-900">아직 프로필이 없어요</h1>
           <p className="mt-2 text-sm text-zinc-500">
             온보딩을 완료하면 프로필과 추천 시뮬레이션을 볼 수 있어요.
@@ -2371,7 +2371,7 @@ function MyPage() {
     <div className="mx-auto max-w-2xl px-4 py-12 [&_button]:!shadow-none [&_input]:!shadow-none [&_textarea]:!shadow-none [&_[role=combobox]]:!shadow-none">
       <h1 className="text-2xl font-bold text-zinc-900">프로필</h1>
 
-      <Card className="mt-6 p-6 shadow-none">
+      <Card className="mt-6 rounded-[6px] p-6 shadow-none">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-4">
             <div className="relative shrink-0">
@@ -2525,7 +2525,7 @@ function MyPage() {
         </div>
       </Card>
 
-      <div className="mt-4 flex items-center justify-between gap-4 rounded-xl border border-zinc-200 bg-white px-5 py-4">
+      <div className="mt-4 flex items-center justify-between gap-4 rounded-[6px] border border-zinc-200 bg-white px-5 py-4">
         <div className="flex items-start gap-3">
           <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400" />
           <div>
@@ -2542,7 +2542,7 @@ function MyPage() {
         />
       </div>
 
-      <Card className="mt-4 p-6 shadow-none">
+      <Card className="mt-4 rounded-[6px] p-6 shadow-none">
         <>
           <SectionRow
             icon={GraduationCap}
@@ -2674,7 +2674,7 @@ function MyPage() {
           <button
             type="button"
             onClick={openNewResume}
-            className="flex min-h-36 flex-col items-start rounded-2xl border border-dashed border-zinc-300 bg-white p-5 text-left transition hover:border-zinc-900 hover:bg-zinc-50"
+            className="flex min-h-36 flex-col items-start rounded-[6px] border border-dashed border-zinc-300 bg-white p-5 text-left transition hover:border-zinc-900 hover:bg-zinc-50"
           >
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 text-zinc-700">
               <FilePlus2 className="h-5 w-5" />
@@ -2689,7 +2689,7 @@ function MyPage() {
             type="button"
             onClick={() => resumeFileInputRef.current?.click()}
             disabled={uploadingResume}
-            className="flex min-h-36 flex-col items-start rounded-2xl border border-dashed border-zinc-300 bg-white p-5 text-left transition hover:border-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex min-h-36 flex-col items-start rounded-[6px] border border-dashed border-zinc-300 bg-white p-5 text-left transition hover:border-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-100 text-zinc-700">
               <Upload className="h-5 w-5" />
@@ -2709,9 +2709,9 @@ function MyPage() {
         </div>
 
         {resumesLoading ? (
-          <Skeleton className="mt-4 h-32 w-full rounded-2xl" />
+          <Skeleton className="mt-4 h-32 w-full rounded-[6px]" />
         ) : resumes.length === 0 ? (
-          <Card className="mt-4 p-6 text-center text-sm text-zinc-400 shadow-none">
+          <Card className="mt-4 rounded-[6px] p-6 text-center text-sm text-zinc-400 shadow-none">
             <FileText className="mx-auto h-8 w-8 opacity-40" />
             <p className="mt-2">아직 등록된 이력서가 없어요.</p>
           </Card>
@@ -2723,7 +2723,7 @@ function MyPage() {
               return (
                 <Card
                   key={resume.id}
-                  className="flex min-h-36 flex-col rounded-2xl border-zinc-200 p-5 shadow-none"
+                  className="flex min-h-36 flex-col rounded-[6px] border-zinc-200 p-5 shadow-none"
                 >
                   <div className="flex items-center gap-2">
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-zinc-700">
@@ -2805,7 +2805,7 @@ function MyPage() {
         {history === null ? (
           <Skeleton className="mt-4 h-24 w-full" />
         ) : history.length === 0 ? (
-          <Card className="mt-4 p-6 text-center text-sm text-zinc-400 shadow-none">
+          <Card className="mt-4 rounded-[6px] p-6 text-center text-sm text-zinc-400 shadow-none">
             <FileText className="mx-auto h-8 w-8 opacity-40" />
             <p className="mt-2">아직 완료한 시뮬레이션이 없어요.</p>
             <Link to="/simulations" className="mt-3 inline-block text-sm text-zinc-600 underline">
@@ -2816,7 +2816,7 @@ function MyPage() {
           <ul className="mt-4 space-y-2">
             {history.map((h) => (
               <li key={h.submissionId}>
-                <Card className="flex items-center gap-3 p-4 shadow-none">
+                <Card className="flex items-center gap-3 rounded-[6px] p-4 shadow-none">
                   <CheckCircle2 className="h-4 w-4 shrink-0 text-zinc-400" />
                   <div>
                     <p className="font-medium text-zinc-900">{h.title}</p>
@@ -3026,7 +3026,7 @@ function MyPage() {
           </DialogHeader>
 
           <div className="grid gap-8 overflow-y-auto px-6 py-4">
-            <section className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+            <section className="rounded-[6px] border border-zinc-200 bg-zinc-50 p-4">
               <h3 className="text-sm font-bold text-zinc-500">이력서 정보</h3>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 <ResumeField
