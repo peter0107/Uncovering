@@ -83,7 +83,7 @@ function AllSimulationsPage() {
               type="button"
               onClick={() => setSelectedDomain(null)}
               className={cn(
-                "rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+                "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
                 selectedDomain === null
                   ? "bg-zinc-900 text-white"
                   : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
@@ -97,7 +97,7 @@ function AllSimulationsPage() {
                 type="button"
                 onClick={() => setSelectedDomain(d === selectedDomain ? null : d)}
                 className={cn(
-                  "rounded-lg px-4 py-2 text-sm font-medium transition-colors",
+                  "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
                   selectedDomain === d
                     ? "bg-zinc-900 text-white"
                     : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
