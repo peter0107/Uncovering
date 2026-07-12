@@ -165,13 +165,13 @@ function Index() {
                 <Link
                   to="/login"
                   search={{ redirect: "/" }}
-                  className="font-semibold text-[#171C26]"
+                  className="inline-flex h-8 items-center rounded-md px-3 text-xs font-medium text-[#171C26] transition-colors hover:bg-[#F7F8FA]"
                 >
                   로그인
                 </Link>
                 <Link
                   to="/start"
-                  className="rounded-md bg-[#2B5CE7] px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#2149BD] hover:text-white"
+                  className="inline-flex h-8 items-center rounded-md bg-[#2B5CE7] px-3 text-xs font-medium text-white transition-colors hover:bg-[#2149BD] hover:text-white"
                 >
                   시작하기
                 </Link>
