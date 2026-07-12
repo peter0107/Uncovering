@@ -21,7 +21,6 @@ import {
   Briefcase,
   Building2,
   MapPin,
-  Sparkles,
   Github,
   Globe,
   Linkedin,
@@ -2548,7 +2547,7 @@ function MyPage() {
 
       <div className="mt-4 flex items-center justify-between gap-4 rounded-[6px] border border-zinc-200 bg-white px-5 py-4">
         <div className="flex items-start gap-3">
-          <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400" />
+          <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400" />
           <div>
             <p className="text-sm font-semibold text-zinc-700">채용 제안 받아보기</p>
             <p className="mt-0.5 text-xs text-zinc-400">

@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   Clock,
   AlertTriangle,
-  Sparkles,
   Send,
   X,
   MessageCircle,
@@ -99,7 +98,7 @@ function AnswerTextarea({
 function MaterialSection({ label, markdown }: { label: string; markdown: string }) {
   return (
     <div>
-      <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">{label}</p>
+      <p className="text-xs font-semibold text-zinc-500">{label}</p>
       <Card className="mt-2 p-6">
         <div className="prose prose-sm prose-zinc max-w-none prose-table:text-sm">
           <RichTextContent value={markdown} />
@@ -442,14 +441,14 @@ function SimulationDetailPage() {
         </p>
         <div className="mt-8 flex flex-col gap-2">
           <Button
-            className="rounded-xl bg-zinc-900 text-white hover:bg-zinc-700"
+            className="rounded-md bg-zinc-900 text-white hover:bg-zinc-700"
             disabled={applying || applicationSent}
             onClick={handleApply}
           >
             {applicationSent ? "지원 완료" : applying ? "지원 중..." : "지원하기"}
           </Button>
           <Link to="/simulations">
-            <Button variant="outline" className="w-full rounded-xl">
+            <Button variant="outline" className="w-full rounded-md">
               다른 시뮬레이션 더 보기
             </Button>
           </Link>
@@ -475,7 +474,7 @@ function SimulationDetailPage() {
   );
 
   const consentBlock = (
-    <div className="mt-6 shrink-0 rounded-2xl border border-zinc-200 p-5">
+    <div className="mt-6 shrink-0 rounded-md border border-zinc-200 p-5">
       <p className="text-sm font-semibold text-zinc-900">
         이 답안을 {sim.company_name}에 전송하는 것에 동의하시나요?
       </p>
@@ -488,7 +487,7 @@ function SimulationDetailPage() {
           type="button"
           onClick={() => setConsent(true)}
           className={cn(
-            "flex-1 rounded-xl border-2 px-4 py-3 text-left text-sm transition-all",
+            "flex-1 rounded-md border-2 px-4 py-3 text-left text-sm transition-colors",
             consent === true
               ? "border-zinc-900 bg-zinc-900 text-white"
               : "border-zinc-200 bg-white text-zinc-800 hover:border-zinc-400",
@@ -500,7 +499,7 @@ function SimulationDetailPage() {
           type="button"
           onClick={() => setConsent(false)}
           className={cn(
-            "flex-1 rounded-xl border-2 px-4 py-3 text-left text-sm transition-all",
+            "flex-1 rounded-md border-2 px-4 py-3 text-left text-sm transition-colors",
             consent === false
               ? "border-zinc-900 bg-zinc-900 text-white"
               : "border-zinc-200 bg-white text-zinc-800 hover:border-zinc-400",
@@ -544,19 +543,19 @@ function SimulationDetailPage() {
         <button
           type="button"
           onClick={() => setChatOpen(true)}
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full bg-zinc-900 px-5 py-3.5 text-sm font-medium text-white shadow-xl ring-1 ring-zinc-900/10 transition-transform hover:scale-105"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-md border border-zinc-900 bg-zinc-900 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-zinc-700"
           aria-label="AI 어시스트 열기"
         >
-          <Sparkles className="h-5 w-5" />
+          <MessageCircle className="h-5 w-5" />
           <span>AI에게 질문</span>
         </button>
       )}
       {chatOpen && (
-        <div className="fixed bottom-6 right-6 z-40 flex h-[520px] w-[360px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl">
+        <div className="fixed bottom-6 right-6 z-40 flex h-[520px] w-[360px] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-md border border-zinc-200 bg-white">
           <div className="flex items-center justify-between border-b border-zinc-100 bg-zinc-50 px-4 py-3">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-900 text-white">
-                <Sparkles className="h-4 w-4" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-zinc-900 text-white">
+                <MessageCircle className="h-4 w-4" />
               </div>
               <div>
                 <p className="text-sm font-semibold text-zinc-900">AI 어시스트</p>
@@ -590,7 +589,7 @@ function SimulationDetailPage() {
               >
                 <div
                   className={cn(
-                    "max-w-[80%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm leading-relaxed",
+                    "max-w-[80%] whitespace-pre-wrap rounded-md px-3 py-2 text-sm leading-relaxed",
                     m.role === "user" ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-800",
                   )}
                 >
@@ -600,7 +599,7 @@ function SimulationDetailPage() {
             ))}
             {chatSending && (
               <div className="flex justify-start">
-                <div className="rounded-2xl bg-zinc-100 px-3 py-2 text-sm text-zinc-500">
+                <div className="rounded-md bg-zinc-100 px-3 py-2 text-sm text-zinc-500">
                   생각 중…
                 </div>
               </div>
@@ -625,13 +624,13 @@ function SimulationDetailPage() {
               }}
               placeholder="AI에게 질문하기…"
               rows={1}
-              className="min-h-9 flex-1 resize-none rounded-xl text-sm"
+              className="min-h-9 flex-1 resize-none rounded-md text-sm"
             />
             <Button
               type="submit"
               size="icon"
               disabled={!chatInput.trim() || chatSending}
-              className="h-9 w-9 shrink-0 rounded-xl bg-zinc-900 text-white hover:bg-zinc-700"
+              className="h-9 w-9 shrink-0 rounded-md bg-zinc-900 text-white hover:bg-zinc-700"
             >
               <Send className="h-4 w-4" />
             </Button>
@@ -675,7 +674,7 @@ function SimulationDetailPage() {
                 <div
                   key={i}
                   className={cn(
-                    "h-1.5 flex-1 rounded-full transition-colors",
+                    "h-1.5 flex-1 rounded-sm transition-colors",
                     i < stepIdx ? "bg-zinc-900" : i === stepIdx ? "bg-zinc-900/50" : "bg-zinc-200",
                   )}
                 />
@@ -714,9 +713,9 @@ function SimulationDetailPage() {
 
             {/* 초심자용 힌트 */}
             {step.hint && (
-              <details className="mt-6 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+              <details className="mt-6 rounded-md border border-zinc-200 bg-zinc-50 p-4">
                 <summary className="cursor-pointer list-none text-sm font-semibold text-zinc-700">
-                  💡 초심자용 힌트 보기
+                  초심자용 힌트 보기
                 </summary>
                 <div className="prose prose-sm prose-zinc mt-3 max-w-none prose-table:text-sm">
                   <RichTextContent value={step.hint} />
@@ -726,7 +725,7 @@ function SimulationDetailPage() {
 
             {/* 단계 완료 메시지 */}
             {showCompletion && (
-              <div className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+              <div className="mt-6 rounded-md border border-emerald-200 bg-emerald-50 p-4">
                 <div className="prose prose-sm prose-emerald max-w-none">
                   <RichTextContent value={step.completionMessage as string} />
                 </div>
@@ -741,7 +740,7 @@ function SimulationDetailPage() {
               {stepIdx > 0 && (
                 <Button
                   variant="outline"
-                  className="rounded-xl"
+                  className="rounded-md"
                   onClick={() => {
                     setStepIdx((i) => i - 1);
                     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -755,7 +754,7 @@ function SimulationDetailPage() {
                   onClick={handleSubmit}
                   disabled={submitting}
                   size="lg"
-                  className="flex-1 rounded-xl bg-zinc-900 text-white hover:bg-zinc-700"
+                  className="flex-1 rounded-md bg-zinc-900 text-white hover:bg-zinc-700"
                 >
                   {submitting ? "제출 중..." : "제출하기"}
                 </Button>
@@ -771,7 +770,7 @@ function SimulationDetailPage() {
                   }}
                   disabled={!canAdvance}
                   size="lg"
-                  className="flex-1 rounded-xl bg-zinc-900 text-white hover:bg-zinc-700"
+                  className="flex-1 rounded-md bg-zinc-900 text-white hover:bg-zinc-700"
                 >
                   다음 단계 →
                 </Button>
@@ -821,7 +820,7 @@ function SimulationDetailPage() {
             onClick={handleSubmit}
             disabled={submitting}
             size="lg"
-            className="mt-6 w-full shrink-0 rounded-xl bg-zinc-900 text-white hover:bg-zinc-700"
+            className="mt-6 w-full shrink-0 rounded-md bg-zinc-900 text-white hover:bg-zinc-700"
           >
             {submitting ? "제출 중..." : "제출하기"}
           </Button>

@@ -912,7 +912,7 @@ function ApplicantFilterDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
-      <div className="max-h-[86vh] w-full max-w-xl overflow-hidden rounded-md bg-white shadow-xl">
+      <div className="max-h-[86vh] w-full max-w-xl overflow-hidden rounded-md border border-neutral-200 bg-white">
         <div className="flex items-start justify-between gap-4 border-b border-neutral-200 p-5">
           <div>
             <h3 className="text-lg font-semibold tracking-tight text-neutral-900">지원자 필터</h3>
@@ -1644,7 +1644,7 @@ function JobPostingDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-      <div className="max-h-[calc(100vh-2rem)] w-full max-w-2xl overflow-y-auto rounded-md bg-white shadow-xl">
+      <div className="max-h-[calc(100vh-2rem)] w-full max-w-2xl overflow-y-auto rounded-md border border-neutral-200 bg-white">
         <div className="flex items-start justify-between border-b border-neutral-200 p-5">
           <div>
             <h2 className="text-lg font-semibold tracking-tight text-neutral-900">
@@ -1810,7 +1810,7 @@ function InterviewMailDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
-      <div className="w-full max-w-xl rounded-md bg-white p-6 shadow-xl">
+      <div className="w-full max-w-xl rounded-md border border-neutral-200 bg-white p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
             <h3 className="text-lg font-semibold tracking-tight">면접 제안 메일 템플릿</h3>

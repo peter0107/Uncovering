@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { RotateCcw, Save, Sparkles } from "lucide-react";
+import { RotateCcw, Save, SlidersHorizontal } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -122,7 +122,7 @@ function AdminAiPrompts() {
                 <div className="border-b border-neutral-200 p-5">
                   <div className="flex items-start gap-3">
                     <div className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-neutral-900 text-white">
-                      <Sparkles className="h-5 w-5" />
+                      <SlidersHorizontal className="h-5 w-5" />
                     </div>
                     <div>
                       <h2 className="text-base font-semibold">{setting.label}</h2>

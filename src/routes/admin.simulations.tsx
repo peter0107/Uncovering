@@ -271,7 +271,7 @@ function getAssetEditorPreset(kind: AssetUploadTarget["kind"]): AssetEditorPrese
       height: 640,
       previewWidth: 256,
       previewHeight: 256,
-      previewClassName: "h-64 w-64 rounded-xl",
+      previewClassName: "h-64 w-64 rounded-md",
     };
   }
 
@@ -282,7 +282,7 @@ function getAssetEditorPreset(kind: AssetUploadTarget["kind"]): AssetEditorPrese
     height: 400,
     previewWidth: 512,
     previewHeight: 146,
-    previewClassName: "w-full max-w-lg rounded-xl",
+    previewClassName: "w-full max-w-lg rounded-md",
   };
 }
 
@@ -1205,7 +1205,7 @@ function AdminSimulations() {
                 tabIndex={0}
                 onClick={() => selectSimulation(simulation)}
                 onKeyDown={(event) => activateCard(event, () => selectSimulation(simulation))}
-                className={`w-full cursor-pointer rounded-xl text-left transition-colors ${
+                className={`w-full cursor-pointer rounded-md text-left transition-colors ${
                   simulation.id === selectedSimulationId
                     ? "ring-2 ring-neutral-900"
                     : "ring-1 ring-transparent hover:ring-neutral-200"
@@ -1238,7 +1238,7 @@ function AdminSimulations() {
                       }}
                       disabled={actioningSimulationId === simulation.id}
                       aria-label={`${simulation.roleLabel} 삭제`}
-                      className="grid h-8 w-8 place-items-center rounded-full bg-white/90 text-neutral-500 shadow-sm transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="grid h-8 w-8 place-items-center rounded-md border border-neutral-200 bg-white text-neutral-500 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>

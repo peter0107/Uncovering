@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Sparkles, LayoutGrid } from "lucide-react";
+import { LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SimulationCardPreview } from "@/components/SimulationCardPreview";
@@ -162,7 +162,7 @@ export function CardSkeleton() {
 function EmptyState({ hasOnboarding }: { hasOnboarding: boolean }) {
   return (
     <div className="flex flex-col items-center py-20 text-center">
-      <Sparkles className="h-10 w-10 text-zinc-300" />
+      <LayoutGrid className="h-8 w-8 text-zinc-300" />
       <h3 className="mt-4 text-lg font-semibold text-zinc-700">
         {hasOnboarding ? "아직 준비된 시뮬레이션이 없어요" : "온보딩을 먼저 완료해주세요"}
       </h3>
@@ -173,7 +173,7 @@ function EmptyState({ hasOnboarding }: { hasOnboarding: boolean }) {
       </p>
       {!hasOnboarding && (
         <Link to="/onboarding" className="mt-6">
-          <Button className="rounded-xl bg-zinc-900 text-white hover:bg-zinc-700">
+          <Button className="rounded-md bg-zinc-900 text-white hover:bg-zinc-700">
             온보딩 시작하기
           </Button>
         </Link>
@@ -238,12 +238,9 @@ function SimulationsPage() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-12">
       {/* 헤더 */}
-      <div className="mb-2 flex items-center gap-2">
-        <Sparkles className="h-5 w-5 text-zinc-500" />
-        <span className="text-sm font-medium text-zinc-500">
-          {isGuest ? "직무 시뮬레이션" : "맞춤 추천"}
-        </span>
-      </div>
+      <p className="mb-2 text-sm font-medium text-zinc-500">
+        {isGuest ? "직무 시뮬레이션" : "맞춤 추천"}
+      </p>
       <h1 className="text-2xl font-bold text-zinc-900 md:text-3xl">
         {isGuest ? "원하는 시뮬레이션을 선택하세요" : "나를 위한 시뮬레이션 3개"}
       </h1>
@@ -259,14 +256,14 @@ function SimulationsPage() {
           {seeker.job_interests.map((j) => (
             <span
               key={j}
-              className="rounded-full border border-zinc-200 px-3 py-1 text-xs text-zinc-600"
+              className="rounded-sm border border-zinc-200 px-3 py-1 text-xs text-zinc-600"
             >
               {j}
             </span>
           ))}
           <Link
             to="/onboarding"
-            className="rounded-full border border-dashed border-zinc-300 px-3 py-1 text-xs text-zinc-400 hover:border-zinc-500 hover:text-zinc-600"
+            className="rounded-sm border border-dashed border-zinc-300 px-3 py-1 text-xs text-zinc-400 hover:border-zinc-500 hover:text-zinc-600"
           >
             수정
           </Link>
@@ -275,7 +272,7 @@ function SimulationsPage() {
 
       {/* 에러 */}
       {error && (
-        <div className="mt-6 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
+        <div className="mt-6 rounded-md border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
           {error}
         </div>
       )}
@@ -308,7 +305,7 @@ function SimulationsPage() {
           <Link to="/simulations/all">
             <Button
               variant="outline"
-              className="rounded-xl border-zinc-300 text-zinc-700 hover:border-zinc-900 hover:text-zinc-900"
+              className="rounded-md border-zinc-300 text-zinc-700 hover:border-zinc-900 hover:text-zinc-900"
             >
               <LayoutGrid className="mr-2 h-4 w-4" />
               전체 직무 보기

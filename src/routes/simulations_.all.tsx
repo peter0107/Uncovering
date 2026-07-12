@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, LayoutGrid, Sparkles } from "lucide-react";
+import { ArrowLeft, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CardSkeleton, SimCard, fetchAll, type Simulation } from "./simulations";
 
@@ -51,7 +51,7 @@ function AllSimulationsPage() {
 
       {/* 에러 */}
       {error && (
-        <div className="mt-6 rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
+        <div className="mt-6 rounded-md border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
           {error}
         </div>
       )}
@@ -69,7 +69,7 @@ function AllSimulationsPage() {
           sims.map((sim) => <SimCard key={sim.id} sim={sim} />)
         ) : (
           <div className="col-span-full flex flex-col items-center py-20 text-center">
-            <Sparkles className="h-10 w-10 text-zinc-300" />
+            <LayoutGrid className="h-8 w-8 text-zinc-300" />
             <h3 className="mt-4 text-lg font-semibold text-zinc-700">
               아직 준비된 시뮬레이션이 없어요
             </h3>
@@ -77,7 +77,7 @@ function AllSimulationsPage() {
               곧 기업 시뮬레이션이 추가될 예정이에요. 조금만 기다려 주세요!
             </p>
             <Link to="/simulations" className="mt-6">
-              <Button className="rounded-xl bg-zinc-900 text-white hover:bg-zinc-700">
+              <Button className="rounded-md bg-zinc-900 text-white hover:bg-zinc-700">
                 추천 보러 가기
               </Button>
             </Link>

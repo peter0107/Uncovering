@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Check, Clock3, Menu, Search, Sparkles, X } from "lucide-react";
+import { ArrowRight, Check, Clock3, Menu, Search, X } from "lucide-react";
 import { useState } from "react";
 
 import { AccountMenu } from "@/components/AccountMenu";
@@ -32,19 +32,19 @@ function Brand() {
 
 function ProfilePreview() {
   return (
-    <div className="w-full rounded-2xl border border-[#E7EAF0] bg-[#F7F8FA] p-5">
+    <div className="w-full border border-[#E7EAF0] bg-white p-5">
       <p className="text-xs font-semibold text-[#6B7280]">프로필 등록</p>
       <div className="mt-4 flex flex-wrap gap-2">
-        <span className="rounded-full border border-[#D9DEE8] bg-white px-3 py-1.5 text-xs text-[#4B5563]">
+        <span className="rounded-sm border border-[#D9DEE8] bg-white px-3 py-1.5 text-xs text-[#4B5563]">
           마케팅
         </span>
-        <span className="inline-flex items-center gap-1 rounded-full bg-[#2B5CE7] px-3 py-1.5 text-xs font-semibold text-white">
+        <span className="inline-flex items-center gap-1 rounded-sm bg-[#2B5CE7] px-3 py-1.5 text-xs font-semibold text-white">
           기획/PM <Check className="h-3 w-3" />
         </span>
-        <span className="rounded-full border border-[#D9DEE8] bg-white px-3 py-1.5 text-xs text-[#4B5563]">
+        <span className="rounded-sm border border-[#D9DEE8] bg-white px-3 py-1.5 text-xs text-[#4B5563]">
           디자인
         </span>
-        <span className="rounded-full border border-[#D9DEE8] bg-white px-3 py-1.5 text-xs text-[#4B5563]">
+        <span className="rounded-sm border border-[#D9DEE8] bg-white px-3 py-1.5 text-xs text-[#4B5563]">
           개발
         </span>
       </div>
@@ -58,10 +58,10 @@ function ProfilePreview() {
 
 function SimulationPreview() {
   return (
-    <div className="w-full rounded-2xl border border-[#E7EAF0] bg-[#F7F8FA] p-5">
+    <div className="w-full border border-[#E7EAF0] bg-white p-5">
       <div className="flex items-center justify-between gap-3">
         <span className="text-xs font-bold text-[#2B5CE7]">기획/PM 시뮬레이션</span>
-        <span className="inline-flex items-center gap-1 rounded-full border border-[#D9DEE8] bg-white px-2 py-1 text-[11px] text-[#6B7280]">
+        <span className="inline-flex items-center gap-1 rounded-sm border border-[#D9DEE8] bg-white px-2 py-1 text-[11px] text-[#6B7280]">
           <Clock3 className="h-3 w-3" /> 50분
         </span>
       </div>
@@ -80,7 +80,7 @@ function SimulationPreview() {
 
 function OfferPreview() {
   return (
-    <div className="w-full space-y-2 rounded-2xl border border-[#E7EAF0] bg-[#F7F8FA] p-5">
+    <div className="w-full space-y-2 border border-[#E7EAF0] bg-white p-5">
       <div className="flex items-center gap-3 rounded-md border border-[#D9DEE8] bg-white p-3">
         <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-[#EAF0FF] text-xs font-extrabold text-[#2B5CE7]">
           A
@@ -139,7 +139,7 @@ function Index() {
 
   return (
     <div className="min-h-screen bg-white text-[#171C26]">
-      <header className="sticky top-0 z-40 border-b border-[#EEF0F4] bg-white/95 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-[#EEF0F4] bg-white">
         <div className="relative mx-auto flex h-14 max-w-[1160px] items-center justify-between px-5 sm:px-8">
           <Link to="/" aria-label="Beginner 홈">
             <Brand />
@@ -256,7 +256,7 @@ function Index() {
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
             <Link
               to="/start"
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-[#2B5CE7] px-6 text-sm font-bold text-white shadow-md transition-all hover:bg-[#2149BD] hover:text-white hover:shadow-lg sm:text-base"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-[#2B5CE7] px-6 text-sm font-bold text-white transition-colors hover:bg-[#2149BD] hover:text-white sm:text-base"
             >
               무료로 시작하기 <ArrowRight className="h-4 w-4" />
             </Link>
@@ -288,7 +288,7 @@ function Index() {
 
         <section id="how-it-works" className="mx-auto max-w-[1000px] px-5 py-20 sm:px-8 sm:py-28">
           <div className="text-center">
-            <p className="text-xs font-extrabold tracking-[0.16em] text-[#2B5CE7]">HOW IT WORKS</p>
+            <p className="text-sm font-semibold text-[#2B5CE7]">이용 방법</p>
             <h2 className="mt-3 text-3xl font-extrabold tracking-[-0.04em] text-[#171C26] sm:text-4xl">
               세 단계면 충분해요
             </h2>
@@ -319,13 +319,12 @@ function Index() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-[1160px] px-5 pb-16 sm:px-8 sm:pb-20">
-          <div className="flex flex-col items-center rounded-lg bg-[#171C26] px-6 py-14 text-center sm:px-12 sm:py-16">
-            <Sparkles className="h-5 w-5 text-[#83A4FF]" />
-            <h2 className="mt-4 text-3xl font-extrabold tracking-[-0.04em] text-white sm:text-4xl">
+        <section className="border-y border-[#E7EAF0] bg-[#F7F8FA]">
+          <div className="mx-auto flex max-w-[1160px] flex-col items-center px-5 py-14 text-center sm:px-8 sm:py-16">
+            <h2 className="text-3xl font-extrabold tracking-[-0.04em] text-[#171C26] sm:text-4xl">
               첫 시뮬레이션, 지금 무료로 시작해보세요
             </h2>
-            <p className="mt-3 text-sm text-[#B2BAC8] sm:text-base">
+            <p className="mt-3 text-sm text-[#4B5563] sm:text-base">
               가입 후 3분이면 첫 과제를 받아볼 수 있어요.
             </p>
             <Link

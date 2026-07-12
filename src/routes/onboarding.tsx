@@ -120,17 +120,17 @@ function OnboardingPage() {
       <div className="mx-auto w-full max-w-lg flex-1 px-6 py-10">
         {/* 단계 표시 */}
         <div className="mb-2 flex items-center justify-between">
-          <div className="flex gap-1.5">
+          <div className="flex gap-4">
             {STEP_LABELS.map((label, i) => (
               <div
                 key={label}
                 className={cn(
-                  "rounded-full px-3 py-1 text-xs font-medium transition-all",
+                  "border-b-2 pb-2 text-xs font-medium transition-colors",
                   i + 1 === step
-                    ? "bg-zinc-900 text-white"
+                    ? "border-zinc-900 text-zinc-900"
                     : i + 1 < step
-                      ? "bg-zinc-200 text-zinc-500"
-                      : "text-zinc-300",
+                      ? "border-zinc-300 text-zinc-500"
+                      : "border-transparent text-zinc-300",
                 )}
               >
                 {i + 1 < step ? "✓" : label}
@@ -170,7 +170,7 @@ function OnboardingPage() {
             <Button
               onClick={() => setStep((s) => s + 1)}
               disabled={!canProceed()}
-              className="min-w-28 rounded-xl bg-zinc-900 text-white hover:bg-zinc-700 disabled:opacity-40"
+              className="min-w-28 rounded-md bg-zinc-900 text-white hover:bg-zinc-700 disabled:opacity-40"
             >
               다음
             </Button>
@@ -178,7 +178,7 @@ function OnboardingPage() {
             <Button
               onClick={handleFinish}
               disabled={saving}
-              className="min-w-36 rounded-xl bg-zinc-900 text-white hover:bg-zinc-700 disabled:opacity-40"
+              className="min-w-36 rounded-md bg-zinc-900 text-white hover:bg-zinc-700 disabled:opacity-40"
             >
               {saving ? "저장 중..." : "시작하기"}
             </Button>

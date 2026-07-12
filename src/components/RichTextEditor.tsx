@@ -629,7 +629,7 @@ export function RichTextEditor({
                   <ChevronDown className="h-3 w-3" />
                 </button>
                 {activePalette === "table" && (
-                  <div className="absolute left-0 top-10 z-20 w-48 rounded-md border border-neutral-200 bg-white p-2 shadow-lg">
+                  <div className="absolute left-0 top-10 z-20 w-48 rounded-md border border-neutral-200 bg-white p-2">
                     <p className="mb-2 text-xs text-neutral-500">
                       {tableGridSize.rows} x {tableGridSize.columns} 표
                     </p>

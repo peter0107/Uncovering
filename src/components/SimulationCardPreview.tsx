@@ -137,12 +137,8 @@ export function SimulationCardPreview({
           onImageClick();
         }}
       >
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{
-            backgroundImage: `linear-gradient(90deg, rgba(0,0,0,0.68), rgba(0,0,0,0.28)), url("${imageUrl}")`,
-          }}
-        />
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url("${imageUrl}")` }} />
+        <div className="absolute inset-0 bg-black/45" />
         {onImageClick && (
           <div className="pointer-events-none absolute inset-0 bg-white/0 ring-0 ring-inset ring-white/0 transition-all group-hover/image:bg-white/10 group-hover/image:ring-2 group-hover/image:ring-white/60" />
         )}

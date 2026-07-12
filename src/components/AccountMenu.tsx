@@ -63,7 +63,7 @@ export function AccountMenu() {
   return (
     <>
       {signingOut && (
-        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-3 bg-background/90">
           <Loader2 className="h-8 w-8 animate-spin text-brand" />
           <p className="text-sm font-medium text-foreground">로그아웃 중입니다...</p>
         </div>
