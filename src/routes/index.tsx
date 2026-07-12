@@ -339,10 +339,7 @@ function Index() {
 
       <footer className="border-t border-[#EEF0F4]">
         <div className="mx-auto flex max-w-[1160px] flex-col gap-5 px-5 py-7 text-xs text-[#9CA3AF] sm:flex-row sm:items-center sm:justify-between sm:px-8">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-            <Brand />
-            <span>© 2026</span>
-          </div>
+          <span>© 2026 Beginner. All rights reserved.</span>
           <nav className="flex flex-wrap items-center gap-x-5 gap-y-2">
             <a href="#faq" className="hover:text-[#4B5563]">
               자주 묻는 질문
