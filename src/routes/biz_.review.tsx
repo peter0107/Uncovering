@@ -154,9 +154,6 @@ function BizReview() {
     for (const simulation of data?.simulations ?? []) {
       roles.set(simulation.roleLabel, simulation.roleLabel);
     }
-    for (const applicant of data?.applicants ?? []) {
-      if (!roles.has(applicant.role)) roles.set(applicant.role, applicant.role);
-    }
     return Array.from(roles.values());
   }, [data]);
 
