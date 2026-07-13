@@ -20,6 +20,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as SimulationsAllRouteImport } from './routes/simulations_.all'
 import { Route as SimulationIdRouteImport } from './routes/simulation.$id'
 import { Route as BizReviewRouteImport } from './routes/biz_.review'
+import { Route as BizContactRouteImport } from './routes/biz_.contact'
 import { Route as BizCoffeeChatRouteImport } from './routes/biz_.coffee-chat'
 import { Route as BizApplyRouteImport } from './routes/biz_.apply'
 import { Route as AdminSubmissionsRouteImport } from './routes/admin.submissions'
@@ -82,6 +83,11 @@ const BizReviewRoute = BizReviewRouteImport.update({
   path: '/biz/review',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BizContactRoute = BizContactRouteImport.update({
+  id: '/biz_/contact',
+  path: '/biz/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BizCoffeeChatRoute = BizCoffeeChatRouteImport.update({
   id: '/biz_/coffee-chat',
   path: '/biz/coffee-chat',
@@ -128,6 +134,7 @@ export interface FileRoutesByFullPath {
   '/admin/submissions': typeof AdminSubmissionsRoute
   '/biz/apply': typeof BizApplyRoute
   '/biz/coffee-chat': typeof BizCoffeeChatRoute
+  '/biz/contact': typeof BizContactRoute
   '/biz/review': typeof BizReviewRoute
   '/simulation/$id': typeof SimulationIdRoute
   '/simulations/all': typeof SimulationsAllRoute
@@ -147,6 +154,7 @@ export interface FileRoutesByTo {
   '/admin/submissions': typeof AdminSubmissionsRoute
   '/biz/apply': typeof BizApplyRoute
   '/biz/coffee-chat': typeof BizCoffeeChatRoute
+  '/biz/contact': typeof BizContactRoute
   '/biz/review': typeof BizReviewRoute
   '/simulation/$id': typeof SimulationIdRoute
   '/simulations/all': typeof SimulationsAllRoute
@@ -167,6 +175,7 @@ export interface FileRoutesById {
   '/admin/submissions': typeof AdminSubmissionsRoute
   '/biz_/apply': typeof BizApplyRoute
   '/biz_/coffee-chat': typeof BizCoffeeChatRoute
+  '/biz_/contact': typeof BizContactRoute
   '/biz_/review': typeof BizReviewRoute
   '/simulation/$id': typeof SimulationIdRoute
   '/simulations_/all': typeof SimulationsAllRoute
@@ -188,6 +197,7 @@ export interface FileRouteTypes {
     | '/admin/submissions'
     | '/biz/apply'
     | '/biz/coffee-chat'
+    | '/biz/contact'
     | '/biz/review'
     | '/simulation/$id'
     | '/simulations/all'
@@ -207,6 +217,7 @@ export interface FileRouteTypes {
     | '/admin/submissions'
     | '/biz/apply'
     | '/biz/coffee-chat'
+    | '/biz/contact'
     | '/biz/review'
     | '/simulation/$id'
     | '/simulations/all'
@@ -226,6 +237,7 @@ export interface FileRouteTypes {
     | '/admin/submissions'
     | '/biz_/apply'
     | '/biz_/coffee-chat'
+    | '/biz_/contact'
     | '/biz_/review'
     | '/simulation/$id'
     | '/simulations_/all'
@@ -242,6 +254,7 @@ export interface RootRouteChildren {
   StartRoute: typeof StartRoute
   BizApplyRoute: typeof BizApplyRoute
   BizCoffeeChatRoute: typeof BizCoffeeChatRoute
+  BizContactRoute: typeof BizContactRoute
   BizReviewRoute: typeof BizReviewRoute
   SimulationIdRoute: typeof SimulationIdRoute
   SimulationsAllRoute: typeof SimulationsAllRoute
@@ -326,6 +339,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BizReviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/biz_/contact': {
+      id: '/biz_/contact'
+      path: '/biz/contact'
+      fullPath: '/biz/contact'
+      preLoaderRoute: typeof BizContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/biz_/coffee-chat': {
       id: '/biz_/coffee-chat'
       path: '/biz/coffee-chat'
@@ -398,6 +418,7 @@ const rootRouteChildren: RootRouteChildren = {
   StartRoute: StartRoute,
   BizApplyRoute: BizApplyRoute,
   BizCoffeeChatRoute: BizCoffeeChatRoute,
+  BizContactRoute: BizContactRoute,
   BizReviewRoute: BizReviewRoute,
   SimulationIdRoute: SimulationIdRoute,
   SimulationsAllRoute: SimulationsAllRoute,

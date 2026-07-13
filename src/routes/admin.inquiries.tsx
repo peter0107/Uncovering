@@ -26,15 +26,18 @@ function AdminInquiries() {
   const [data, setData] = useState<AdminInquiries>(EMPTY);
   const [tab, setTab] = useState<Tab>("applications");
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const loadedUserIdRef = useRef<string | null>(null);
   const userId = user?.id ?? null;
 
   const load = useCallback(async () => {
     setIsLoading(true);
+    setLoadError(false);
     try {
       const result = await getAdminInquiries();
       setData(result);
     } catch (error) {
+      setLoadError(true);
       toast.error(error instanceof Error ? error.message : "신청 내역을 불러오지 못했습니다.");
     } finally {
       setIsLoading(false);
@@ -88,6 +91,18 @@ function AdminInquiries() {
       {authLoading || isLoading ? (
         <div className="py-16 text-center text-sm text-neutral-500">
           신청 내역을 불러오는 중입니다...
+        </div>
+      ) : loadError ? (
+        <div className="mt-6 rounded-md border border-dashed border-red-300 px-5 py-16 text-center">
+          <p className="text-sm text-red-600">신청 내역을 불러오지 못했습니다.</p>
+          <button
+            type="button"
+            onClick={load}
+            className="mt-4 inline-flex h-9 items-center justify-center gap-2 rounded-md border border-neutral-300 bg-white px-3 text-xs font-medium text-neutral-800 hover:bg-neutral-50"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            다시 시도
+          </button>
         </div>
       ) : tab === "applications" ? (
         applications.length === 0 ? (
