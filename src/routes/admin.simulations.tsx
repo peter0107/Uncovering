@@ -268,8 +268,8 @@ function getAssetEditorPreset(kind: AssetUploadTarget["kind"]): AssetEditorPrese
     return {
       title: "기업 로고 편집",
       description: "로고가 정사각형 영역 안에 잘 보이도록 조정한 뒤 적용하세요.",
-      width: 640,
-      height: 640,
+      width: 512,
+      height: 512,
       previewWidth: 256,
       previewHeight: 256,
       previewClassName: "h-64 w-64 rounded-md",
@@ -279,8 +279,8 @@ function getAssetEditorPreset(kind: AssetUploadTarget["kind"]): AssetEditorPrese
   return {
     title: "카드 배경 사진 편집",
     description: "유저 카드 상단 배경과 같은 비율로 보이도록 조정한 뒤 적용하세요.",
-    width: 1400,
-    height: 400,
+    width: 1260,
+    height: 360,
     previewWidth: 512,
     previewHeight: 146,
     previewClassName: "w-full max-w-lg rounded-md",
@@ -368,8 +368,8 @@ async function createCroppedAssetBlob(
         if (blob) resolve(blob);
         else reject(new Error("Failed to create edited image"));
       },
-      "image/jpeg",
-      0.92,
+      "image/webp",
+      0.82,
     );
   });
 }
@@ -650,12 +650,12 @@ function AdminSimulations() {
     if (!userId) throw new Error("로그인이 필요합니다.");
 
     const targetId = target.kind === "logo" ? target.companyId : target.simulationId;
-    const objectPath = `${userId}/${target.kind}/${targetId}-${Date.now()}.jpg`;
+    const objectPath = `${userId}/${target.kind}/${targetId}-${Date.now()}.webp`;
 
     const { error } = await supabase.storage
       .from("simulation-card-assets")
       .upload(objectPath, blob, {
-        contentType: "image/jpeg",
+        contentType: "image/webp",
         upsert: true,
       });
 
