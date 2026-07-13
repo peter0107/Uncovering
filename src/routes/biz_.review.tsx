@@ -1252,7 +1252,7 @@ function ApplicantDetail({
 
             <InfoBlock title="학력">
               {applicant.educations.length ? (
-                <div className="space-y-4">
+                <div className="space-y-2">
                   {applicant.educations.map((education, index) => (
                     <div
                       key={`${education.category}-${education.school}-${education.major}-${education.status}-${index}`}
@@ -1294,7 +1294,7 @@ function ApplicantDetail({
               }
             >
               {applicant.experiences.length ? (
-                <div className="space-y-5">
+                <div className="space-y-3">
                   {applicant.experiences.map((experience, index) => (
                     <div key={`${experience.company}-${experience.role}-${index}`}>
                       <div className="flex flex-wrap items-center gap-2">
@@ -1312,7 +1312,7 @@ function ApplicantDetail({
                         <p className="mt-1 text-xs text-neutral-500">{experience.period}</p>
                       )}
                       {experience.description && (
-                        <p className="mt-3 whitespace-pre-line text-sm leading-6 text-neutral-700">
+                        <p className="mt-2 whitespace-pre-line text-sm leading-6 text-neutral-700">
                           {experience.description}
                         </p>
                       )}
