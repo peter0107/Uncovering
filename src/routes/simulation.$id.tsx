@@ -807,7 +807,7 @@ function SimulationDetailPage() {
           <div className="flex min-h-0 flex-1 flex-col">
             <div id="response-question" className="shrink-0">
               <p className="text-sm font-medium text-zinc-700">제출 질문</p>
-              <Card className="mt-2 max-h-64 overflow-y-auto p-4">
+              <Card className="mt-2 p-4">
                 <div className="prose prose-sm prose-zinc max-w-none prose-table:text-sm">
                   <RichTextContent value={sim.single_answer_question?.trim() || "답안 작성"} />
                 </div>
