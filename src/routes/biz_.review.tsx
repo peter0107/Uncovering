@@ -3,11 +3,7 @@ import { Bookmark, ChevronDown, Filter, MessageSquare, Search, Sparkles, X } fro
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 import {
   advanceApplicantReviewStageByCompanyCode,
@@ -475,7 +471,7 @@ function BizReview() {
         </div>
       </header>
 
-      <main className="mx-auto grid max-w-7xl gap-6 px-6 py-8 xl:grid-cols-[360px_1fr]">
+      <main className="mx-auto grid max-w-7xl gap-6 px-6 py-8 md:grid-cols-[minmax(260px,0.8fr)_minmax(0,1.6fr)] xl:grid-cols-[360px_1fr]">
         <aside>
           <h1 className="text-2xl font-semibold tracking-tight">{reviewTitle}</h1>
           <p className="mt-2 text-sm text-neutral-500">
