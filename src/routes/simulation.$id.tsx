@@ -85,7 +85,7 @@ function AnswerTextarea({
       <Textarea
         id={id}
         value={value}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => onChange(event.target.value.slice(0, MAX_ANSWER_LENGTH))}
         aria-labelledby={ariaLabelledby}
         maxLength={MAX_ANSWER_LENGTH}
         placeholder="여기에 답안을 작성해주세요"
@@ -631,7 +631,7 @@ function SimulationDetailPage() {
           >
             <Textarea
               value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
+              onChange={(e) => setChatInput(e.target.value.slice(0, MAX_ANSWER_LENGTH))}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
@@ -639,6 +639,7 @@ function SimulationDetailPage() {
                 }
               }}
               placeholder="AI에게 질문하기…"
+              maxLength={MAX_ANSWER_LENGTH}
               rows={1}
               className="min-h-9 flex-1 resize-none rounded-md text-sm"
             />
