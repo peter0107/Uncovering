@@ -58,6 +58,7 @@ type SimulationDetail = {
   title: string;
   simulation_source: "company" | "expert";
   expert_nickname: string | null;
+  expert_job_title: string | null;
   simulation_format: "single" | "selection";
   selection_mode: "separated" | "common";
   single_answer_question: string | null;
@@ -244,6 +245,7 @@ function SimulationDetailPage() {
             title: data.title,
             simulation_source: data.simulationSource,
             expert_nickname: data.expertNickname || null,
+            expert_job_title: data.expertJobTitle || null,
             simulation_format: data.simulationFormat,
             selection_mode: data.selectionMode,
             single_answer_question: data.singleAnswerQuestion,
@@ -260,7 +262,7 @@ function SimulationDetailPage() {
         const { data } = await supabase
           .from("job_simulations")
           .select(
-            "id, title, simulation_source, expert_nickname, simulation_format, selection_mode, single_answer_question, task_prompt, shared_situation, shared_materials, steps, estimated_minutes, companies(name)",
+            "id, title, simulation_source, expert_nickname, expert_job_title, simulation_format, selection_mode, single_answer_question, task_prompt, shared_situation, shared_materials, steps, estimated_minutes, companies(name)",
           )
           .eq("id", id)
           .eq("is_public", true)
@@ -273,6 +275,7 @@ function SimulationDetailPage() {
           title: string;
           simulation_source: "company" | "expert" | null;
           expert_nickname: string | null;
+          expert_job_title: string | null;
           simulation_format: "single" | "selection" | null;
           selection_mode: "separated" | "common" | null;
           single_answer_question: string | null;
@@ -288,6 +291,7 @@ function SimulationDetailPage() {
           title: row.title,
           simulation_source: row.simulation_source === "expert" ? "expert" : "company",
           expert_nickname: row.expert_nickname,
+          expert_job_title: row.expert_job_title,
           simulation_format: row.simulation_format === "selection" ? "selection" : "single",
           selection_mode: row.selection_mode === "common" ? "common" : "separated",
           single_answer_question: row.single_answer_question,
@@ -535,7 +539,7 @@ function SimulationDetailPage() {
         ) : (
           <Building2 className="h-3.5 w-3.5" />
         )}
-        {sim.company_name}
+        {isExpertSimulation ? sim.expert_job_title || sim.company_name : sim.company_name}
       </div>
       <h1 className="mt-1 text-2xl font-bold text-zinc-900">{sim.title}</h1>
       {sim.estimated_minutes && (
@@ -746,8 +750,12 @@ function SimulationDetailPage() {
                 </>
               ) : (
                 <>
-                  {step.situation && <MaterialSection label="상황 안내" markdown={step.situation} />}
-                  {step.materials && <MaterialSection label="제공 자료" markdown={step.materials} />}
+                  {step.situation && (
+                    <MaterialSection label="상황 안내" markdown={step.situation} />
+                  )}
+                  {step.materials && (
+                    <MaterialSection label="제공 자료" markdown={step.materials} />
+                  )}
                 </>
               )}
               {/* 자동 분할(폴백): 전 단계 공통 배경 */}

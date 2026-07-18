@@ -109,6 +109,7 @@ export type AdminSimulationPreview = Pick<
 > & {
   simulationSource: "company" | "expert";
   expertNickname: string;
+  expertJobTitle: string;
 };
 
 const domainCategorySchema = z.enum(DOMAIN_CATEGORIES);
@@ -158,13 +159,15 @@ const createCompanySimulationInputSchema = z.object({
         materials: z.string().optional(),
         hint: z.string().optional(),
         completionMessage: z.string().optional(),
-        prompts: z.array(
-          z.object({
-            id: z.string().min(1),
-            label: z.string().min(1),
-            body: z.string().optional().default(""),
-          }),
-        ).max(1),
+        prompts: z
+          .array(
+            z.object({
+              id: z.string().min(1),
+              label: z.string().min(1),
+              body: z.string().optional().default(""),
+            }),
+          )
+          .max(1),
       }),
     )
     .default([]),
@@ -399,7 +402,7 @@ export const getAdminCompanySimulations = createServerFn({ method: "GET" }).hand
     const { data, error } = await supabaseAdmin
       .from("job_simulations")
       .select(
-        "id, company_id, title, role_label, job_family, domain, estimated_minutes, card_image_url, description, simulation_source, expert_nickname, simulation_format, selection_mode, single_answer_question, task_prompt, shared_situation, shared_materials, steps, is_public, deleted_at, created_at, companies(code, unique_code, name, description, logo_url)",
+        "id, company_id, title, role_label, job_family, domain, estimated_minutes, card_image_url, description, simulation_source, expert_nickname, expert_job_title, simulation_format, selection_mode, single_answer_question, task_prompt, shared_situation, shared_materials, steps, is_public, deleted_at, created_at, companies(code, unique_code, name, description, logo_url)",
       )
       .eq("simulation_source", "company")
       .is("deleted_at", null)
@@ -453,6 +456,7 @@ export const getAdminSimulationPreview = createServerFn({ method: "GET" })
       simulationSource:
         (row as Record<string, unknown>).simulation_source === "expert" ? "expert" : "company",
       expertNickname: String((row as Record<string, unknown>).expert_nickname ?? ""),
+      expertJobTitle: String((row as Record<string, unknown>).expert_job_title ?? ""),
     };
   });
 
@@ -812,10 +816,7 @@ export const deleteCompanySimulation = createServerFn({ method: "POST" })
       throw new Error("Failed to delete related submissions");
     }
 
-    const { error } = await supabaseAdmin
-      .from("job_simulations")
-      .delete()
-      .eq("id", data.id);
+    const { error } = await supabaseAdmin.from("job_simulations").delete().eq("id", data.id);
 
     if (error) {
       console.error("Failed to delete simulation:", error);
