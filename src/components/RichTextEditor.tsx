@@ -578,20 +578,28 @@ export function RichTextEditor({
     const selection = getTableSelection() ?? activeTable;
     if (!editor || !selection) return;
 
-    const container = document.createElement("div");
-    container.innerHTML = editor.innerHTML;
-    const table = container.querySelectorAll("table")[selection.tableIndex] as
+    const table = editor.querySelectorAll("table")[selection.tableIndex] as
       | HTMLTableElement
       | undefined;
     if (!table) return;
 
-    mutation(table);
+    // Restrict the history mutation to the table itself so surrounding rich text keeps its markup.
+    const replacement = document.createElement("div");
+    replacement.append(table.cloneNode(true));
+    const replacementTable = replacement.querySelector("table") as HTMLTableElement | null;
+    if (!replacementTable) return;
+
+    mutation(replacementTable);
+    const range = document.createRange();
+    range.selectNode(table);
+    const browserSelection = window.getSelection();
+    browserSelection?.removeAllRanges();
+    browserSelection?.addRange(range);
     editor.focus();
-    document.execCommand("selectAll", false);
-    document.execCommand("insertHTML", false, container.innerHTML);
+    document.execCommand("insertHTML", false, replacement.innerHTML);
     commitChange();
 
-    if (focusPosition) {
+    if (focusPosition && replacement.querySelector("table")) {
       window.requestAnimationFrame(() =>
         focusTableCell(selection.tableIndex, focusPosition.rowIndex, focusPosition.columnIndex),
       );
@@ -847,7 +855,17 @@ export function RichTextEditor({
     commitChange();
   };
 
-  const handleTableTab = (event: React.KeyboardEvent<HTMLDivElement>) => {
+  const handleEditorKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (
+      selectedImageId &&
+      (event.key === "Backspace" || event.key === "Delete") &&
+      getSelectedImage()
+    ) {
+      event.preventDefault();
+      deleteSelectedImage();
+      return;
+    }
+
     if (event.key !== "Tab") return;
     const selection = getTableSelection();
     const editor = editorRef.current;
@@ -1063,7 +1081,7 @@ export function RichTextEditor({
           aria-multiline="true"
           data-placeholder={placeholder}
           onInput={() => commitChange()}
-          onKeyDown={handleTableTab}
+          onKeyDown={handleEditorKeyDown}
           onKeyUp={refreshToolbarState}
           onMouseUp={refreshToolbarState}
           onFocus={refreshToolbarState}
