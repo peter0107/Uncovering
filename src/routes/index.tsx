@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, ArrowUpRight, Check, Clock3, Lightbulb, Menu, X } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Check, Clock3, Menu, X } from "lucide-react";
 import { useState } from "react";
 
 import { AccountMenu } from "@/components/AccountMenu";
@@ -34,16 +34,12 @@ function ExpertPreview() {
   return (
     <figure className="home-expert-preview" aria-label="현직자 제시 시뮬레이션 예시">
       <div className="home-expert-preview-head">
-        <span className="home-expert-icon" aria-hidden="true">
-          <Lightbulb />
-        </span>
         <div>
           <p className="home-expert-name">소영</p>
           <p className="home-expert-meta">스타트업 · 6~10년차 · 브랜드 디자이너</p>
         </div>
       </div>
       <div className="home-expert-preview-body">
-        <p className="home-preview-label">현직자 제시</p>
         <h2>브랜드 첫 화면의 방향을 제안해보세요.</h2>
         <p>업무의 맥락을 읽고, 실제로 어떤 판단을 할지 답안으로 정리합니다.</p>
         <div className="home-expert-preview-foot">
@@ -120,22 +116,19 @@ function ResultPreview() {
 
 const STEPS = [
   {
-    number: "01",
-    title: "관심 있는 일을 고릅니다.",
+    title: "직무를 고릅니다.",
     description:
       "직무군을 선택하면, 그 일을 실제로 하고 있는 현직자가 제시한 시뮬레이션을 찾아볼 수 있어요.",
     preview: <InterestPreview />,
   },
   {
-    number: "02",
-    title: "현직자가 제시한 업무를 해봅니다.",
+    title: "업무를 풀어봅니다.",
     description:
       "문제를 푸는 순서와 판단의 기준이 담긴 과제를 따라가며, 내가 이 일을 어떻게 풀어가는지 확인합니다.",
     preview: <TaskPreview />,
   },
   {
-    number: "03",
-    title: "내가 만든 답안을 남깁니다.",
+    title: "답안을 남깁니다.",
     description:
       "제출한 결과물은 이력과 함께 저장됩니다. 공유에 동의한 경우에는 채용 제안을 받는 데에도 활용할 수 있어요.",
     preview: <ResultPreview />,
@@ -220,17 +213,13 @@ function Index() {
       <main>
         <section className="home-hero">
           <div className="home-hero-copy">
-            <p className="home-hero-label">현직자 제시 시뮬레이션</p>
             <h1>
-              <span>현직자가 제시한</span>
-              <span>
-                업무를 <br className="home-mobile-break" />
-                직접 해보세요.
-              </span>
+              <span>일을 직접</span>
+              <span>해봅니다.</span>
             </h1>
             <p className="home-hero-description">
-              실제 현업의 문제와 판단 기준을 담은 시뮬레이션으로
-              <br className="home-desktop-break" /> 내게 맞는 일을 경험해보세요.
+              현직자가 제시한 실제 업무와 판단 기준을 따라가며,
+              <br className="home-desktop-break" /> 나에게 맞는 일을 확인해보세요.
             </p>
             <div className="home-hero-actions">
               <Link to="/expert-simulations" className="home-action home-action-primary">
@@ -246,19 +235,17 @@ function Index() {
 
         <section id="how-it-works" className="home-workflow">
           <header className="home-section-heading">
-            <p>이용 흐름</p>
             <h2>
-              답을 보기 전에,
+              현직자의 업무를 고르고,
               <br />
-              일하는 방식을 경험합니다.
+              직접 풀어봅니다.
             </h2>
           </header>
 
           <ol className="home-steps">
             {STEPS.map((step) => (
-              <li key={step.number} className="home-step">
+              <li key={step.title} className="home-step">
                 <div className="home-step-copy">
-                  <span className="home-step-number">{step.number}</span>
                   <div>
                     <h3>{step.title}</h3>
                     <p>{step.description}</p>
@@ -270,13 +257,11 @@ function Index() {
           </ol>
         </section>
 
-        <section className="home-closing">
-          <p>처음부터 완벽하게 고를 필요는 없어요.</p>
-          <h2>현직자가 제시한 업무부터, 직접 시작해보세요.</h2>
+        <div className="home-next">
           <Link to="/expert-simulations" className="home-closing-link">
-            현직자 제시 시뮬레이션 보기 <ArrowRight aria-hidden="true" />
+            현직자 제시 업무 보기 <ArrowRight aria-hidden="true" />
           </Link>
-        </section>
+        </div>
       </main>
 
       <footer className="home-footer">

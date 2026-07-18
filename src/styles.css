@@ -345,40 +345,24 @@
     max-width: 39rem;
   }
 
-  .home-hero-label,
-  .home-section-heading > p,
-  .home-preview-label,
-  .home-step-number {
-    color: var(--home-accent);
-    font-size: 0.75rem;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    line-height: 1.3;
-  }
-
   .home-hero h1,
   .home-section-heading h2,
-  .home-closing h2,
   .home-step h3 {
     overflow-wrap: anywhere;
     font-style: normal;
   }
 
   .home-hero h1 {
-    margin: var(--home-space-5) 0 0;
+    margin: 0;
     color: var(--home-ink);
     font-size: clamp(2.6rem, 4.9vw, 4.2rem);
     font-weight: 850;
-    letter-spacing: -0.065em;
+    letter-spacing: -0.04em;
     line-height: 1.04;
   }
 
   .home-hero h1 span {
     display: block;
-  }
-
-  .home-mobile-break {
-    display: none;
   }
 
   .home-hero-description {
@@ -455,27 +439,12 @@
 
   .home-expert-preview-head {
     display: flex;
-    min-height: 8.75rem;
+    min-height: 7.5rem;
     align-items: center;
     gap: var(--home-space-4);
     padding: var(--home-space-6);
     background: var(--home-accent);
     color: var(--home-accent-ink);
-  }
-
-  .home-expert-icon {
-    display: grid;
-    width: 3.5rem;
-    height: 3.5rem;
-    flex: 0 0 auto;
-    place-items: center;
-    border: 1px solid color-mix(in oklab, var(--home-accent-ink) 75%, transparent);
-    border-radius: var(--home-radius);
-  }
-
-  .home-expert-icon svg {
-    width: 1.5rem;
-    height: 1.5rem;
   }
 
   .home-expert-name {
@@ -498,15 +467,15 @@
   }
 
   .home-expert-preview-body h2 {
-    margin: var(--home-space-3) 0 0;
+    margin: 0;
     color: var(--home-ink);
     font-size: clamp(1.5rem, 2.7vw, 2rem);
     font-weight: 850;
-    letter-spacing: -0.055em;
+    letter-spacing: -0.03em;
     line-height: 1.18;
   }
 
-  .home-expert-preview-body > p:not(.home-preview-label) {
+  .home-expert-preview-body > p {
     max-width: 31ch;
     margin: var(--home-space-4) 0 0;
     color: var(--home-ink-muted);
@@ -549,16 +518,12 @@
     flex-direction: column;
   }
 
-  .home-section-heading > p {
-    margin: 0;
-  }
-
   .home-section-heading h2 {
-    margin: var(--home-space-3) 0 0;
+    margin: 0;
     color: var(--home-ink);
     font-size: clamp(2rem, 4.2vw, 3.65rem);
     font-weight: 850;
-    letter-spacing: -0.06em;
+    letter-spacing: -0.035em;
     line-height: 1.08;
   }
 
@@ -582,14 +547,7 @@
   }
 
   .home-step-copy {
-    display: grid;
-    grid-template-columns: 2.5rem minmax(0, 1fr);
-    gap: var(--home-space-4);
-    align-items: start;
-  }
-
-  .home-step-number {
-    padding-top: 0.25rem;
+    min-width: 0;
   }
 
   .home-step h3 {
@@ -597,7 +555,7 @@
     color: var(--home-ink);
     font-size: clamp(1.375rem, 2.4vw, 2rem);
     font-weight: 800;
-    letter-spacing: -0.045em;
+    letter-spacing: -0.03em;
     line-height: 1.2;
   }
 
@@ -772,38 +730,18 @@
     line-height: 1.45;
   }
 
-  .home-closing {
-    display: flex;
+  .home-next {
     max-width: 72.5rem;
-    flex-direction: column;
-    align-items: flex-start;
     margin: 0 auto;
-    padding: var(--home-space-20) var(--home-space-5);
+    padding: var(--home-space-8) var(--home-space-5) var(--home-space-16);
     border-top: 1px solid var(--home-rule);
-  }
-
-  .home-closing > p {
-    margin: 0;
-    color: var(--home-ink-muted);
-    font-size: 0.875rem;
-    font-weight: 650;
-  }
-
-  .home-closing h2 {
-    max-width: 24ch;
-    margin: var(--home-space-3) 0 0;
-    color: var(--home-ink);
-    font-size: clamp(1.75rem, 3.6vw, 3.25rem);
-    font-weight: 850;
-    letter-spacing: -0.06em;
-    line-height: 1.12;
   }
 
   .home-closing-link {
     display: inline-flex;
     align-items: center;
     gap: var(--home-space-2);
-    margin-top: var(--home-space-8);
+    margin-top: 0;
     color: var(--home-accent);
     font-size: 0.9375rem;
     font-weight: 800;
@@ -960,7 +898,7 @@
 
     .home-hero,
     .home-workflow,
-    .home-closing,
+    .home-next,
     .home-footer > div {
       padding-right: var(--home-space-4);
       padding-left: var(--home-space-4);
@@ -981,10 +919,6 @@
 
     .home-desktop-break {
       display: none;
-    }
-
-    .home-mobile-break {
-      display: block;
     }
 
     .home-hero-actions {
@@ -1025,11 +959,6 @@
 
     .home-step {
       padding: var(--home-space-8) 0;
-    }
-
-    .home-step-copy {
-      grid-template-columns: 2rem minmax(0, 1fr);
-      gap: var(--home-space-3);
     }
 
     .home-footer > div {
