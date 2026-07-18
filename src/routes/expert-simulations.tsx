@@ -1,10 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, LayoutGrid } from "lucide-react";
-import { useEffect, useState } from "react";
+import { ArrowLeft, LayoutGrid, Search, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 import { ExpertSimulationCard } from "@/components/ExpertSimulationCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
+import { DOMAIN_CATEGORIES } from "@/lib/domain-categories";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/expert-simulations")({
   head: () => ({ meta: [{ title: "현직자 제시 시뮬레이션 — Beginner" }] }),
@@ -47,6 +49,8 @@ function ExpertSimulationsPage() {
   const [simulations, setSimulations] = useState<ExpertSimulation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -86,6 +90,29 @@ function ExpertSimulationsPage() {
     void load();
   }, []);
 
+  const availableDomains = useMemo(() => {
+    const domains = new Set(simulations.map((simulation) => simulation.domain).filter(Boolean));
+    return DOMAIN_CATEGORIES.filter((domain) => domains.has(domain));
+  }, [simulations]);
+
+  const filteredSimulations = useMemo(() => {
+    const normalizedQuery = query.trim().toLocaleLowerCase("ko-KR");
+
+    return simulations.filter((simulation) => {
+      if (selectedDomain && simulation.domain !== selectedDomain) return false;
+      if (!normalizedQuery) return true;
+
+      return [simulation.roleLabel, simulation.jobTitle, simulation.title]
+        .filter(Boolean)
+        .some((value) => value.toLocaleLowerCase("ko-KR").includes(normalizedQuery));
+    });
+  }, [query, selectedDomain, simulations]);
+
+  function resetFilters() {
+    setQuery("");
+    setSelectedDomain(null);
+  }
+
   return (
     <main className="mx-auto max-w-5xl px-4 py-12">
       <Link
@@ -99,43 +126,112 @@ function ExpertSimulationsPage() {
       {error ? (
         <p className="mt-8 text-sm text-zinc-500">{error}</p>
       ) : (
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {loading ? (
-            <>
-              <ExpertCardSkeleton />
-              <ExpertCardSkeleton />
-              <ExpertCardSkeleton />
-            </>
-          ) : simulations.length > 0 ? (
-            simulations.map((simulation) => (
-              <Link
-                key={simulation.id}
-                to="/simulation/$id"
-                params={{ id: simulation.id }}
-                className="block h-full"
-              >
-                <ExpertSimulationCard
-                  nickname={simulation.nickname}
-                  companyType={simulation.companyType}
-                  experienceBand={simulation.experienceBand}
-                  jobTitle={simulation.jobTitle}
-                  roleLabel={simulation.roleLabel}
-                  title={simulation.title}
-                  description={simulation.description}
-                  estimatedMinutes={simulation.estimatedMinutes}
-                  backgroundColor={simulation.backgroundColor}
-                  textColor={simulation.textColor}
-                  className="h-full"
+        <>
+          {!loading && simulations.length > 0 && (
+            <div className="mt-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedDomain(null)}
+                  className={cn(
+                    "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                    selectedDomain === null
+                      ? "bg-zinc-900 text-white"
+                      : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
+                  )}
+                >
+                  전체
+                </button>
+                {availableDomains.map((domain) => (
+                  <button
+                    key={domain}
+                    type="button"
+                    onClick={() => setSelectedDomain(domain === selectedDomain ? null : domain)}
+                    className={cn(
+                      "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                      selectedDomain === domain
+                        ? "bg-zinc-900 text-white"
+                        : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200",
+                    )}
+                  >
+                    {domain}
+                  </button>
+                ))}
+              </div>
+
+              <div className="relative md:w-60">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+                <input
+                  type="search"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="직무명 검색"
+                  className="w-full rounded-md border border-zinc-200 bg-white py-1.5 pl-9 pr-9 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none"
                 />
-              </Link>
-            ))
-          ) : (
-            <div className="col-span-full flex flex-col items-center py-20 text-center text-zinc-500">
-              <LayoutGrid className="h-8 w-8 text-zinc-300" />
-              <p className="mt-4 text-sm">공개된 현직자 시뮬레이션이 없습니다.</p>
+                {query && (
+                  <button
+                    type="button"
+                    onClick={() => setQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700"
+                    aria-label="검색어 지우기"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
             </div>
           )}
-        </div>
+
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {loading ? (
+              <>
+                <ExpertCardSkeleton />
+                <ExpertCardSkeleton />
+                <ExpertCardSkeleton />
+              </>
+            ) : filteredSimulations.length > 0 ? (
+              filteredSimulations.map((simulation) => (
+                <Link
+                  key={simulation.id}
+                  to="/simulation/$id"
+                  params={{ id: simulation.id }}
+                  className="block h-full"
+                >
+                  <ExpertSimulationCard
+                    nickname={simulation.nickname}
+                    companyType={simulation.companyType}
+                    experienceBand={simulation.experienceBand}
+                    jobTitle={simulation.jobTitle}
+                    roleLabel={simulation.roleLabel}
+                    title={simulation.title}
+                    description={simulation.description}
+                    estimatedMinutes={simulation.estimatedMinutes}
+                    backgroundColor={simulation.backgroundColor}
+                    textColor={simulation.textColor}
+                    className="h-full"
+                  />
+                </Link>
+              ))
+            ) : simulations.length > 0 ? (
+              <div className="col-span-full flex flex-col items-center py-20 text-center text-zinc-500">
+                <Search className="h-8 w-8 text-zinc-300" />
+                <p className="mt-4 text-sm">조건에 맞는 시뮬레이션이 없습니다.</p>
+                <button
+                  type="button"
+                  onClick={resetFilters}
+                  className="mt-5 rounded-md border border-zinc-300 px-3 py-1.5 text-sm text-zinc-700 hover:border-zinc-900 hover:text-zinc-900"
+                >
+                  필터 초기화
+                </button>
+              </div>
+            ) : (
+              <div className="col-span-full flex flex-col items-center py-20 text-center text-zinc-500">
+                <LayoutGrid className="h-8 w-8 text-zinc-300" />
+                <p className="mt-4 text-sm">공개된 현직자 시뮬레이션이 없습니다.</p>
+              </div>
+            )}
+          </div>
+        </>
       )}
     </main>
   );
