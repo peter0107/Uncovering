@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Check, Clock3, Menu, Search, X } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Check, Clock3, Lightbulb, Menu, X } from "lucide-react";
 import { useState } from "react";
 
 import { AccountMenu } from "@/components/AccountMenu";
@@ -8,11 +8,11 @@ import { useAuth } from "@/hooks/use-auth";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Beginner - 직접 경험해보고 확인하는 직무 시뮬레이션" },
+      { title: "Beginner - 현직자가 제시한 업무를 직접 경험하는 직무 시뮬레이션" },
       {
         name: "description",
         content:
-          "내가 원하는 직무를 직접 경험해보세요. 나의 AI 활용 능력까지 평가 받아보세요.",
+          "현직자가 제시한 실제 업무를 시뮬레이션으로 경험하고, 나에게 맞는 직무를 확인해보세요.",
       },
     ],
   }),
@@ -21,88 +21,97 @@ export const Route = createFileRoute("/")({
 
 function Brand() {
   return (
-    <span className="inline-flex items-center gap-2" aria-label="Beginner 홈">
-      <span className="grid h-7 w-7 place-items-center rounded-full border-[3px] border-[#2B5CE7] border-t-transparent text-[10px] font-extrabold tracking-[-0.12em] text-[#171C26] [transform:rotate(18deg)]">
-        <span className="[transform:rotate(-18deg)]">B</span>
+    <span className="home-brand" aria-label="Beginner 홈">
+      <span className="home-brand-mark" aria-hidden="true">
+        <span>B</span>
       </span>
-      <span className="text-[17px] font-extrabold tracking-[-0.03em] text-[#171C26]">Beginner</span>
+      <span>Beginner</span>
     </span>
   );
 }
 
-function ProfilePreview() {
+function ExpertPreview() {
   return (
-    <div className="w-full border border-[#E7EAF0] bg-white p-5">
-      <p className="text-xs font-semibold text-[#6B7280]">프로필 등록</p>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <span className="rounded-sm border border-[#D9DEE8] bg-white px-3 py-1.5 text-xs text-[#4B5563]">
-          마케팅
+    <figure className="home-expert-preview" aria-label="현직자 제시 시뮬레이션 예시">
+      <div className="home-expert-preview-head">
+        <span className="home-expert-icon" aria-hidden="true">
+          <Lightbulb />
         </span>
-        <span className="inline-flex items-center gap-1 rounded-sm bg-[#2B5CE7] px-3 py-1.5 text-xs font-semibold text-white">
-          기획/PM <Check className="h-3 w-3" />
-        </span>
-        <span className="rounded-sm border border-[#D9DEE8] bg-white px-3 py-1.5 text-xs text-[#4B5563]">
-          디자인
-        </span>
-        <span className="rounded-sm border border-[#D9DEE8] bg-white px-3 py-1.5 text-xs text-[#4B5563]">
-          개발
-        </span>
-      </div>
-      <div className="mt-3 flex h-10 items-center gap-2 rounded-md border border-[#D9DEE8] bg-white px-3 text-xs text-[#9CA3AF]">
-        <Search className="h-3.5 w-3.5" />
-        관심 기업을 검색하세요
-      </div>
-    </div>
-  );
-}
-
-function SimulationPreview() {
-  return (
-    <div className="w-full border border-[#E7EAF0] bg-white p-5">
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-xs font-bold text-[#2B5CE7]">기획/PM 시뮬레이션</span>
-        <span className="inline-flex items-center gap-1 rounded-sm border border-[#D9DEE8] bg-white px-2 py-1 text-[11px] text-[#6B7280]">
-          <Clock3 className="h-3 w-3" /> 50분
-        </span>
-      </div>
-      <p className="mt-4 text-sm font-semibold leading-6 text-[#171C26]">
-        Q. 신규 기능의 요구사항 정의서를 작성해 주세요
-      </p>
-      <div className="mt-3 h-14 rounded-md border border-[#D9DEE8] bg-white p-3 text-xs text-[#9CA3AF]">
-        답안을 입력하세요...
-      </div>
-      <span className="mt-3 ml-auto flex w-fit rounded-md bg-[#171C26] px-3 py-2 text-xs font-semibold text-white">
-        제출하기
-      </span>
-    </div>
-  );
-}
-
-function OfferPreview() {
-  return (
-    <div className="w-full space-y-2 border border-[#E7EAF0] bg-white p-5">
-      <div className="flex items-center gap-3 rounded-md border border-[#D9DEE8] bg-white p-3">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-[#EAF0FF] text-xs font-extrabold text-[#2B5CE7]">
-          A
-        </span>
-        <div className="min-w-0">
-          <p className="truncate text-xs font-semibold text-[#171C26]">
-            A사에서 채용 제안이 도착했어요
-          </p>
-          <p className="mt-1 truncate text-[11px] text-[#6B7280]">
-            기획/PM 시뮬레이션 답안을 확인했어요
-          </p>
+        <div>
+          <p className="home-expert-name">소영</p>
+          <p className="home-expert-meta">스타트업 · 6~10년차 · 브랜드 디자이너</p>
         </div>
       </div>
-      <div className="flex items-center gap-3 rounded-md border border-[#D9DEE8] bg-white p-3 opacity-60">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-md bg-[#F1F3F6] text-xs font-extrabold text-[#6B7280]">
-          B
+      <div className="home-expert-preview-body">
+        <p className="home-preview-label">현직자 제시</p>
+        <h2>브랜드 첫 화면의 방향을 제안해보세요.</h2>
+        <p>업무의 맥락을 읽고, 실제로 어떤 판단을 할지 답안으로 정리합니다.</p>
+        <div className="home-expert-preview-foot">
+          <span>
+            <Clock3 aria-hidden="true" /> 약 25분
+          </span>
+          <ArrowUpRight aria-hidden="true" />
+        </div>
+      </div>
+    </figure>
+  );
+}
+
+function InterestPreview() {
+  return (
+    <div className="home-process-visual" aria-label="관심 직무 선택 예시">
+      <p className="home-visual-title">관심 직무</p>
+      <div className="home-role-list">
+        <span>기획·전략</span>
+        <span className="is-selected">
+          디자인 <Check aria-hidden="true" />
         </span>
-        <div className="min-w-0">
-          <p className="truncate text-xs font-semibold text-[#171C26]">
-            B사가 내 프로필을 조회했어요
-          </p>
-          <p className="mt-1 text-[11px] text-[#6B7280]">방금 전</p>
+        <span>AI·개발·데이터</span>
+      </div>
+      <p className="home-visual-note">현직자 제시 업무를 먼저 찾아볼 수 있어요.</p>
+    </div>
+  );
+}
+
+function TaskPreview() {
+  return (
+    <div className="home-process-visual" aria-label="시뮬레이션 답안 작성 예시">
+      <div className="home-task-visual-head">
+        <span>브랜드 디자이너</span>
+        <span>
+          <Clock3 aria-hidden="true" /> 25분
+        </span>
+      </div>
+      <p className="home-task-question">첫 화면에서 가장 먼저 보여줄 메시지를 정리해 주세요.</p>
+      <div className="home-answer-lines" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+      </div>
+    </div>
+  );
+}
+
+function ResultPreview() {
+  return (
+    <div className="home-process-visual" aria-label="답안 저장 예시">
+      <p className="home-visual-title">내 이력</p>
+      <div className="home-result-row">
+        <span className="home-result-check" aria-hidden="true">
+          <Check />
+        </span>
+        <div>
+          <p>현직자 제시 시뮬레이션</p>
+          <span>작성한 답안을 다시 확인할 수 있어요.</span>
+        </div>
+      </div>
+      <div className="home-result-row is-muted">
+        <span className="home-result-check" aria-hidden="true">
+          <Check />
+        </span>
+        <div>
+          <p>채용 제안 받아보기</p>
+          <span>동의한 경우에만 기업에 공유돼요.</span>
         </div>
       </div>
     </div>
@@ -111,25 +120,25 @@ function OfferPreview() {
 
 const STEPS = [
   {
-    number: "STEP 1",
-    title: "관심 직무·기업 등록",
+    number: "01",
+    title: "관심 있는 일을 고릅니다.",
     description:
-      "학력, 관심 직무, 관심 기업, 근무 선호를 입력하면 나에게 맞는 시뮬레이션이 준비돼요.",
-    preview: <ProfilePreview />,
+      "직무군을 선택하면, 그 일을 실제로 하고 있는 현직자가 제시한 시뮬레이션을 찾아볼 수 있어요.",
+    preview: <InterestPreview />,
   },
   {
-    number: "STEP 2",
-    title: "맞춤 시뮬레이션 수행",
+    number: "02",
+    title: "현직자가 제시한 업무를 해봅니다.",
     description:
-      "실제 업무 상황을 기반으로 만들어진 과제를 수행하고 답안을 작성해요. 체험하며 역량도 함께 쌓여요.",
-    preview: <SimulationPreview />,
+      "문제를 푸는 순서와 판단의 기준이 담긴 과제를 따라가며, 내가 이 일을 어떻게 풀어가는지 확인합니다.",
+    preview: <TaskPreview />,
   },
   {
-    number: "STEP 3",
-    title: "채용 제안 받아보기",
+    number: "03",
+    title: "내가 만든 답안을 남깁니다.",
     description:
-      "동의하면 내 답안이 관심 기업에 전달되고, 역량을 확인한 기업에게 채용 제안을 받아요.",
-    preview: <OfferPreview />,
+      "제출한 결과물은 이력과 함께 저장됩니다. 공유에 동의한 경우에는 채용 제안을 받는 데에도 활용할 수 있어요.",
+    preview: <ResultPreview />,
   },
 ];
 
@@ -138,220 +147,145 @@ function Index() {
   const { user } = useAuth();
 
   return (
-    <div className="min-h-screen bg-white text-[#171C26]">
-      <header className="sticky top-0 z-40 border-b border-[#EEF0F4] bg-white">
-        <div className="relative mx-auto flex h-14 max-w-[1160px] items-center justify-between px-5 sm:px-8">
+    <div className="home-page">
+      <header className="home-header">
+        <div className="home-header-inner">
           <Link to="/" aria-label="Beginner 홈">
             <Brand />
           </Link>
 
-          <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-7 text-sm text-[#4B5563] md:flex">
-            <a href="#how-it-works" className="transition-colors hover:text-[#171C26]">
-              서비스 소개
-            </a>
-            <Link to="/simulations" className="transition-colors hover:text-[#171C26]">
-              시뮬레이션
-            </Link>
-            <Link to="/biz" className="transition-colors hover:text-[#171C26]">
-              기업용
-            </Link>
+          <nav className="home-desktop-nav" aria-label="주요 메뉴">
+            <a href="#how-it-works">서비스 소개</a>
+            <Link to="/simulations">기업 시뮬레이션</Link>
+            <Link to="/expert-simulations">현직자 제시</Link>
+            <Link to="/biz">기업용</Link>
           </nav>
 
-          <div className="hidden items-center gap-4 md:flex">
+          <div className="home-desktop-actions">
             {user ? (
               <AccountMenu />
             ) : (
               <>
-                <Link
-                  to="/login"
-                  search={{ redirect: "/" }}
-                  className="inline-flex h-8 items-center rounded-md px-3 text-xs font-medium text-[#171C26] transition-colors hover:bg-[#F7F8FA]"
-                >
+                <Link to="/login" search={{ redirect: "/" }} className="home-login-link">
                   로그인
                 </Link>
-                <Link
-                  to="/start"
-                  className="inline-flex h-8 items-center rounded-md bg-[#2B5CE7] px-3 text-xs font-medium text-white transition-colors hover:bg-[#2149BD] hover:text-white"
-                >
+                <Link to="/start" className="home-header-action">
                   시작하기
                 </Link>
               </>
             )}
           </div>
 
-          <div className="flex items-center gap-1 md:hidden">
+          <div className="home-mobile-actions">
             {user && <AccountMenu />}
             <button
               type="button"
               onClick={() => setIsMenuOpen((current) => !current)}
               aria-label={isMenuOpen ? "메뉴 닫기" : "메뉴 열기"}
-              className="grid h-9 w-9 place-items-center text-[#4B5563]"
+              aria-expanded={isMenuOpen}
+              className="home-mobile-menu-button"
             >
-              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              {isMenuOpen ? <X /> : <Menu />}
             </button>
           </div>
         </div>
         {isMenuOpen && (
-          <nav className="border-t border-[#EEF0F4] bg-white px-5 py-4 md:hidden">
-            <div className="mx-auto grid max-w-[1160px] gap-1">
-              <a
-                href="#how-it-works"
-                onClick={() => setIsMenuOpen(false)}
-                className="rounded-md px-3 py-2.5 text-sm text-[#4B5563] hover:bg-[#F7F8FA]"
-              >
-                서비스 소개
-              </a>
-              <Link
-                to="/simulations"
-                onClick={() => setIsMenuOpen(false)}
-                className="rounded-md px-3 py-2.5 text-sm text-[#4B5563] hover:bg-[#F7F8FA]"
-              >
-                시뮬레이션
-              </Link>
-              <Link
-                to="/biz"
-                onClick={() => setIsMenuOpen(false)}
-                className="rounded-md px-3 py-2.5 text-sm text-[#4B5563] hover:bg-[#F7F8FA]"
-              >
-                기업용
-              </Link>
-              {!user && (
-                <>
-                  <Link
-                    to="/login"
-                    search={{ redirect: "/" }}
-                    onClick={() => setIsMenuOpen(false)}
-                    className="rounded-md px-3 py-2.5 text-sm font-semibold text-[#171C26] hover:bg-[#F7F8FA]"
-                  >
-                    로그인
-                  </Link>
-                  <Link
-                    to="/start"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="mt-2 rounded-md bg-[#2B5CE7] px-3 py-2.5 text-center text-sm font-bold text-white"
-                  >
-                    시작하기
-                  </Link>
-                </>
-              )}
-            </div>
+          <nav className="home-mobile-nav" aria-label="모바일 주요 메뉴">
+            <a href="#how-it-works" onClick={() => setIsMenuOpen(false)}>
+              서비스 소개
+            </a>
+            <Link to="/simulations" onClick={() => setIsMenuOpen(false)}>
+              기업 시뮬레이션
+            </Link>
+            <Link to="/expert-simulations" onClick={() => setIsMenuOpen(false)}>
+              현직자 제시
+            </Link>
+            <Link to="/biz" onClick={() => setIsMenuOpen(false)}>
+              기업용
+            </Link>
+            {!user && (
+              <div className="home-mobile-auth">
+                <Link to="/login" search={{ redirect: "/" }} onClick={() => setIsMenuOpen(false)}>
+                  로그인
+                </Link>
+                <Link to="/start" onClick={() => setIsMenuOpen(false)}>
+                  시작하기
+                </Link>
+              </div>
+            )}
           </nav>
         )}
       </header>
 
       <main>
-        <section className="mx-auto max-w-[1160px] px-5 pb-16 pt-20 text-center sm:px-8 sm:pb-20 sm:pt-28">
-          <p className="text-sm font-medium text-[#6B7280] sm:text-base">
-            "이 직무... 나랑 맞을까?"
-          </p>
-          <h1 className="mt-5 text-4xl font-extrabold leading-[1.18] tracking-[-0.045em] text-[#171C26] sm:text-6xl">
-            고민만 하지 말고,
-            <br />
-            직접 일해보고 확인하세요
-          </h1>
-          <p className="mt-6 text-base leading-7 text-[#4B5563] sm:text-lg">
-            현직자가 하는 실제 업무를 시뮬레이션으로 체험하고
-            <br className="hidden sm:block" />내 직무 적합도를 확인해요
-          </p>
-          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-            {!user && (
-              <Link
-                to="/start"
-                className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-[#2B5CE7] px-6 text-sm font-bold text-white transition-colors hover:bg-[#2149BD] hover:text-white sm:text-base"
-              >
-                무료로 시작하기 <ArrowRight className="h-4 w-4" />
-              </Link>
-            )}
-            <Link
-              to="/simulations"
-              className="inline-flex h-12 items-center justify-center rounded-md border border-[#D9DEE8] bg-white px-6 text-sm font-semibold text-[#171C26] transition-colors hover:bg-[#F7F8FA] sm:text-base"
-            >
-              시뮬레이션 둘러보기
-            </Link>
-          </div>
-        </section>
-
-        <section className="border-b border-[#EEF0F4]">
-          <div className="mx-auto grid max-w-[760px] grid-cols-3 gap-3 px-5 pb-16 text-center sm:gap-12 sm:px-8 sm:pb-20">
-            {[
-              ["120+", "직무 시뮬레이션"],
-              ["80+", "참여 기업"],
-              ["1,400+", "전달된 채용 제안"],
-            ].map(([value, label]) => (
-              <div key={value}>
-                <p className="text-xl font-extrabold tracking-[-0.04em] text-[#2B5CE7] sm:text-3xl">
-                  {value}
-                </p>
-                <p className="mt-1 text-[11px] text-[#6B7280] sm:text-sm">{label}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section id="how-it-works" className="mx-auto max-w-[1000px] px-5 py-20 sm:px-8 sm:py-28">
-          <div className="text-center">
-            <p className="text-sm font-semibold text-[#2B5CE7]">이용 방법</p>
-            <h2 className="mt-3 text-3xl font-extrabold tracking-[-0.04em] text-[#171C26] sm:text-4xl">
-              세 단계면 충분해요
-            </h2>
-          </div>
-
-          <div className="mt-16 space-y-16 sm:mt-20 sm:space-y-24">
-            {STEPS.map((step, index) => (
-              <article
-                key={step.number}
-                className="grid items-center gap-8 md:grid-cols-2 md:gap-16"
-              >
-                <div className={index % 2 === 1 ? "md:order-2" : ""}>
-                  <p className="text-xs font-extrabold tracking-[0.14em] text-[#2B5CE7]">
-                    {step.number}
-                  </p>
-                  <h3 className="mt-3 text-2xl font-extrabold tracking-[-0.035em] text-[#171C26] sm:text-3xl">
-                    {step.title}
-                  </h3>
-                  <p className="mt-4 max-w-md text-base leading-7 text-[#4B5563]">
-                    {step.description}
-                  </p>
-                </div>
-                <div className={`flex justify-center ${index % 2 === 1 ? "md:order-1" : ""}`}>
-                  {step.preview}
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="border-y border-[#E7EAF0] bg-[#F7F8FA]">
-          <div className="mx-auto flex max-w-[1160px] flex-col items-center px-5 py-14 text-center sm:px-8 sm:py-16">
-            <h2 className="text-3xl font-extrabold tracking-[-0.04em] text-[#171C26] sm:text-4xl">
-              첫 시뮬레이션, 지금 무료로 시작해보세요
-            </h2>
-            <p className="mt-3 text-sm text-[#4B5563] sm:text-base">
-              가입 후 3분이면 첫 과제를 받아볼 수 있어요.
+        <section className="home-hero">
+          <div className="home-hero-copy">
+            <p className="home-hero-label">현직자 제시 시뮬레이션</p>
+            <h1>
+              <span>현직자가 제시한</span>
+              <span>
+                업무를 <br className="home-mobile-break" />
+                직접 해보세요.
+              </span>
+            </h1>
+            <p className="home-hero-description">
+              실제 현업의 문제와 판단 기준을 담은 시뮬레이션으로
+              <br className="home-desktop-break" /> 내게 맞는 일을 경험해보세요.
             </p>
-            <Link
-              to="/start"
-              className="mt-7 inline-flex h-12 items-center gap-2 rounded-md bg-[#2B5CE7] px-6 text-sm font-bold text-white transition-colors hover:bg-[#3E6DEE] hover:text-white sm:text-base"
-            >
-              시작하기 <ArrowRight className="h-4 w-4" />
-            </Link>
+            <div className="home-hero-actions">
+              <Link to="/expert-simulations" className="home-action home-action-primary">
+                현직자 제시 보기 <ArrowRight aria-hidden="true" />
+              </Link>
+              <Link to="/simulations" className="home-action home-action-secondary">
+                기업 시뮬레이션 보기
+              </Link>
+            </div>
           </div>
+          <ExpertPreview />
+        </section>
+
+        <section id="how-it-works" className="home-workflow">
+          <header className="home-section-heading">
+            <p>이용 흐름</p>
+            <h2>
+              답을 보기 전에,
+              <br />
+              일하는 방식을 경험합니다.
+            </h2>
+          </header>
+
+          <ol className="home-steps">
+            {STEPS.map((step) => (
+              <li key={step.number} className="home-step">
+                <div className="home-step-copy">
+                  <span className="home-step-number">{step.number}</span>
+                  <div>
+                    <h3>{step.title}</h3>
+                    <p>{step.description}</p>
+                  </div>
+                </div>
+                {step.preview}
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section className="home-closing">
+          <p>처음부터 완벽하게 고를 필요는 없어요.</p>
+          <h2>현직자가 제시한 업무부터, 직접 시작해보세요.</h2>
+          <Link to="/expert-simulations" className="home-closing-link">
+            현직자 제시 시뮬레이션 보기 <ArrowRight aria-hidden="true" />
+          </Link>
         </section>
       </main>
 
-      <footer className="border-t border-[#EEF0F4]">
-        <div className="mx-auto flex max-w-[1160px] flex-col gap-5 px-5 py-7 text-xs text-[#9CA3AF] sm:flex-row sm:items-center sm:justify-between sm:px-8">
+      <footer className="home-footer">
+        <div>
           <span>© 2026 Beginner. All rights reserved.</span>
-          <nav className="flex flex-wrap items-center gap-x-5 gap-y-2">
-            <a href="#faq" className="hover:text-[#4B5563]">
-              자주 묻는 질문
-            </a>
-            <a href="#terms" className="hover:text-[#4B5563]">
-              이용약관
-            </a>
-            <a href="#privacy" className="hover:text-[#4B5563]">
-              개인정보처리방침
-            </a>
+          <nav aria-label="하단 메뉴">
+            <a href="#faq">자주 묻는 질문</a>
+            <a href="#terms">이용약관</a>
+            <a href="#privacy">개인정보처리방침</a>
           </nav>
         </div>
       </footer>

@@ -1,0 +1,14 @@
+{
+  "target": "src/routes/index.tsx",
+  "timestamp": "2026-07-18",
+  "framework": "TanStack Start with React and Tailwind CSS v4",
+  "font": "Pretendard system stack",
+  "existing_tokens": "CSS custom properties in src/styles.css",
+  "motion": "CSS transitions only; no motion library detected",
+  "preserve": [
+    "Beginner brand and blue accent",
+    "existing navigation destinations",
+    "authentication-aware header actions",
+    "responsive navigation"
+  ]
+}
