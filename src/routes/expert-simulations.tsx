@@ -89,10 +89,10 @@ function ExpertSimulationsPage() {
   return (
     <main className="mx-auto max-w-5xl px-4 py-12">
       <Link
-        to="/simulations"
+        to="/"
         className="inline-flex items-center gap-1 text-sm text-zinc-500 transition-colors hover:text-zinc-900"
       >
-        <ArrowLeft className="h-4 w-4" /> 기업 시뮬레이션
+        <ArrowLeft className="h-4 w-4" /> 홈으로
       </Link>
       <h1 className="mt-5 text-2xl font-bold text-zinc-900 md:text-3xl">현직자 제시 시뮬레이션</h1>
 
