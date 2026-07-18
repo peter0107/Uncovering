@@ -79,7 +79,7 @@ export function ExpertSimulationCard({
   return (
     <article
       className={cn(
-        "group flex aspect-[4/3] flex-col overflow-hidden rounded-md border border-zinc-200 bg-white text-left transition-colors hover:border-zinc-900",
+        "group flex aspect-[4/2.8] flex-col overflow-hidden rounded-md border border-zinc-200 bg-white text-left transition-colors hover:border-zinc-900",
         className,
       )}
     >
