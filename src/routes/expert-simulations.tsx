@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, LayoutGrid } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { ExpertSimulationCard } from "@/components/ExpertSimulationCard";
+import { SimulationCardPreview } from "@/components/SimulationCardPreview";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -16,6 +16,7 @@ type ExpertSimulation = {
   title: string;
   roleLabel: string;
   description: string;
+  domain: string;
   estimatedMinutes: number | null;
   nickname: string;
   companyType: string;
@@ -27,12 +28,17 @@ type ExpertSimulation = {
 
 function ExpertCardSkeleton() {
   return (
-    <div className="flex aspect-[4/3] flex-col rounded-md border border-zinc-200 p-4">
-      <Skeleton className="h-5 w-20" />
-      <Skeleton className="mt-2 h-3 w-44" />
-      <Skeleton className="mt-8 h-5 w-24" />
-      <Skeleton className="mt-2 h-6 w-4/5" />
-      <Skeleton className="mt-auto h-4 w-24" />
+    <div className="flex aspect-[4/3] flex-col overflow-hidden rounded-md border border-zinc-100 bg-white">
+      <Skeleton className="basis-[38%] shrink-0 w-full" />
+      <div className="flex min-h-0 flex-1 flex-col p-4">
+        <Skeleton className="h-5 w-32" />
+        <Skeleton className="mt-3 h-3.5 w-5/6" />
+        <Skeleton className="mt-2 h-4 w-2/3" />
+        <div className="mt-auto flex items-center justify-between pt-4">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-4 w-16" />
+        </div>
+      </div>
     </div>
   );
 }
@@ -47,7 +53,7 @@ function ExpertSimulationsPage() {
       const { data, error: queryError } = await supabase
         .from("job_simulations")
         .select(
-          "id, title, role_label, job_family, description, estimated_minutes, expert_nickname, expert_company_type, expert_experience_band, expert_job_title, card_background_color, card_text_color",
+          "id, title, role_label, job_family, description, domain, estimated_minutes, expert_nickname, expert_company_type, expert_experience_band, expert_job_title, card_background_color, card_text_color",
         )
         .eq("simulation_source", "expert")
         .eq("is_public", true)
@@ -63,6 +69,7 @@ function ExpertSimulationsPage() {
             title: row.title,
             roleLabel: row.role_label || row.job_family || row.title,
             description: row.description || "",
+            domain: row.domain || "",
             estimatedMinutes: row.estimated_minutes,
             nickname: row.expert_nickname || "현직자",
             companyType: row.expert_company_type || "",
@@ -107,7 +114,22 @@ function ExpertSimulationsPage() {
                 params={{ id: simulation.id }}
                 className="block h-full"
               >
-                <ExpertSimulationCard {...simulation} className="h-full" />
+                <SimulationCardPreview
+                  companyName={simulation.nickname}
+                  companyDescription={[
+                    simulation.companyType,
+                    simulation.experienceBand,
+                    simulation.jobTitle,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                  roleLabel={simulation.roleLabel}
+                  title={simulation.title}
+                  description={simulation.description}
+                  domain={simulation.domain}
+                  estimatedMinutes={simulation.estimatedMinutes}
+                  className="h-full"
+                />
               </Link>
             ))
           ) : (
