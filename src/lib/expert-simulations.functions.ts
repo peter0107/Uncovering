@@ -7,6 +7,7 @@ import { DOMAIN_CATEGORIES } from "@/lib/domain-categories";
 import type {
   AdminSimulationPrompt,
   AdminSimulationStep,
+  SelectionMode,
   SimulationFormat,
 } from "@/lib/simulations.functions";
 
@@ -30,8 +31,11 @@ export type AdminExpertSimulation = {
   domain: string;
   estimatedMinutes: number | null;
   simulationFormat: SimulationFormat;
+  selectionMode: SelectionMode;
   singleAnswerQuestion: string;
   taskPrompt: string;
+  sharedSituation: string;
+  sharedMaterials: string;
   steps: AdminSimulationStep[];
   isPublic: boolean;
   nickname: string;
@@ -68,6 +72,7 @@ export type ExpertSimulationFeedback = {
 
 const domainCategorySchema = z.enum(DOMAIN_CATEGORIES);
 const simulationFormatSchema = z.enum(["single", "selection"]);
+const selectionModeSchema = z.enum(["separated", "common"]);
 const expertCompanyTypeSchema = z.enum(EXPERT_COMPANY_TYPES);
 const expertExperienceBandSchema = z.enum(EXPERT_EXPERIENCE_BANDS);
 const hexColorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/);
@@ -88,7 +93,7 @@ const stepSchema = z.object({
       label: z.string().min(1),
       body: z.string().optional().default(""),
     }),
-  ),
+  ).max(1),
 });
 
 const expertSimulationInputSchema = z.object({
@@ -98,8 +103,11 @@ const expertSimulationInputSchema = z.object({
   domain: domainCategorySchema,
   estimatedMinutes: z.number().int().positive().nullable().optional().default(null),
   simulationFormat: simulationFormatSchema.optional().default("single"),
+  selectionMode: selectionModeSchema.optional().default("separated"),
   singleAnswerQuestion: z.string().optional().default(""),
   taskPrompt: z.string().optional().default(""),
+  sharedSituation: z.string().optional().default(""),
+  sharedMaterials: z.string().optional().default(""),
   steps: z.array(stepSchema).default([]),
   nickname: z.string().trim().min(1).max(60),
   companyType: expertCompanyTypeSchema,
@@ -189,8 +197,11 @@ function mapExpertSimulation(row: Record<string, unknown>): AdminExpertSimulatio
       (row.simulation_format !== "single" && steps.length > 0)
         ? "selection"
         : "single",
+    selectionMode: row.selection_mode === "common" ? "common" : "separated",
     singleAnswerQuestion: String(row.single_answer_question ?? ""),
     taskPrompt: String(row.task_prompt ?? ""),
+    sharedSituation: String(row.shared_situation ?? ""),
+    sharedMaterials: String(row.shared_materials ?? ""),
     steps,
     isPublic: row.is_public === true,
     nickname: String(row.expert_nickname ?? ""),
@@ -246,7 +257,7 @@ export const getAdminExpertSimulations = createServerFn({ method: "GET" }).handl
     const { data, error } = await supabaseAdmin
       .from("job_simulations")
       .select(
-        "id, title, role_label, job_family, description, domain, estimated_minutes, simulation_format, single_answer_question, task_prompt, steps, is_public, expert_nickname, expert_company_type, expert_experience_band, expert_job_title, card_background_color, card_text_color, expert_model_answer, expert_ai_feedback, created_at",
+        "id, title, role_label, job_family, description, domain, estimated_minutes, simulation_format, selection_mode, single_answer_question, task_prompt, shared_situation, shared_materials, steps, is_public, expert_nickname, expert_company_type, expert_experience_band, expert_job_title, card_background_color, card_text_color, expert_model_answer, expert_ai_feedback, created_at",
       )
       .eq("simulation_source", "expert")
       .is("deleted_at", null)
@@ -273,8 +284,11 @@ export const createExpertSimulation = createServerFn({ method: "POST" })
         domain: data.domain,
         estimated_minutes: data.estimatedMinutes,
         simulation_format: data.simulationFormat,
+        selection_mode: data.selectionMode,
         single_answer_question: data.singleAnswerQuestion || null,
         task_prompt: data.taskPrompt || null,
+        shared_situation: data.sharedSituation,
+        shared_materials: data.sharedMaterials,
         steps: data.steps,
         simulation_source: "expert",
         expert_nickname: data.nickname,
@@ -308,8 +322,11 @@ export const updateExpertSimulation = createServerFn({ method: "POST" })
         domain: data.domain,
         estimated_minutes: data.estimatedMinutes,
         simulation_format: data.simulationFormat,
+        selection_mode: data.selectionMode,
         single_answer_question: data.singleAnswerQuestion || null,
         task_prompt: data.taskPrompt || null,
+        shared_situation: data.sharedSituation,
+        shared_materials: data.sharedMaterials,
         steps: data.steps,
         expert_nickname: data.nickname,
         expert_company_type: data.companyType,

@@ -36,8 +36,11 @@ export type AdminCompanySimulation = {
   cardImageUrl: string;
   description: string;
   simulationFormat: SimulationFormat;
+  selectionMode: SelectionMode;
   singleAnswerQuestion: string;
   taskPrompt: string;
+  sharedSituation: string;
+  sharedMaterials: string;
   steps: AdminSimulationStep[];
   isPublic: boolean;
   deletedAt: string | null;
@@ -45,6 +48,7 @@ export type AdminCompanySimulation = {
 };
 
 export type SimulationFormat = "single" | "selection";
+export type SelectionMode = "separated" | "common";
 
 export type AdminSimulationPrompt = {
   id: string;
@@ -94,8 +98,11 @@ export type AdminSimulationPreview = Pick<
   | "id"
   | "title"
   | "simulationFormat"
+  | "selectionMode"
   | "singleAnswerQuestion"
   | "taskPrompt"
+  | "sharedSituation"
+  | "sharedMaterials"
   | "steps"
   | "estimatedMinutes"
   | "companyName"
@@ -106,6 +113,7 @@ export type AdminSimulationPreview = Pick<
 
 const domainCategorySchema = z.enum(DOMAIN_CATEGORIES);
 const simulationFormatSchema = z.enum(["single", "selection"]);
+const selectionModeSchema = z.enum(["separated", "common"]);
 
 const createCompanyInputSchema = z.object({
   name: z.string().min(1),
@@ -133,8 +141,11 @@ const createCompanySimulationInputSchema = z.object({
   domain: domainCategorySchema,
   estimatedMinutes: z.number().int().positive().nullable().optional().default(null),
   simulationFormat: simulationFormatSchema.optional().default("single"),
+  selectionMode: selectionModeSchema.optional().default("separated"),
   singleAnswerQuestion: z.string().optional().default(""),
   taskPrompt: z.string().optional().default(""),
+  sharedSituation: z.string().optional().default(""),
+  sharedMaterials: z.string().optional().default(""),
   steps: z
     .array(
       z.object({
@@ -153,7 +164,7 @@ const createCompanySimulationInputSchema = z.object({
             label: z.string().min(1),
             body: z.string().optional().default(""),
           }),
-        ),
+        ).max(1),
       }),
     )
     .default([]),
@@ -274,8 +285,11 @@ function mapAdminSimulation(row: Record<string, unknown>): AdminCompanySimulatio
       (row.simulation_format !== "single" && steps.length > 0)
         ? "selection"
         : "single",
+    selectionMode: row.selection_mode === "common" ? "common" : "separated",
     singleAnswerQuestion: String(row.single_answer_question ?? ""),
     taskPrompt: String(row.task_prompt ?? ""),
+    sharedSituation: String(row.shared_situation ?? ""),
+    sharedMaterials: String(row.shared_materials ?? ""),
     steps,
     isPublic: row.is_public !== false,
     deletedAt: row.deleted_at ? String(row.deleted_at) : null,
@@ -385,7 +399,7 @@ export const getAdminCompanySimulations = createServerFn({ method: "GET" }).hand
     const { data, error } = await supabaseAdmin
       .from("job_simulations")
       .select(
-        "id, company_id, title, role_label, job_family, domain, estimated_minutes, card_image_url, description, simulation_source, expert_nickname, simulation_format, single_answer_question, task_prompt, steps, is_public, deleted_at, created_at, companies(code, unique_code, name, description, logo_url)",
+        "id, company_id, title, role_label, job_family, domain, estimated_minutes, card_image_url, description, simulation_source, expert_nickname, simulation_format, selection_mode, single_answer_question, task_prompt, shared_situation, shared_materials, steps, is_public, deleted_at, created_at, companies(code, unique_code, name, description, logo_url)",
       )
       .eq("simulation_source", "company")
       .is("deleted_at", null)
@@ -409,7 +423,7 @@ export const getAdminSimulationPreview = createServerFn({ method: "GET" })
     const { data: row, error } = await supabaseAdmin
       .from("job_simulations")
       .select(
-        "id, company_id, title, role_label, job_family, domain, estimated_minutes, card_image_url, description, simulation_source, expert_nickname, simulation_format, single_answer_question, task_prompt, steps, is_public, deleted_at, created_at, companies(code, unique_code, name, description, logo_url)",
+        "id, company_id, title, role_label, job_family, domain, estimated_minutes, card_image_url, description, simulation_source, expert_nickname, simulation_format, selection_mode, single_answer_question, task_prompt, shared_situation, shared_materials, steps, is_public, deleted_at, created_at, companies(code, unique_code, name, description, logo_url)",
       )
       .eq("id", data.id)
       .is("deleted_at", null)
@@ -425,8 +439,11 @@ export const getAdminSimulationPreview = createServerFn({ method: "GET" })
       id: simulation.id,
       title: simulation.title,
       simulationFormat: simulation.simulationFormat,
+      selectionMode: simulation.selectionMode,
       singleAnswerQuestion: simulation.singleAnswerQuestion,
       taskPrompt: simulation.taskPrompt,
+      sharedSituation: simulation.sharedSituation,
+      sharedMaterials: simulation.sharedMaterials,
       steps: simulation.steps,
       estimatedMinutes: simulation.estimatedMinutes,
       companyName:
@@ -663,8 +680,11 @@ export const createCompanySimulation = createServerFn({ method: "POST" })
         domain: data.domain,
         estimated_minutes: data.estimatedMinutes,
         simulation_format: data.simulationFormat,
+        selection_mode: data.selectionMode,
         single_answer_question: data.singleAnswerQuestion.trim() || null,
         task_prompt: data.taskPrompt,
+        shared_situation: data.sharedSituation.trim(),
+        shared_materials: data.sharedMaterials.trim(),
         steps: data.steps,
         is_public: false,
       })
@@ -708,8 +728,11 @@ export const updateCompanySimulation = createServerFn({ method: "POST" })
         domain: data.domain,
         estimated_minutes: data.estimatedMinutes,
         simulation_format: data.simulationFormat,
+        selection_mode: data.selectionMode,
         single_answer_question: data.singleAnswerQuestion.trim() || null,
         task_prompt: data.taskPrompt,
+        shared_situation: data.sharedSituation.trim(),
+        shared_materials: data.sharedMaterials.trim(),
         steps: data.steps,
       })
       .eq("id", data.id);

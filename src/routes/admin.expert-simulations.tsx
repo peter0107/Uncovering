@@ -17,7 +17,11 @@ import {
   updateExpertSimulation,
   type AdminExpertSimulation,
 } from "@/lib/expert-simulations.functions";
-import type { AdminSimulationStep, SimulationFormat } from "@/lib/simulations.functions";
+import type {
+  AdminSimulationStep,
+  SelectionMode,
+  SimulationFormat,
+} from "@/lib/simulations.functions";
 
 export const Route = createFileRoute("/admin/expert-simulations")({
   head: () => ({ meta: [{ title: "Beginner - 현직자 시뮬레이션 관리" }] }),
@@ -31,8 +35,11 @@ type ExpertSimulationForm = {
   domain: string;
   estimatedMinutes: string;
   simulationFormat: SimulationFormat;
+  selectionMode: SelectionMode;
   singleAnswerQuestion: string;
   taskPrompt: string;
+  sharedSituation: string;
+  sharedMaterials: string;
   steps: AdminSimulationStep[];
   nickname: string;
   companyType: (typeof EXPERT_COMPANY_TYPES)[number];
@@ -66,8 +73,11 @@ function createEmptyForm(): ExpertSimulationForm {
     domain: DOMAIN_CATEGORIES[0],
     estimatedMinutes: "60",
     simulationFormat: "single",
+    selectionMode: "separated",
     singleAnswerQuestion: "",
     taskPrompt: "",
+    sharedSituation: "",
+    sharedMaterials: "",
     steps: [],
     nickname: "",
     companyType: EXPERT_COMPANY_TYPES[0],
@@ -90,8 +100,11 @@ function formFromSimulation(simulation: AdminExpertSimulation): ExpertSimulation
       : DOMAIN_CATEGORIES[0],
     estimatedMinutes: simulation.estimatedMinutes ? String(simulation.estimatedMinutes) : "",
     simulationFormat: simulation.simulationFormat,
+    selectionMode: simulation.selectionMode,
     singleAnswerQuestion: simulation.singleAnswerQuestion,
     taskPrompt: simulation.taskPrompt,
+    sharedSituation: simulation.sharedSituation,
+    sharedMaterials: simulation.sharedMaterials,
     steps: simulation.steps.map((step) => ({
       ...step,
       prompts:
@@ -233,8 +246,11 @@ function AdminExpertSimulations() {
         domain: form.domain as (typeof DOMAIN_CATEGORIES)[number],
         estimatedMinutes,
         simulationFormat: form.simulationFormat,
+        selectionMode: form.selectionMode,
         singleAnswerQuestion: form.singleAnswerQuestion,
         taskPrompt: form.taskPrompt,
+        sharedSituation: form.sharedSituation,
+        sharedMaterials: form.sharedMaterials,
         steps: prepareSteps(form.steps),
         nickname: form.nickname,
         companyType: form.companyType,
@@ -509,24 +525,33 @@ function AdminExpertSimulations() {
 
               <div>
                 <p className="text-xs font-medium text-neutral-600">시뮬레이션 형식</p>
-                <div className="mt-2 flex gap-2">
-                  {(["single", "selection"] as const).map((format) => (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {(["single", "separated", "common"] as const).map((format) => {
+                    const selectedFormat =
+                      format === "single"
+                        ? form.simulationFormat === "single"
+                        : form.simulationFormat === "selection" && form.selectionMode === format;
+                    return (
                     <button
                       key={format}
                       type="button"
                       onClick={() => {
-                        updateForm("simulationFormat", format);
-                        if (format === "selection") setStepEditorPanel("situation");
+                        updateForm("simulationFormat", format === "single" ? "single" : "selection");
+                        if (format !== "single") {
+                          updateForm("selectionMode", format);
+                          setStepEditorPanel("situation");
+                        }
                       }}
-                      className={`rounded-full px-3 py-1.5 text-xs font-semibold ${form.simulationFormat === format ? "bg-neutral-900 text-white" : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"}`}
+                      className={`rounded-full px-3 py-1.5 text-xs font-semibold ${selectedFormat ? "bg-neutral-900 text-white" : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"}`}
                     >
-                      {format === "single" ? "단일형" : "선택형"}
+                      {format === "single" ? "단일형" : format === "separated" ? "선택형(분리)" : "선택형(공통)"}
                     </button>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
-              {form.simulationFormat === "selection" && (
+              {form.simulationFormat === "selection" && form.selectionMode === "common" && (
                 <div className="flex flex-wrap gap-2">
                   {(
                     [
@@ -567,11 +592,37 @@ function AdminExpertSimulations() {
                     minHeight="12rem"
                   />
                 </>
+              ) : form.selectionMode === "common" ? (
+                <>
+                  {stepEditorPanel === "situation" && (
+                    <RichTextEditor
+                      label="상황 안내"
+                      value={form.sharedSituation}
+                      onChange={(value) => updateForm("sharedSituation", value)}
+                    />
+                  )}
+                  {stepEditorPanel === "materials" && (
+                    <RichTextEditor
+                      label="제공 자료"
+                      value={form.sharedMaterials}
+                      onChange={(value) => updateForm("sharedMaterials", value)}
+                      minHeight="12rem"
+                    />
+                  )}
+                  {stepEditorPanel === "questions" && (
+                    <ExpertStepEditor
+                      steps={form.steps}
+                      onChange={(steps) => updateForm("steps", steps)}
+                      activePanel="questions"
+                    />
+                  )}
+                </>
               ) : (
                 <ExpertStepEditor
                   steps={form.steps}
                   onChange={(steps) => updateForm("steps", steps)}
-                  activePanel={stepEditorPanel}
+                  activePanel="situation"
+                  showAll
                 />
               )}
 
@@ -626,11 +677,17 @@ function ExpertStepEditor({
   steps,
   onChange,
   activePanel,
+  showAll = false,
 }: {
   steps: AdminSimulationStep[];
   onChange: (steps: AdminSimulationStep[]) => void;
   activePanel: StepEditorPanel;
+  showAll?: boolean;
 }) {
+  const [activeStepIndex, setActiveStepIndex] = useState(0);
+  useEffect(() => {
+    setActiveStepIndex((current) => Math.min(current, Math.max(steps.length - 1, 0)));
+  }, [steps.length]);
   const updateStep = (index: number, patch: Partial<AdminSimulationStep>) =>
     onChange(steps.map((step, current) => (current === index ? { ...step, ...patch } : step)));
   const updatePrompt = (stepIndex: number, patch: { label?: string; body?: string }) =>
@@ -665,7 +722,27 @@ function ExpertStepEditor({
         </button>
       </div>
       <div className="space-y-4 p-4">
-        {steps.map((step, stepIndex) => (
+        {steps.length > 0 && (
+          <div className="flex flex-wrap gap-2 border-b border-neutral-200 pb-4">
+            {steps.map((_, index) => (
+              <button
+                key={index}
+                type="button"
+                onClick={() => setActiveStepIndex(index)}
+                aria-pressed={activeStepIndex === index}
+                className={`rounded-md border px-3 py-1.5 text-xs font-semibold ${
+                  activeStepIndex === index
+                    ? "border-neutral-900 bg-neutral-900 text-white"
+                    : "border-neutral-300 text-neutral-600 hover:bg-neutral-50"
+                }`}
+              >
+                {index + 1}단계
+              </button>
+            ))}
+          </div>
+        )}
+        {steps.map((step, stepIndex) =>
+          stepIndex !== activeStepIndex ? null : (
           <div key={step.id} className="rounded-md border border-neutral-200 p-4">
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm font-semibold">{stepIndex + 1}단계</p>
@@ -714,7 +791,7 @@ function ExpertStepEditor({
                 options={["1", "2", "3", "4", "5"]}
               />
             </div>
-            {activePanel === "situation" && (
+            {(showAll || activePanel === "situation") && (
               <div className="mt-4 grid gap-4">
                 <RichTextEditor
                   label="상황 안내"
@@ -728,7 +805,7 @@ function ExpertStepEditor({
                 />
               </div>
             )}
-            {activePanel === "materials" && (
+            {(showAll || activePanel === "materials") && (
               <div className="mt-4">
                 <RichTextEditor
                   label="제공 자료"
@@ -738,7 +815,7 @@ function ExpertStepEditor({
                 />
               </div>
             )}
-            {activePanel === "questions" && (
+            {(showAll || activePanel === "questions") && (
               <div className="mt-4 border-t border-neutral-200 pt-4">
                 <p className="text-xs font-semibold">답변 질문</p>
                 <div className="mt-3 rounded-md border border-neutral-200 p-3">
@@ -759,7 +836,8 @@ function ExpertStepEditor({
               </div>
             )}
           </div>
-        ))}
+        ),
+        )}
       </div>
     </section>
   );

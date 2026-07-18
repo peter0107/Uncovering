@@ -56,13 +56,24 @@ export type WizardModel = {
   authored: boolean;
   /** 자동 분할일 때 전 단계 공통 배경 */
   sharedBackground?: string;
+  /** 공통형 선택 시 모든 단계에 함께 보여줄 상황 안내/제공 자료 */
+  selectionMode?: "separated" | "common";
+  sharedSituation?: string;
+  sharedMaterials?: string;
   steps: WizardStep[];
 };
 
 // ============================================================
 // 1) 저작 스텝 → WizardModel
 // ============================================================
-function fromAuthoredSteps(raw: unknown): WizardModel | null {
+function fromAuthoredSteps(
+  raw: unknown,
+  shared?: {
+    selectionMode?: "separated" | "common";
+    situation?: string | null;
+    materials?: string | null;
+  },
+): WizardModel | null {
   if (!Array.isArray(raw) || raw.length === 0) return null;
 
   const steps: WizardStep[] = [];
@@ -90,7 +101,13 @@ function fromAuthoredSteps(raw: unknown): WizardModel | null {
       prompts,
     });
   }
-  return { authored: true, steps };
+  return {
+    authored: true,
+    selectionMode: shared?.selectionMode === "common" ? "common" : "separated",
+    sharedSituation: shared?.situation?.trim() || undefined,
+    sharedMaterials: shared?.materials?.trim() || undefined,
+    steps,
+  };
 }
 
 // ============================================================
@@ -162,8 +179,13 @@ function fromTaskPrompt(taskPrompt: string | null | undefined): WizardModel | nu
 export function buildWizardModel(
   taskPrompt: string | null | undefined,
   authoredSteps: unknown,
+  shared?: {
+    selectionMode?: "separated" | "common";
+    situation?: string | null;
+    materials?: string | null;
+  },
 ): WizardModel | null {
-  return fromAuthoredSteps(authoredSteps) ?? fromTaskPrompt(taskPrompt);
+  return fromAuthoredSteps(authoredSteps, shared) ?? fromTaskPrompt(taskPrompt);
 }
 
 // ============================================================

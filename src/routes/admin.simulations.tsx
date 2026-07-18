@@ -54,6 +54,7 @@ import {
   type AdminCompanySimulation,
   type AdminSimulationPrompt,
   type AdminSimulationStep,
+  type SelectionMode,
   type SimulationFormat,
 } from "@/lib/simulations.functions";
 import { DOMAIN_CATEGORIES, type DomainCategory } from "@/lib/domain-categories";
@@ -67,8 +68,11 @@ type SimulationForm = {
   domain: string;
   estimatedMinutes: string;
   simulationFormat: SimulationFormat;
+  selectionMode: SelectionMode;
   singleAnswerQuestion: string;
   taskPrompt: string;
+  sharedSituation: string;
+  sharedMaterials: string;
   steps: AdminSimulationStep[];
 };
 
@@ -160,8 +164,9 @@ function normaliseSteps(raw: AdminSimulationStep[]): AdminSimulationStep[] {
       materials: step.materials ?? "",
       hint: step.hint ?? "",
       completionMessage: step.completionMessage ?? "",
-      prompts: step.prompts
+  prompts: step.prompts
         .filter((prompt) => prompt && typeof prompt.id === "string")
+        .slice(0, 1)
         .map((prompt, promptIndex) => ({
           id: prompt.id || `prompt-${index + 1}-${promptIndex + 1}`,
           label: prompt.label ?? "",
@@ -176,8 +181,8 @@ function hasValidSteps(steps: AdminSimulationStep[]) {
     steps.every(
       (step) =>
         step.title.trim() &&
-        step.prompts.length > 0 &&
-        step.prompts.every((prompt) => prompt.label.trim()),
+        step.prompts.length === 1 &&
+        step.prompts[0]?.label.trim(),
     )
   );
 }
@@ -195,7 +200,7 @@ function prepareSteps(steps: AdminSimulationStep[]): AdminSimulationStep[] {
     ...(step.materials?.trim() ? { materials: step.materials.trim() } : {}),
     ...(step.hint?.trim() ? { hint: step.hint.trim() } : {}),
     ...(step.completionMessage?.trim() ? { completionMessage: step.completionMessage.trim() } : {}),
-    prompts: step.prompts.map((prompt) => ({
+    prompts: step.prompts.slice(0, 1).map((prompt) => ({
       id: prompt.id,
       label: prompt.label.trim(),
       body: prompt.body.trim(),
@@ -213,8 +218,11 @@ function createEmptyForm(companyCode = ""): SimulationForm {
     domain: DOMAIN_CATEGORIES[0],
     estimatedMinutes: "60",
     simulationFormat: "single",
+    selectionMode: "separated",
     singleAnswerQuestion: "",
     taskPrompt: "",
+    sharedSituation: "",
+    sharedMaterials: "",
     steps: [],
   };
 }
@@ -231,8 +239,11 @@ function formFromSimulation(simulation: AdminCompanySimulation): SimulationForm 
       : DOMAIN_CATEGORIES[0],
     estimatedMinutes: simulation.estimatedMinutes ? String(simulation.estimatedMinutes) : "",
     simulationFormat: simulation.simulationFormat,
+    selectionMode: simulation.selectionMode,
     singleAnswerQuestion: simulation.singleAnswerQuestion,
     taskPrompt: simulation.taskPrompt,
+    sharedSituation: simulation.sharedSituation,
+    sharedMaterials: simulation.sharedMaterials,
     steps: normaliseSteps(simulation.steps),
   };
 }
@@ -246,8 +257,11 @@ const EMPTY_FORM: SimulationForm = {
   domain: DOMAIN_CATEGORIES[0],
   estimatedMinutes: "60",
   simulationFormat: "single",
+  selectionMode: "separated",
   singleAnswerQuestion: "",
   taskPrompt: "",
+  sharedSituation: "",
+  sharedMaterials: "",
   steps: [],
 };
 
@@ -910,8 +924,11 @@ function AdminSimulations() {
         domain: form.domain as DomainCategory,
         estimatedMinutes: Number.isFinite(estimatedMinutes) ? estimatedMinutes : null,
         simulationFormat: form.simulationFormat,
+        selectionMode: form.selectionMode,
         singleAnswerQuestion: form.singleAnswerQuestion.trim(),
         taskPrompt: form.taskPrompt.trim(),
+        sharedSituation: form.sharedSituation,
+        sharedMaterials: form.sharedMaterials,
         steps,
       };
 
@@ -1353,30 +1370,40 @@ function AdminSimulations() {
                 {(
                   [
                     ["single", "단일형"],
-                    ["selection", "선택형"],
+                    ["separated", "선택형(분리)"],
+                    ["common", "선택형(공통)"],
                   ] as const
-                ).map(([format, label]) => (
+                ).map(([format, label]) => {
+                  const selected =
+                    format === "single"
+                      ? form.simulationFormat === "single"
+                      : form.simulationFormat === "selection" && form.selectionMode === format;
+                  return (
                   <button
                     key={format}
                     type="button"
-                    aria-pressed={form.simulationFormat === format}
+                    aria-pressed={selected}
                     onClick={() => {
-                      updateForm("simulationFormat", format);
-                      if (format === "selection") setStepEditorPanel("situation");
+                      updateForm("simulationFormat", format === "single" ? "single" : "selection");
+                      if (format !== "single") {
+                        updateForm("selectionMode", format);
+                        setStepEditorPanel("situation");
+                      }
                     }}
                     className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-                      form.simulationFormat === format
+                      selected
                         ? "bg-neutral-900 text-white"
                         : "bg-neutral-100 text-neutral-500 hover:bg-neutral-200 hover:text-neutral-900"
                     }`}
                   >
                     {label}
                   </button>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
-            {form.simulationFormat === "selection" && (
+            {form.simulationFormat === "selection" && form.selectionMode === "common" && (
               <div className="flex flex-wrap gap-2">
                 {(
                   [
@@ -1419,8 +1446,38 @@ function AdminSimulations() {
                   minHeight="14rem"
                 />
               </>
+            ) : form.selectionMode === "common" ? (
+              <>
+                {stepEditorPanel === "situation" && (
+                  <RichTextEditor
+                    label="상황 안내"
+                    value={form.sharedSituation}
+                    onChange={(value) => updateForm("sharedSituation", value)}
+                  />
+                )}
+                {stepEditorPanel === "materials" && (
+                  <RichTextEditor
+                    label="제공 자료"
+                    value={form.sharedMaterials}
+                    onChange={(value) => updateForm("sharedMaterials", value)}
+                    minHeight="14rem"
+                  />
+                )}
+                {stepEditorPanel === "questions" && (
+                  <StepEditor
+                    steps={form.steps}
+                    onChange={updateSteps}
+                    activePanel="questions"
+                  />
+                )}
+              </>
             ) : (
-              <StepEditor steps={form.steps} onChange={updateSteps} activePanel={stepEditorPanel} />
+              <StepEditor
+                steps={form.steps}
+                onChange={updateSteps}
+                activePanel="situation"
+                showAll
+              />
             )}
 
             <div className="flex justify-end gap-2">
@@ -1561,11 +1618,17 @@ function StepEditor({
   steps,
   onChange,
   activePanel,
+  showAll = false,
 }: {
   steps: AdminSimulationStep[];
   onChange: (updater: (steps: AdminSimulationStep[]) => AdminSimulationStep[]) => void;
   activePanel: StepEditorPanel;
+  showAll?: boolean;
 }) {
+  const [activeStepIndex, setActiveStepIndex] = useState(0);
+  useEffect(() => {
+    setActiveStepIndex((current) => Math.min(current, Math.max(steps.length - 1, 0)));
+  }, [steps.length]);
   const updateStep = (stepIndex: number, patch: Partial<AdminSimulationStep>) => {
     onChange((current) =>
       current.map((step, index) => (index === stepIndex ? { ...step, ...patch } : step)),
@@ -1612,7 +1675,27 @@ function StepEditor({
       </div>
 
       <div className="space-y-4 p-4">
-        {steps.map((step, stepIndex) => (
+        {steps.length > 0 && (
+          <div className="flex flex-wrap gap-2 border-b border-neutral-200 pb-4">
+            {steps.map((_, index) => (
+              <button
+                key={index}
+                type="button"
+                onClick={() => setActiveStepIndex(index)}
+                aria-pressed={activeStepIndex === index}
+                className={`rounded-md border px-3 py-1.5 text-xs font-semibold ${
+                  activeStepIndex === index
+                    ? "border-neutral-900 bg-neutral-900 text-white"
+                    : "border-neutral-300 text-neutral-600 hover:bg-neutral-50"
+                }`}
+              >
+                {index + 1}단계
+              </button>
+            ))}
+          </div>
+        )}
+        {steps.map((step, stepIndex) =>
+          stepIndex !== activeStepIndex ? null : (
           <div key={step.id} className="rounded-md border border-neutral-200 bg-neutral-50 p-4">
             <div className="mb-4 flex items-center justify-between gap-3">
               <p className="text-sm font-semibold text-neutral-700">{stepIndex + 1}단계</p>
@@ -1674,7 +1757,7 @@ function StepEditor({
               />
             </div>
 
-            {activePanel === "situation" && (
+            {(showAll || activePanel === "situation") && (
               <div className="mt-4 grid gap-4">
                 <RichTextEditor
                   label="상황 안내"
@@ -1697,7 +1780,7 @@ function StepEditor({
               </div>
             )}
 
-            {activePanel === "materials" && (
+            {(showAll || activePanel === "materials") && (
               <div className="mt-4">
                 <RichTextEditor
                   label="제공 자료"
@@ -1709,94 +1792,22 @@ function StepEditor({
               </div>
             )}
 
-            {activePanel === "questions" && (
+            {(showAll || activePanel === "questions") && (
               <div className="mt-5 border-t border-neutral-200 pt-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-xs font-semibold text-neutral-700">답변 질문</p>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      onChange((current) =>
-                        current.map((item, index) =>
-                          index === stepIndex
-                            ? { ...item, prompts: [...item.prompts, createPrompt()] }
-                            : item,
-                        ),
-                      )
-                    }
-                    className="inline-flex h-8 items-center gap-1 rounded-md border border-neutral-300 px-3 text-xs font-medium hover:bg-white"
-                  >
-                    <Plus className="h-3.5 w-3.5" /> 질문 추가
-                  </button>
                 </div>
 
                 <div className="mt-3 space-y-3">
-                  {step.prompts.map((prompt, promptIndex) => (
+                  {step.prompts.slice(0, 1).map((prompt, promptIndex) => (
                     <div
                       key={prompt.id}
                       className="rounded-md border border-neutral-200 bg-white p-3"
                     >
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="text-xs font-medium text-neutral-500">
-                          질문 {promptIndex + 1}
-                        </p>
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            aria-label={`질문 ${promptIndex + 1} 위로 이동`}
-                            disabled={promptIndex === 0}
-                            onClick={() =>
-                              onChange((current) =>
-                                current.map((item, index) =>
-                                  index === stepIndex
-                                    ? { ...item, prompts: move(item.prompts, promptIndex, -1) }
-                                    : item,
-                                ),
-                              )
-                            }
-                            className="grid h-7 w-7 place-items-center rounded-md text-neutral-500 hover:bg-neutral-50 disabled:opacity-30"
-                          >
-                            <ChevronUp className="h-4 w-4" />
-                          </button>
-                          <button
-                            type="button"
-                            aria-label={`질문 ${promptIndex + 1} 아래로 이동`}
-                            disabled={promptIndex === step.prompts.length - 1}
-                            onClick={() =>
-                              onChange((current) =>
-                                current.map((item, index) =>
-                                  index === stepIndex
-                                    ? { ...item, prompts: move(item.prompts, promptIndex, 1) }
-                                    : item,
-                                ),
-                              )
-                            }
-                            className="grid h-7 w-7 place-items-center rounded-md text-neutral-500 hover:bg-neutral-50 disabled:opacity-30"
-                          >
-                            <ChevronDown className="h-4 w-4" />
-                          </button>
-                          <button
-                            type="button"
-                            aria-label={`질문 ${promptIndex + 1} 삭제`}
-                            onClick={() =>
-                              onChange((current) =>
-                                current.map((item, index) =>
-                                  index === stepIndex
-                                    ? {
-                                        ...item,
-                                        prompts: item.prompts.filter(
-                                          (_, indexValue) => indexValue !== promptIndex,
-                                        ),
-                                      }
-                                    : item,
-                                ),
-                              )
-                            }
-                            className="grid h-7 w-7 place-items-center rounded-md text-neutral-400 hover:bg-red-50 hover:text-red-600"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-xs font-medium text-neutral-500">
+                            질문 {promptIndex + 1}
+                          </p>
                       </div>
                       <div className="mt-3 space-y-3">
                         <InputField
@@ -1823,7 +1834,8 @@ function StepEditor({
               </div>
             )}
           </div>
-        ))}
+        ),
+        )}
 
         {steps.length === 0 && (
           <div className="rounded-md border border-dashed border-neutral-200 px-4 py-8 text-center text-sm text-neutral-500">

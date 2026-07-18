@@ -59,8 +59,11 @@ type SimulationDetail = {
   simulation_source: "company" | "expert";
   expert_nickname: string | null;
   simulation_format: "single" | "selection";
+  selection_mode: "separated" | "common";
   single_answer_question: string | null;
   task_prompt: string | null;
+  shared_situation: string | null;
+  shared_materials: string | null;
   steps: unknown;
   estimated_minutes: number | null;
   company_name: string;
@@ -211,8 +214,21 @@ function SimulationDetailPage() {
 
   const model: WizardModel | null = useMemo(
     () =>
-      sim?.simulation_format === "selection" ? buildWizardModel(sim.task_prompt, sim.steps) : null,
-    [sim?.simulation_format, sim?.task_prompt, sim?.steps],
+      sim?.simulation_format === "selection"
+        ? buildWizardModel(sim.task_prompt, sim.steps, {
+            selectionMode: sim.selection_mode,
+            situation: sim.shared_situation,
+            materials: sim.shared_materials,
+          })
+        : null,
+    [
+      sim?.simulation_format,
+      sim?.task_prompt,
+      sim?.steps,
+      sim?.selection_mode,
+      sim?.shared_situation,
+      sim?.shared_materials,
+    ],
   );
   const draftKey = `sim-draft-${id}`;
 
@@ -229,8 +245,11 @@ function SimulationDetailPage() {
             simulation_source: data.simulationSource,
             expert_nickname: data.expertNickname || null,
             simulation_format: data.simulationFormat,
+            selection_mode: data.selectionMode,
             single_answer_question: data.singleAnswerQuestion,
             task_prompt: data.taskPrompt,
+            shared_situation: data.sharedSituation,
+            shared_materials: data.sharedMaterials,
             steps: data.steps,
             estimated_minutes: data.estimatedMinutes,
             company_name: data.companyName,
@@ -241,7 +260,7 @@ function SimulationDetailPage() {
         const { data } = await supabase
           .from("job_simulations")
           .select(
-            "id, title, simulation_source, expert_nickname, simulation_format, single_answer_question, task_prompt, steps, estimated_minutes, companies(name)",
+            "id, title, simulation_source, expert_nickname, simulation_format, selection_mode, single_answer_question, task_prompt, shared_situation, shared_materials, steps, estimated_minutes, companies(name)",
           )
           .eq("id", id)
           .eq("is_public", true)
@@ -255,8 +274,11 @@ function SimulationDetailPage() {
           simulation_source: "company" | "expert" | null;
           expert_nickname: string | null;
           simulation_format: "single" | "selection" | null;
+          selection_mode: "separated" | "common" | null;
           single_answer_question: string | null;
           task_prompt: string | null;
+          shared_situation: string | null;
+          shared_materials: string | null;
           steps: unknown;
           estimated_minutes: number | null;
           companies: { name: string } | null;
@@ -267,8 +289,11 @@ function SimulationDetailPage() {
           simulation_source: row.simulation_source === "expert" ? "expert" : "company",
           expert_nickname: row.expert_nickname,
           simulation_format: row.simulation_format === "selection" ? "selection" : "single",
+          selection_mode: row.selection_mode === "common" ? "common" : "separated",
           single_answer_question: row.single_answer_question,
           task_prompt: row.task_prompt,
+          shared_situation: row.shared_situation,
+          shared_materials: row.shared_materials,
           steps: row.steps,
           estimated_minutes: row.estimated_minutes,
           company_name:
@@ -706,12 +731,25 @@ function SimulationDetailPage() {
         {aiPanel}
         {header}
 
-        <div className="mt-8 grid gap-8 lg:grid-cols-2">
+        <div className="mt-8 grid gap-8 md:grid-cols-2">
           {/* 왼쪽: 이 단계의 자료 (단계마다 다름) */}
-          <div className="lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:self-start lg:overflow-y-auto">
+          <div className="md:sticky md:top-20 md:max-h-[calc(100vh-6rem)] md:self-start md:overflow-y-auto">
             <div className="flex flex-col gap-5">
-              {step.situation && <MaterialSection label="상황 안내" markdown={step.situation} />}
-              {step.materials && <MaterialSection label="제공 자료" markdown={step.materials} />}
+              {model.selectionMode === "common" ? (
+                <>
+                  {model.sharedSituation && (
+                    <MaterialSection label="상황 안내" markdown={model.sharedSituation} />
+                  )}
+                  {model.sharedMaterials && (
+                    <MaterialSection label="제공 자료" markdown={model.sharedMaterials} />
+                  )}
+                </>
+              ) : (
+                <>
+                  {step.situation && <MaterialSection label="상황 안내" markdown={step.situation} />}
+                  {step.materials && <MaterialSection label="제공 자료" markdown={step.materials} />}
+                </>
+              )}
               {/* 자동 분할(폴백): 전 단계 공통 배경 */}
               {model.sharedBackground && (
                 <MaterialSection label="과제 배경·자료" markdown={model.sharedBackground} />

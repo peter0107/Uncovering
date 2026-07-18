@@ -521,9 +521,12 @@ export type Database = {
           is_public: boolean
           job_family: string | null
           role_label: string | null
+          selection_mode: string
           simulation_format: string
           simulation_source: string
           single_answer_question: string | null
+          shared_materials: string
+          shared_situation: string
           steps: Json | null
           task_prompt: string | null
           title: string
@@ -548,9 +551,12 @@ export type Database = {
           is_public?: boolean
           job_family?: string | null
           role_label?: string | null
+          selection_mode?: string
           simulation_format?: string
           simulation_source?: string
           single_answer_question?: string | null
+          shared_materials?: string
+          shared_situation?: string
           steps?: Json | null
           task_prompt?: string | null
           title: string
@@ -575,9 +581,12 @@ export type Database = {
           is_public?: boolean
           job_family?: string | null
           role_label?: string | null
+          selection_mode?: string
           simulation_format?: string
           simulation_source?: string
           single_answer_question?: string | null
+          shared_materials?: string
+          shared_situation?: string
           steps?: Json | null
           task_prompt?: string | null
           title?: string
