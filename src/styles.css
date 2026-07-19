@@ -1168,7 +1168,9 @@
   }
 
   .rich-text-editor tr > th:not(:last-child)::after,
-  .rich-text-editor tr > td:not(:last-child)::after {
+  .rich-text-editor tr > td:not(:last-child)::after,
+  .rich-text-content tr > th:not(:last-child)::after,
+  .rich-text-content tr > td:not(:last-child)::after {
     position: absolute;
     top: 0;
     right: -2px;
@@ -1182,8 +1184,12 @@
 
   .rich-text-editor tr > th:not(:last-child):hover::after,
   .rich-text-editor tr > td:not(:last-child):hover::after,
+  .rich-text-content tr > th:not(:last-child):hover::after,
+  .rich-text-content tr > td:not(:last-child):hover::after,
   .rich-text-editor[data-table-resizing] tr > th:not(:last-child)::after,
-  .rich-text-editor[data-table-resizing] tr > td:not(:last-child)::after {
+  .rich-text-editor[data-table-resizing] tr > td:not(:last-child)::after,
+  body.rich-text-table-resizing .rich-text-content tr > th:not(:last-child)::after,
+  body.rich-text-table-resizing .rich-text-content tr > td:not(:last-child)::after {
     background: var(--color-foreground);
     opacity: 0.45;
   }

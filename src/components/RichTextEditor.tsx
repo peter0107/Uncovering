@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ChangeEvent,
@@ -1240,7 +1241,7 @@ export function RichTextContent({ value, className = "" }: { value: string; clas
   const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null);
   const richValue = value.startsWith(RICH_TEXT_PREFIX);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!contentRef.current) return;
     prepareContentTables(contentRef.current);
   }, [value]);
@@ -1263,8 +1264,9 @@ export function RichTextContent({ value, className = "" }: { value: string; clas
 
   const beginTableResize = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;
-    const handle = (event.target as HTMLElement).closest(".rich-text-table-resize-handle");
-    const cell = handle?.parentElement as HTMLTableCellElement | null;
+    const target = event.target as HTMLElement;
+    const handle = target.closest(".rich-text-table-resize-handle");
+    const cell = (handle?.parentElement ?? target.closest("td, th")) as HTMLTableCellElement | null;
     const table = cell?.closest("table");
     const row = cell?.parentElement as HTMLTableRowElement | null;
     if (!cell || !table || !row || !contentRef.current?.contains(table)) return;
@@ -1272,6 +1274,9 @@ export function RichTextContent({ value, className = "" }: { value: string; clas
     const columnIndex = Array.from(row.cells).indexOf(cell);
     const columns = ensureContentTableColumns(table);
     if (columnIndex < 0 || columnIndex >= columns.length - 1) return;
+
+    const nearRightBorder = Math.abs(event.clientX - cell.getBoundingClientRect().right) <= 8;
+    if (!handle && !nearRightBorder) return;
 
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
