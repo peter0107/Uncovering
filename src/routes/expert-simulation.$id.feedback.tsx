@@ -106,6 +106,26 @@ function ExpertSimulationFeedbackPage() {
             <h2 className="text-lg font-semibold">AI 활용 능력</h2>
           </div>
           <p className="mt-3 text-sm text-zinc-600">AI 질문 {userQuestions}회</p>
+          {feedback.aiReview && (
+            <div className="mt-5 border-l-2 border-zinc-900 pl-3">
+              <p className="text-sm font-semibold text-zinc-900">
+                AI 활용 {feedback.aiReview.score}점
+              </p>
+              <p className="mt-2 text-sm leading-6 text-zinc-700">
+                {feedback.aiReview.summary}
+              </p>
+              {feedback.aiReview.strengths.length > 0 && (
+                <p className="mt-2 text-xs leading-5 text-zinc-500">
+                  강점: {feedback.aiReview.strengths.join(" · ")}
+                </p>
+              )}
+              {feedback.aiReview.improvements.length > 0 && (
+                <p className="mt-1 text-xs leading-5 text-zinc-500">
+                  보완: {feedback.aiReview.improvements.join(" · ")}
+                </p>
+              )}
+            </div>
+          )}
           {feedback.simulation.aiFeedback && (
             <div className="prose prose-sm prose-zinc mt-5 max-w-none prose-table:text-sm">
               <RichTextContent value={feedback.simulation.aiFeedback} />

@@ -3,6 +3,10 @@ import { getRequest } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
+import {
+  COMPANY_AI_PROMPT_DEFAULTS,
+  type CompanyAiPromptKey,
+} from "@/lib/ai-prompt.defaults";
 import { DOMAIN_CATEGORIES } from "@/lib/domain-categories";
 import type {
   AdminSimulationPrompt,
@@ -68,6 +72,23 @@ export type ExpertSimulationFeedback = {
     aiChatLog: Array<{ role: "user" | "assistant"; content: string; at: string }>;
     submittedAt: string | null;
   };
+  aiReview: ExpertAiUtilizationReview | null;
+};
+
+export type ExpertAiUtilizationReview = {
+  score: number;
+  summary: string;
+  strengths: string[];
+  improvements: string[];
+  updatedAt: string;
+};
+
+export type AdminExpertSimulationSubmission = {
+  id: string;
+  applicantName: string;
+  submittedAt: string;
+  chatMessageCount: number;
+  aiReview: ExpertAiUtilizationReview | null;
 };
 
 const domainCategorySchema = z.enum(DOMAIN_CATEGORIES);
@@ -129,6 +150,18 @@ const expertFeedbackInputSchema = z.object({
   simulationId: z.string().uuid(),
   submissionId: z.string().uuid().optional(),
 });
+const expertSubmissionInputSchema = z.object({ simulationId: z.string().uuid() });
+const expertAiEvaluationInputSchema = z.object({
+  simulationId: z.string().uuid(),
+  submissionId: z.string().uuid(),
+});
+const expertAiUtilizationSchema = z.object({
+  score: z.number().int().min(0).max(100),
+  summary: z.string(),
+  strengths: z.array(z.string()),
+  improvements: z.array(z.string()),
+});
+const expertAiAnalysisSchema = z.object({ aiUtilization: expertAiUtilizationSchema });
 
 function createPublicServerClient() {
   const supabaseUrl = process.env.SUPABASE_URL;
@@ -404,6 +437,192 @@ function mapAiChatLog(value: unknown): ExpertSimulationFeedback["submission"]["a
   });
 }
 
+function extractJsonObject(value: string) {
+  const trimmed = value
+    .trim()
+    .replace(/^```json\s*/i, "")
+    .replace(/```$/i, "")
+    .trim();
+  const start = trimmed.indexOf("{");
+  const end = trimmed.lastIndexOf("}");
+  if (start === -1 || end === -1 || end <= start) {
+    throw new Error("AI 응답 형식이 올바르지 않습니다.");
+  }
+  return JSON.parse(trimmed.slice(start, end + 1)) as unknown;
+}
+
+function getClaudeText(payload: Record<string, unknown>) {
+  const content = Array.isArray(payload.content) ? payload.content : [];
+  return content
+    .flatMap((part) =>
+      typeof part === "object" &&
+      part !== null &&
+      (part as { type?: unknown }).type === "text" &&
+      typeof (part as { text?: unknown }).text === "string"
+        ? [(part as { text: string }).text]
+        : [],
+    )
+    .join("\n")
+    .trim();
+}
+
+function parseExpertAiReview(value: unknown, updatedAt: string): ExpertAiUtilizationReview | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const parsed = expertAiAnalysisSchema.safeParse(value);
+  if (!parsed.success) return null;
+  return { ...parsed.data.aiUtilization, updatedAt };
+}
+
+function getResponseAnswers(value: unknown) {
+  return mapResponseAnswers(value).map((answer) => ({ label: answer.label, answer: answer.answer }));
+}
+
+export const getAdminExpertSimulationSubmissions = createServerFn({ method: "GET" })
+  .inputValidator(expertSubmissionInputSchema)
+  .handler(async ({ data }): Promise<AdminExpertSimulationSubmission[]> => {
+    await assertAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: simulation, error: simulationError } = await supabaseAdmin
+      .from("job_simulations")
+      .select("company_id")
+      .eq("id", data.simulationId)
+      .eq("simulation_source", "expert")
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (simulationError || !simulation) throw new Error("현직자 시뮬레이션을 찾을 수 없습니다.");
+
+    const { data: rows, error } = await supabaseAdmin
+      .from("submissions")
+      .select("id, submitted_at, ai_chat_log, job_seekers(display_name, email)")
+      .eq("job_simulation_id", data.simulationId)
+      .not("submitted_at", "is", null)
+      .order("submitted_at", { ascending: false });
+    if (error) throw new Error("제출 답변을 불러오지 못했습니다.");
+
+    const submissionIds = (rows ?? []).map((row) => String(row.id));
+    const reviewBySubmission = new Map<string, ExpertAiUtilizationReview>();
+    if (submissionIds.length > 0) {
+      const { data: reviews, error: reviewError } = await supabaseAdmin
+        .from("company_simulation_ai_reviews")
+        .select("applicant_id, analysis, created_at, updated_at")
+        .eq("company_id", simulation.company_id)
+        .in("applicant_id", submissionIds);
+      if (reviewError) throw new Error("저장된 AI 평가를 불러오지 못했습니다.");
+      for (const review of reviews ?? []) {
+        const parsed = parseExpertAiReview(
+          review.analysis,
+          String(review.updated_at ?? review.created_at ?? ""),
+        );
+        if (parsed) reviewBySubmission.set(String(review.applicant_id), parsed);
+      }
+    }
+
+    return (rows ?? []).map((row) => {
+      const seeker = row.job_seekers as { display_name?: string | null; email?: string | null } | null;
+      const chatLog = mapAiChatLog(row.ai_chat_log);
+      return {
+        id: String(row.id),
+        applicantName: seeker?.display_name || seeker?.email || "이름 미입력",
+        submittedAt: formatDateTime(String(row.submitted_at ?? "")),
+        chatMessageCount: chatLog.length,
+        aiReview: reviewBySubmission.get(String(row.id)) ?? null,
+      };
+    });
+  });
+
+export const evaluateExpertSimulationAiUtilization = createServerFn({ method: "POST" })
+  .inputValidator(expertAiEvaluationInputSchema)
+  .handler(async ({ data }): Promise<ExpertAiUtilizationReview> => {
+    await assertAdmin();
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) throw new Error("ANTHROPIC_API_KEY 환경변수를 Lovable에 설정해주세요.");
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: simulation, error: simulationError } = await supabaseAdmin
+      .from("job_simulations")
+      .select("company_id, title, role_label")
+      .eq("id", data.simulationId)
+      .eq("simulation_source", "expert")
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (simulationError || !simulation) throw new Error("현직자 시뮬레이션을 찾을 수 없습니다.");
+
+    const { data: submission, error: submissionError } = await supabaseAdmin
+      .from("submissions")
+      .select("id, response_text, response_json, ai_chat_log")
+      .eq("id", data.submissionId)
+      .eq("job_simulation_id", data.simulationId)
+      .not("submitted_at", "is", null)
+      .maybeSingle();
+    if (submissionError || !submission) throw new Error("제출 답변을 찾을 수 없습니다.");
+
+    const promptKey: CompanyAiPromptKey = "company_ai_utilization_review";
+    const { data: savedPrompt } = await supabaseAdmin
+      .from("ai_prompt_settings")
+      .select("prompt")
+      .eq("key", promptKey)
+      .maybeSingle();
+    const instruction = savedPrompt?.prompt?.trim() || COMPANY_AI_PROMPT_DEFAULTS[promptKey].prompt;
+    const material = {
+      simulationTitle: simulation.title,
+      roleLabel: simulation.role_label,
+      responseText: String(submission.response_text ?? ""),
+      responseAnswers: getResponseAnswers(submission.response_json),
+      aiAssistantChatLog: mapAiChatLog(submission.ai_chat_log),
+    };
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6",
+        max_tokens: 1200,
+        messages: [
+          {
+            role: "user",
+            content: `${instruction}\n\n공통 규칙:\n- 제공된 대화 로그와 답변 안에서 확인되는 내용만 평가하세요.\n- 채용 합격/불합격을 판단하지 마세요.\n- 반드시 아래 JSON만 반환하세요.\n{ "aiUtilization": { "score": 0, "summary": "", "strengths": [""], "improvements": [""] } }\n\n평가 자료:\n${JSON.stringify(material).slice(0, 30000)}`,
+          },
+        ],
+      }),
+    });
+    const payload = (await response.json()) as Record<string, unknown>;
+    if (!response.ok) {
+      const message =
+        typeof payload.error === "object" &&
+        payload.error !== null &&
+        typeof (payload.error as { message?: unknown }).message === "string"
+          ? (payload.error as { message: string }).message
+          : "AI 평가 요청에 실패했습니다.";
+      throw new Error(message);
+    }
+
+    const output = getClaudeText(payload);
+    if (!output) throw new Error("AI 평가 결과를 받지 못했습니다.");
+    const analysis = expertAiAnalysisSchema.parse(extractJsonObject(output));
+    const now = new Date().toISOString();
+    const { data: saved, error: saveError } = await supabaseAdmin
+      .from("company_simulation_ai_reviews")
+      .upsert(
+        {
+          company_id: simulation.company_id,
+          applicant_id: submission.id,
+          analysis,
+          updated_at: now,
+        },
+        { onConflict: "company_id,applicant_id" },
+      )
+      .select("created_at, updated_at")
+      .single();
+    if (saveError || !saved) throw new Error("AI 평가 결과를 저장하지 못했습니다.");
+    return {
+      ...analysis.aiUtilization,
+      updatedAt: String(saved.updated_at ?? saved.created_at ?? now),
+    };
+  });
+
 export const getExpertSimulationFeedback = createServerFn({ method: "GET" })
   .inputValidator(expertFeedbackInputSchema)
   .handler(async ({ data }): Promise<ExpertSimulationFeedback> => {
@@ -412,7 +631,7 @@ export const getExpertSimulationFeedback = createServerFn({ method: "GET" })
     const { data: simulation, error: simulationError } = await supabaseAdmin
       .from("job_simulations")
       .select(
-        "id, title, role_label, expert_nickname, expert_company_type, expert_experience_band, expert_job_title, expert_model_answer, expert_ai_feedback",
+        "id, company_id, title, role_label, expert_nickname, expert_company_type, expert_experience_band, expert_job_title, expert_model_answer, expert_ai_feedback",
       )
       .eq("id", data.simulationId)
       .eq("simulation_source", "expert")
@@ -431,6 +650,14 @@ export const getExpertSimulationFeedback = createServerFn({ method: "GET" })
     const { data: submissions, error: submissionError } = await submissionQuery;
     const submission = submissions?.[0];
     if (submissionError || !submission) throw new Error("제출 기록을 찾을 수 없습니다.");
+
+    const { data: reviewRow, error: reviewError } = await supabaseAdmin
+      .from("company_simulation_ai_reviews")
+      .select("analysis, created_at, updated_at")
+      .eq("company_id", simulation.company_id)
+      .eq("applicant_id", submission.id)
+      .maybeSingle();
+    if (reviewError) throw new Error("AI 평가 결과를 불러오지 못했습니다.");
 
     return {
       simulation: {
@@ -451,5 +678,11 @@ export const getExpertSimulationFeedback = createServerFn({ method: "GET" })
         aiChatLog: mapAiChatLog(submission.ai_chat_log),
         submittedAt: submission.submitted_at ? String(submission.submitted_at) : null,
       },
+      aiReview: reviewRow
+        ? parseExpertAiReview(
+            reviewRow.analysis,
+            String(reviewRow.updated_at ?? reviewRow.created_at ?? ""),
+          )
+        : null,
     };
   });

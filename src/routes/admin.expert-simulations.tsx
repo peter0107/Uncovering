@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronDown, ChevronUp, ExternalLink, Plus, Save, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, ExternalLink, Plus, Save, Sparkles, Trash2 } from "lucide-react";
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -10,11 +10,14 @@ import { DOMAIN_CATEGORIES } from "@/lib/domain-categories";
 import {
   createExpertSimulation,
   deleteExpertSimulation,
+  evaluateExpertSimulationAiUtilization,
   EXPERT_COMPANY_TYPES,
   EXPERT_EXPERIENCE_BANDS,
+  getAdminExpertSimulationSubmissions,
   getAdminExpertSimulations,
   setExpertSimulationVisibility,
   updateExpertSimulation,
+  type AdminExpertSimulationSubmission,
   type AdminExpertSimulation,
 } from "@/lib/expert-simulations.functions";
 import type {
@@ -144,7 +147,7 @@ function prepareSteps(steps: AdminSimulationStep[]) {
   }));
 }
 
-type StepEditorPanel = "situation" | "materials" | "questions";
+type StepEditorPanel = "situation" | "materials" | "questions" | "modelAnswer" | "aiFeedback";
 
 function AdminExpertSimulations() {
   const navigate = useNavigate();
@@ -156,6 +159,9 @@ function AdminExpertSimulations() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [actioningId, setActioningId] = useState<string | null>(null);
+  const [aiReviewSubmissions, setAiReviewSubmissions] = useState<AdminExpertSimulationSubmission[]>([]);
+  const [isLoadingAiReviewSubmissions, setIsLoadingAiReviewSubmissions] = useState(false);
+  const [evaluatingSubmissionId, setEvaluatingSubmissionId] = useState<string | null>(null);
   const loadedUserIdRef = useRef<string | null>(null);
 
   const selected = useMemo(
@@ -206,12 +212,14 @@ function AdminExpertSimulations() {
     setSelectedId(simulation.id);
     setForm(formFromSimulation(simulation));
     setStepEditorPanel("situation");
+    setAiReviewSubmissions([]);
   };
 
   const startNew = () => {
     setSelectedId(null);
     setForm(createEmptyForm());
     setStepEditorPanel("situation");
+    setAiReviewSubmissions([]);
   };
 
   const updateForm = <K extends keyof ExpertSimulationForm>(
@@ -219,6 +227,39 @@ function AdminExpertSimulations() {
     value: ExpertSimulationForm[K],
   ) => {
     setForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const loadAiReviewSubmissions = useCallback(async (simulationId: string) => {
+    setIsLoadingAiReviewSubmissions(true);
+    try {
+      setAiReviewSubmissions(
+        await getAdminExpertSimulationSubmissions({ data: { simulationId } }),
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "제출 답변을 불러오지 못했습니다.");
+    } finally {
+      setIsLoadingAiReviewSubmissions(false);
+    }
+  }, []);
+
+  const evaluateAiUtilization = async (submissionId: string) => {
+    if (!selectedId || evaluatingSubmissionId) return;
+    setEvaluatingSubmissionId(submissionId);
+    try {
+      const review = await evaluateExpertSimulationAiUtilization({
+        data: { simulationId: selectedId, submissionId },
+      });
+      setAiReviewSubmissions((current) =>
+        current.map((submission) =>
+          submission.id === submissionId ? { ...submission, aiReview: review } : submission,
+        ),
+      );
+      toast.success("AI 활용 평가를 저장했습니다.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "AI 활용 평가를 생성하지 못했습니다.");
+    } finally {
+      setEvaluatingSubmissionId(null);
+    }
   };
 
   const submit = async (event: FormEvent) => {
@@ -562,13 +603,20 @@ function AdminExpertSimulations() {
                       ["situation", "상황 안내"],
                       ["materials", "제공 자료"],
                       ["questions", "단계별 질문"],
+                      ["modelAnswer", "현직자 모범답안"],
+                      ["aiFeedback", "AI 활용 피드백"],
                     ] as const
                   ).map(([panel, label]) => (
                     <button
                       key={panel}
                       type="button"
                       aria-pressed={stepEditorPanel === panel}
-                      onClick={() => setStepEditorPanel(panel)}
+                      onClick={() => {
+                        setStepEditorPanel(panel);
+                        if (panel === "aiFeedback" && selectedId) {
+                          void loadAiReviewSubmissions(selectedId);
+                        }
+                      }}
                       className={`h-8 rounded-md border px-3 text-xs font-semibold transition-colors ${
                         stepEditorPanel === panel
                           ? "border-neutral-900 bg-neutral-900 text-white"
@@ -620,6 +668,36 @@ function AdminExpertSimulations() {
                       activePanel="questions"
                     />
                   )}
+                  {stepEditorPanel === "modelAnswer" && (
+                    <RichTextEditor
+                      label="현직자 모범답안"
+                      value={form.modelAnswer}
+                      onChange={(value) => updateForm("modelAnswer", value)}
+                      minHeight="16rem"
+                    />
+                  )}
+                  {stepEditorPanel === "aiFeedback" && (
+                    <div className="grid gap-5">
+                      {selectedId ? (
+                        <ExpertAiFeedbackPanel
+                          submissions={aiReviewSubmissions}
+                          isLoading={isLoadingAiReviewSubmissions}
+                          evaluatingSubmissionId={evaluatingSubmissionId}
+                          onEvaluate={evaluateAiUtilization}
+                        />
+                      ) : (
+                        <div className="border-y border-dashed border-neutral-200 py-8 text-center text-sm text-neutral-500">
+                          저장 후 AI 활용 평가를 확인할 수 있습니다.
+                        </div>
+                      )}
+                      <RichTextEditor
+                        label="현직자 안내"
+                        value={form.aiFeedback}
+                        onChange={(value) => updateForm("aiFeedback", value)}
+                        minHeight="12rem"
+                      />
+                    </div>
+                  )}
                 </>
               ) : (
                 <ExpertStepEditor
@@ -630,18 +708,22 @@ function AdminExpertSimulations() {
                 />
               )}
 
-              <RichTextEditor
-                label="현직자 모범답안"
-                value={form.modelAnswer}
-                onChange={(value) => updateForm("modelAnswer", value)}
-                minHeight="16rem"
-              />
-              <RichTextEditor
-                label="AI 활용 피드백"
-                value={form.aiFeedback}
-                onChange={(value) => updateForm("aiFeedback", value)}
-                minHeight="12rem"
-              />
+              {!(form.simulationFormat === "selection" && form.selectionMode === "common") && (
+                <>
+                  <RichTextEditor
+                    label="현직자 모범답안"
+                    value={form.modelAnswer}
+                    onChange={(value) => updateForm("modelAnswer", value)}
+                    minHeight="16rem"
+                  />
+                  <RichTextEditor
+                    label="AI 활용 피드백"
+                    value={form.aiFeedback}
+                    onChange={(value) => updateForm("aiFeedback", value)}
+                    minHeight="12rem"
+                  />
+                </>
+              )}
 
               <div className="flex justify-end gap-2">
                 <button
@@ -962,6 +1044,83 @@ function TextAreaField({
         className="mt-2 min-h-24 w-full resize-y rounded-md border border-neutral-300 bg-white p-3 text-sm text-neutral-900 outline-none focus:border-neutral-700"
       />
     </label>
+  );
+}
+
+function ExpertAiFeedbackPanel({
+  submissions,
+  isLoading,
+  evaluatingSubmissionId,
+  onEvaluate,
+}: {
+  submissions: AdminExpertSimulationSubmission[];
+  isLoading: boolean;
+  evaluatingSubmissionId: string | null;
+  onEvaluate: (submissionId: string) => void;
+}) {
+  if (isLoading) {
+    return <div className="py-8 text-center text-sm text-neutral-500">제출 답변을 불러오는 중입니다.</div>;
+  }
+
+  if (submissions.length === 0) {
+    return (
+      <div className="border-y border-dashed border-neutral-200 py-8 text-center text-sm text-neutral-500">
+        제출된 답변이 없습니다.
+      </div>
+    );
+  }
+
+  return (
+    <section className="border-y border-neutral-200">
+      <div className="divide-y divide-neutral-200">
+        {submissions.map((submission) => (
+          <div key={submission.id} className="py-4 first:pt-0 last:pb-0">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-neutral-900">{submission.applicantName}</p>
+                <p className="mt-1 text-xs text-neutral-500">
+                  {submission.submittedAt} · AI 대화 {submission.chatMessageCount}건
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => onEvaluate(submission.id)}
+                disabled={Boolean(submission.aiReview) || evaluatingSubmissionId === submission.id}
+                className="inline-flex h-8 items-center gap-1.5 rounded-md border border-neutral-300 px-2.5 text-xs font-medium text-neutral-800 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                {evaluatingSubmissionId === submission.id
+                  ? "평가 중..."
+                  : submission.aiReview
+                    ? "평가 완료"
+                    : "AI 평가하기"}
+              </button>
+            </div>
+
+            {submission.aiReview && (
+              <div className="mt-4 border-l-2 border-neutral-900 pl-3">
+                <p className="text-sm font-semibold text-neutral-900">
+                  AI 활용 {submission.aiReview.score}점
+                </p>
+                <p className="mt-2 text-sm leading-6 text-neutral-700">
+                  {submission.aiReview.summary}
+                </p>
+                {submission.aiReview.strengths.length > 0 && (
+                  <p className="mt-2 text-xs leading-5 text-neutral-500">
+                    강점: {submission.aiReview.strengths.join(" · ")}
+                  </p>
+                )}
+                {submission.aiReview.improvements.length > 0 && (
+                  <p className="mt-1 text-xs leading-5 text-neutral-500">
+                    보완: {submission.aiReview.improvements.join(" · ")}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
