@@ -1390,10 +1390,10 @@ function AdminSimulations() {
                         setStepEditorPanel("situation");
                       }
                     }}
-                    className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    className={`h-8 rounded-md border px-3 text-xs font-semibold transition-colors ${
                       selected
-                        ? "bg-neutral-900 text-white"
-                        : "bg-neutral-100 text-neutral-500 hover:bg-neutral-200 hover:text-neutral-900"
+                        ? "border-neutral-900 bg-neutral-900 text-white"
+                        : "border-neutral-300 bg-white text-neutral-600 hover:border-neutral-500 hover:text-neutral-900"
                     }`}
                   >
                     {label}
@@ -1417,10 +1417,10 @@ function AdminSimulations() {
                     type="button"
                     aria-pressed={stepEditorPanel === panel}
                     onClick={() => setStepEditorPanel(panel)}
-                    className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
+                    className={`h-8 rounded-md border px-3 text-xs font-semibold transition-colors ${
                       stepEditorPanel === panel
-                        ? "bg-neutral-900 text-white"
-                        : "bg-neutral-100 text-neutral-500 hover:bg-neutral-200 hover:text-neutral-900"
+                        ? "border-neutral-900 bg-neutral-900 text-white"
+                        : "border-neutral-300 bg-white text-neutral-600 hover:border-neutral-500 hover:text-neutral-900"
                     }`}
                   >
                     {label}
@@ -1662,8 +1662,8 @@ function StepEditor({
   };
 
   return (
-    <section className="rounded-md border border-neutral-200">
-      <div className="flex items-center justify-between gap-4 border-b border-neutral-200 p-4">
+    <section className="border-t border-neutral-200 pt-5">
+      <div className="flex items-center justify-between gap-4">
         <h3 className="text-sm font-semibold text-neutral-900">단계별 시뮬레이션 구성</h3>
         <button
           type="button"
@@ -1674,7 +1674,7 @@ function StepEditor({
         </button>
       </div>
 
-      <div className="space-y-4 p-4">
+      <div className="mt-4 space-y-4">
         {steps.length > 0 && (
           <div className="flex flex-wrap gap-2 border-b border-neutral-200 pb-4">
             {steps.map((_, index) => (
@@ -1683,7 +1683,7 @@ function StepEditor({
                 type="button"
                 onClick={() => setActiveStepIndex(index)}
                 aria-pressed={activeStepIndex === index}
-                className={`rounded-md border px-3 py-1.5 text-xs font-semibold ${
+                className={`h-8 rounded-md border px-3 text-xs font-semibold ${
                   activeStepIndex === index
                     ? "border-neutral-900 bg-neutral-900 text-white"
                     : "border-neutral-300 text-neutral-600 hover:bg-neutral-50"
@@ -1696,7 +1696,7 @@ function StepEditor({
         )}
         {steps.map((step, stepIndex) =>
           stepIndex !== activeStepIndex ? null : (
-          <div key={step.id} className="rounded-md border border-neutral-200 bg-neutral-50 p-4">
+          <div key={step.id} className="border-t border-neutral-200 pt-4">
             <div className="mb-4 flex items-center justify-between gap-3">
               <p className="text-sm font-semibold text-neutral-700">{stepIndex + 1}단계</p>
               <div className="flex items-center gap-1">
@@ -1800,10 +1800,7 @@ function StepEditor({
 
                 <div className="mt-3 space-y-3">
                   {step.prompts.slice(0, 1).map((prompt, promptIndex) => (
-                    <div
-                      key={prompt.id}
-                      className="rounded-md border border-neutral-200 bg-white p-3"
-                    >
+                    <div key={prompt.id}>
                         <div className="flex items-center justify-between gap-2">
                           <p className="text-xs font-medium text-neutral-500">
                             질문 {promptIndex + 1}
@@ -1838,7 +1835,7 @@ function StepEditor({
         )}
 
         {steps.length === 0 && (
-          <div className="rounded-md border border-dashed border-neutral-200 px-4 py-8 text-center text-sm text-neutral-500">
+          <div className="border-y border-dashed border-neutral-200 px-4 py-8 text-center text-sm text-neutral-500">
             아직 단계가 없습니다. 단계 추가로 유저 화면의 흐름을 구성해주세요.
           </div>
         )}

@@ -115,22 +115,17 @@ function AdminAiPrompts() {
         <section className="mt-6 max-w-none">
           <div className="grid gap-4 lg:grid-cols-3">
             {settings.map((setting) => (
-              <div
-                key={setting.key}
-                className="flex min-w-0 flex-col rounded-md border border-neutral-200"
-              >
-                <div className="border-b border-neutral-200 p-5">
+              <div key={setting.key} className="flex min-w-0 flex-col border-t border-neutral-200 pt-4">
+                <div className="pb-4">
                   <div className="flex items-start gap-3">
-                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-neutral-900 text-white">
-                      <SlidersHorizontal className="h-5 w-5" />
-                    </div>
+                    <SlidersHorizontal className="mt-0.5 h-4 w-4 shrink-0 text-neutral-500" />
                     <div>
                       <h2 className="text-base font-semibold">{setting.label}</h2>
                       <p className="mt-1 text-sm text-neutral-500">{setting.description}</p>
                     </div>
                   </div>
                 </div>
-                <div className="flex flex-1 flex-col p-5">
+                <div className="flex flex-1 flex-col">
                   <label htmlFor={`ai-prompt-${setting.key}`} className="text-sm font-medium">
                     프롬프트 지침
                   </label>

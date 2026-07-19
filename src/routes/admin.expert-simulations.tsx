@@ -542,7 +542,11 @@ function AdminExpertSimulations() {
                           setStepEditorPanel("situation");
                         }
                       }}
-                      className={`rounded-full px-3 py-1.5 text-xs font-semibold ${selectedFormat ? "bg-neutral-900 text-white" : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"}`}
+                      className={`h-8 rounded-md border px-3 text-xs font-semibold transition-colors ${
+                        selectedFormat
+                          ? "border-neutral-900 bg-neutral-900 text-white"
+                          : "border-neutral-300 bg-white text-neutral-600 hover:border-neutral-500 hover:text-neutral-900"
+                      }`}
                     >
                       {format === "single" ? "단일형" : format === "separated" ? "선택형(분리)" : "선택형(공통)"}
                     </button>
@@ -565,10 +569,10 @@ function AdminExpertSimulations() {
                       type="button"
                       aria-pressed={stepEditorPanel === panel}
                       onClick={() => setStepEditorPanel(panel)}
-                      className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+                      className={`h-8 rounded-md border px-3 text-xs font-semibold transition-colors ${
                         stepEditorPanel === panel
-                          ? "bg-neutral-900 text-white"
-                          : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+                          ? "border-neutral-900 bg-neutral-900 text-white"
+                          : "border-neutral-300 bg-white text-neutral-600 hover:border-neutral-500 hover:text-neutral-900"
                       }`}
                     >
                       {label}
@@ -710,8 +714,8 @@ function ExpertStepEditor({
   };
 
   return (
-    <section className="rounded-md border border-neutral-200">
-      <div className="flex items-center justify-between gap-3 border-b border-neutral-200 p-4">
+    <section className="border-t border-neutral-200 pt-5">
+      <div className="flex items-center justify-between gap-3">
         <h3 className="text-sm font-semibold">단계별 시뮬레이션 구성</h3>
         <button
           type="button"
@@ -721,7 +725,7 @@ function ExpertStepEditor({
           <Plus className="h-3.5 w-3.5" /> 단계 추가
         </button>
       </div>
-      <div className="space-y-4 p-4">
+      <div className="mt-4 space-y-4">
         {steps.length > 0 && (
           <div className="flex flex-wrap gap-2 border-b border-neutral-200 pb-4">
             {steps.map((_, index) => (
@@ -743,7 +747,7 @@ function ExpertStepEditor({
         )}
         {steps.map((step, stepIndex) =>
           stepIndex !== activeStepIndex ? null : (
-          <div key={step.id} className="rounded-md border border-neutral-200 p-4">
+          <div key={step.id} className="border-t border-neutral-200 pt-4">
             <div className="flex items-center justify-between gap-3">
               <p className="text-sm font-semibold">{stepIndex + 1}단계</p>
               <div className="flex items-center gap-1">
@@ -818,7 +822,7 @@ function ExpertStepEditor({
             {(showAll || activePanel === "questions") && (
               <div className="mt-4 border-t border-neutral-200 pt-4">
                 <p className="text-xs font-semibold">답변 질문</p>
-                <div className="mt-3 rounded-md border border-neutral-200 p-3">
+                <div className="mt-3">
                   <div className="grid gap-3">
                     <Field
                       label="질문 제목"
