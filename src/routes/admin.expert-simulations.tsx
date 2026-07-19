@@ -405,8 +405,18 @@ function AdminExpertSimulations() {
                             void toggleVisibility(simulation);
                           }}
                           disabled={actioningId === simulation.id}
-                          className="rounded-full border border-current/20 bg-white/60 px-2 py-1 text-[10px] font-semibold disabled:opacity-40"
+                          aria-pressed={simulation.isPublic}
+                          className={`inline-flex h-7 shrink-0 items-center gap-1 rounded-full border px-1.5 pr-2 text-[11px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+                            simulation.isPublic
+                              ? "border-neutral-900 bg-neutral-900 text-white"
+                              : "border-neutral-200 bg-white text-neutral-500"
+                          }`}
                         >
+                          <span
+                            className={`h-3 w-3 rounded-full transition-colors ${
+                              simulation.isPublic ? "bg-white" : "bg-neutral-300"
+                            }`}
+                          />
                           {simulation.isPublic ? "공개" : "비공개"}
                         </button>
                       }
