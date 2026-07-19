@@ -615,14 +615,14 @@ export const evaluateAdminSubmissionWithAi = createServerFn({ method: "POST" })
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6",
-        max_tokens: 2200,
+        model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5",
+        max_tokens: 8000,
         tools: [COMPANY_AI_REVIEW_TOOL],
         tool_choice: { type: "tool", name: COMPANY_AI_REVIEW_TOOL_NAME },
         messages: [
           {
             role: "user",
-            content: `[1. 시뮬레이션 결과물 평가 프롬프트]\n${getPrompt("company_simulation_result_review")}\n\n[2. AI 활용 능력 평가 프롬프트]\n${getPrompt("company_ai_utilization_review")}\n\n[3. 면접 질문 추천 프롬프트]\n${getPrompt("company_interview_question_recommendation")}\n\n공통 규칙:\n- 제공된 결과물과 AI 대화 로그 안에서 확인되는 내용만 평가하세요.\n- 채용 합격/불합격을 판단하지 마세요.\n- 평가를 마치면 지정된 평가 기록 도구를 사용하세요.\n\n평가 자료:\n${JSON.stringify(material).slice(0, 30000)}`,
+            content: `[1. 시뮬레이션 결과물 평가 프롬프트]\n${getPrompt("company_simulation_result_review")}\n\n[2. AI 활용 능력 평가 프롬프트]\n${getPrompt("company_ai_utilization_review")}\n\n[3. 면접 질문 추천 프롬프트]\n${getPrompt("company_interview_question_recommendation")}\n\n공통 규칙:\n- 제공된 결과물과 AI 대화 로그 안에서 확인되는 내용만 평가하세요.\n- 채용 합격/불합격을 판단하지 마세요.\n- 반드시 simulation, aiUtilization, interviewQuestions 세 필드를 모두 포함하여 record_ai_review 도구를 한 번의 호출로 기록하세요. interviewQuestions는 최소 1개 이상 작성하고, 자료가 부족하면 빈 배열이라도 반드시 필드를 포함하세요.\n\n평가 자료:\n${JSON.stringify(material).slice(0, 30000)}`,
           },
         ],
       }),
@@ -636,6 +636,9 @@ export const evaluateAdminSubmissionWithAi = createServerFn({ method: "POST" })
           ? (payload.error as { message: string }).message
           : "AI 평가 요청에 실패했습니다.";
       throw new Error(message);
+    }
+    if (payload.stop_reason === "max_tokens") {
+      throw new Error("AI 평가 응답이 길이 제한을 초과했습니다. 다시 시도해주세요.");
     }
 
     const analysis = adminSubmissionAiReviewSchema.parse(getClaudeAiReviewInput(payload));
