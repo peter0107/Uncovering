@@ -94,7 +94,7 @@ function AdminHome() {
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <div className="grid h-10 w-10 place-items-center rounded-md bg-neutral-100 text-neutral-900">
+                  <div className="grid h-10 w-10 place-items-center rounded-md bg-neutral-900 text-white">
                     <UserRound className="h-5 w-5" />
                   </div>
                   <h2 className="mt-4 text-base font-semibold text-neutral-900">
