@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { BotMessageSquare, ChevronLeft, FileCheck2, Sparkles } from "lucide-react";
+import { ChevronLeft, FileCheck2, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 
@@ -128,25 +128,6 @@ function CompanySimulationFeedbackPage() {
           ) : (
             <p className="mt-4 text-sm text-zinc-500">AI 평가 결과가 아직 없습니다.</p>
           )}
-
-          <div className="mt-7 border-t border-zinc-200 pt-4">
-            <div className="flex items-center gap-2">
-              <BotMessageSquare className="h-4 w-4 text-zinc-700" />
-              <h3 className="text-sm font-semibold">AI 대화 기록</h3>
-            </div>
-            <div className="mt-3 space-y-3">
-              {feedback.submission.aiChatLog.length > 0 ? (
-                feedback.submission.aiChatLog.map((message, index) => (
-                  <div key={`${message.at}-${index}`} className="text-sm leading-6 text-zinc-700">
-                    <span className="font-semibold">{message.role === "user" ? "나" : "AI"}</span>
-                    <p className="mt-1 whitespace-pre-wrap text-zinc-600">{message.content}</p>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-zinc-500">AI 대화 기록이 없습니다.</p>
-              )}
-            </div>
-          </div>
         </aside>
       </div>
 
