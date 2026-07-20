@@ -896,13 +896,13 @@ function SimulationDetailPage() {
       {blockerDialog}
       {aiPanel}
 
-      <div className="grid gap-8 lg:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-2">
         {/* 왼쪽: 과제 내용 */}
         <div>
           {header}
-          <Card className="mt-6 p-6">
+          <Card className="mt-4 p-4">
             <div className="prose prose-sm sm:prose-base prose-zinc max-w-none prose-table:text-sm">
-              <RichTextContent value={sim.task_prompt ?? ""} />
+              <RichTextContent value={sim.task_prompt ?? ""} compact />
             </div>
           </Card>
         </div>
@@ -912,9 +912,9 @@ function SimulationDetailPage() {
           <div className="flex flex-col">
             <div id="response-question" className="shrink-0">
               <p className="text-sm font-medium text-zinc-700">제출 질문</p>
-              <Card className="mt-2 p-4">
+              <Card className="mt-1 p-3">
                 <div className="prose prose-sm prose-zinc max-w-none prose-table:text-sm">
-                  <RichTextContent value={sim.single_answer_question?.trim() || "답안 작성"} />
+                  <RichTextContent value={sim.single_answer_question?.trim() || "답안 작성"} compact />
                 </div>
               </Card>
             </div>
@@ -924,7 +924,7 @@ function SimulationDetailPage() {
               onChange={setResponseText}
               ariaLabelledby="response-question"
               className="min-h-64"
-              containerClassName="mt-4"
+              containerClassName="mt-2"
             />
           </div>
 
