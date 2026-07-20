@@ -32,6 +32,7 @@ import {
   type DragEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
+import { createPortal } from "react-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
@@ -1393,33 +1394,35 @@ export const RichTextContent = memo(function RichTextContent({
         </div>
       )}
 
-      {previewImage && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center bg-black/80 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-label="이미지 확대"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setPreviewImage(null);
-          }}
-        >
-          <div className="relative max-h-full max-w-full">
-            <button
-              type="button"
-              onClick={() => setPreviewImage(null)}
-              className="absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-md bg-black/60 text-white hover:bg-black/80"
-              aria-label="이미지 확대 닫기"
-            >
-              <X className="h-4 w-4" />
-            </button>
-            <img
-              src={previewImage.src}
-              alt={previewImage.alt}
-              className="max-h-[calc(100vh-2rem)] max-w-full object-contain"
-            />
-          </div>
-        </div>
-      )}
+      {previewImage &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[9999] grid place-items-center bg-black/80 p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-label="이미지 확대"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) setPreviewImage(null);
+            }}
+          >
+            <div className="relative max-h-full max-w-full">
+              <button
+                type="button"
+                onClick={() => setPreviewImage(null)}
+                className="absolute right-2 top-2 z-10 grid h-8 w-8 place-items-center rounded-md bg-black/60 text-white hover:bg-black/80"
+                aria-label="이미지 확대 닫기"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <img
+                src={previewImage.src}
+                alt={previewImage.alt}
+                className="max-h-[calc(100vh-2rem)] max-w-full object-contain"
+              />
+            </div>
+          </div>,
+          document.body,
+        )}
     </>
   );
 });
