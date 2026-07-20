@@ -118,7 +118,7 @@ function SourceFlow() {
     <section className="reference-flow" aria-label="이용 흐름">
       <div className="reference-flow-steps">
         {[
-          ["1", "시작"],
+          ["1", "탐색"],
           ["2", "체험"],
           ["3", "결과 확인"],
         ].map(([number, label], index) => (
