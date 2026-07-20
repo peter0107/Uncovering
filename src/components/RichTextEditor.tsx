@@ -1422,4 +1422,4 @@ export const RichTextContent = memo(function RichTextContent({
       )}
     </>
   );
-}
+});
