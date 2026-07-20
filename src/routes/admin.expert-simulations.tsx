@@ -126,9 +126,7 @@ function formFromSimulation(simulation: AdminExpertSimulation): ExpertSimulation
 function hasValidSteps(steps: AdminSimulationStep[]) {
   return (
     steps.length > 0 &&
-    steps.every(
-      (step) => step.title.trim() && step.prompts.length === 1 && step.prompts[0]?.label.trim(),
-    )
+    steps.every((step) => step.title.trim() && step.prompts.length === 1)
   );
 }
 
@@ -138,7 +136,7 @@ function prepareSteps(steps: AdminSimulationStep[]) {
     title: step.title.trim(),
     prompts: step.prompts.slice(0, 1).map((prompt) => ({
       ...prompt,
-      label: prompt.label.trim(),
+      label: step.title.trim(),
       body: prompt.body.trim(),
     })),
   }));
@@ -869,12 +867,6 @@ function ExpertStepEditor({
                 <p className="text-xs font-semibold">답변 질문</p>
                 <div className="mt-3">
                   <div className="grid gap-3">
-                    <Field
-                      label="질문 제목"
-                      value={step.prompts[0]?.label ?? ""}
-                      onChange={(value) => updatePrompt(stepIndex, { label: value })}
-                      required
-                    />
                     <RichTextEditor
                       label="질문 설명"
                       value={step.prompts[0]?.body ?? ""}

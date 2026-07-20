@@ -804,9 +804,8 @@ function SimulationDetailPage() {
             <div className="mt-5 flex flex-col gap-8">
               {step.prompts.map((p) => (
                 <div key={p.id}>
-                  <h3 className="text-base font-bold text-zinc-900">{p.label}</h3>
                   {p.bodyMarkdown && (
-                    <div className="prose prose-sm prose-zinc mt-2 max-w-none prose-table:text-sm prose-headings:text-sm prose-headings:font-semibold">
+                    <div className="prose prose-sm prose-zinc max-w-none prose-table:text-sm prose-headings:text-sm prose-headings:font-semibold">
                       <RichTextContent value={p.bodyMarkdown} />
                     </div>
                   )}

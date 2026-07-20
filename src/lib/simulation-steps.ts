@@ -83,7 +83,8 @@ function fromAuthoredSteps(
       .filter((p) => p && typeof p.id === "string")
       .map((p) => ({
         id: p.id,
-        label: p.label?.trim() || p.id,
+        // 단계 제목만 유저에게 보이도록 답변 항목의 내부 제목도 단계 제목으로 통일한다.
+        label: item.title.trim() || p.label?.trim() || p.id,
         bodyMarkdown: (p.body ?? "").trim(),
       }));
     if (prompts.length === 0) return null;

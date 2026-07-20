@@ -178,12 +178,7 @@ function normaliseSteps(raw: AdminSimulationStep[]): AdminSimulationStep[] {
 function hasValidSteps(steps: AdminSimulationStep[]) {
   return (
     steps.length > 0 &&
-    steps.every(
-      (step) =>
-        step.title.trim() &&
-        step.prompts.length === 1 &&
-        step.prompts[0]?.label.trim(),
-    )
+    steps.every((step) => step.title.trim() && step.prompts.length === 1)
   );
 }
 
@@ -202,7 +197,7 @@ function prepareSteps(steps: AdminSimulationStep[]): AdminSimulationStep[] {
     ...(step.completionMessage?.trim() ? { completionMessage: step.completionMessage.trim() } : {}),
     prompts: step.prompts.slice(0, 1).map((prompt) => ({
       id: prompt.id,
-      label: prompt.label.trim(),
+      label: step.title.trim(),
       body: prompt.body.trim(),
     })),
   }));
@@ -1801,30 +1796,14 @@ function StepEditor({
                 <div className="mt-3 space-y-3">
                   {step.prompts.slice(0, 1).map((prompt, promptIndex) => (
                     <div key={prompt.id}>
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-xs font-medium text-neutral-500">
-                            질문 {promptIndex + 1}
-                          </p>
-                      </div>
-                      <div className="mt-3 space-y-3">
-                        <InputField
-                          label="질문 제목"
-                          value={prompt.label}
-                          onChange={(value) =>
-                            updatePrompt(stepIndex, promptIndex, { label: value })
-                          }
-                          placeholder="예: 핵심 문제를 정의해주세요"
-                          required
-                        />
-                        <RichTextEditor
-                          label="질문 설명"
-                          value={prompt.body}
-                          onChange={(value) =>
-                            updatePrompt(stepIndex, promptIndex, { body: value })
-                          }
-                          placeholder="유저가 작성해야 할 내용을 안내하세요."
-                        />
-                      </div>
+                      <RichTextEditor
+                        label="질문 설명"
+                        value={prompt.body}
+                        onChange={(value) =>
+                          updatePrompt(stepIndex, promptIndex, { body: value })
+                        }
+                        placeholder="유저가 작성해야 할 내용을 안내하세요."
+                      />
                     </div>
                   ))}
                 </div>
