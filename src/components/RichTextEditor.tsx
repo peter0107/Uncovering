@@ -1365,6 +1365,7 @@ export const RichTextContent = memo(function RichTextContent({
     <>
       {richValue ? (
         <div
+          key={value}
           ref={contentRef}
           className={contentClassName}
           onClick={(event) => {
@@ -1378,6 +1379,7 @@ export const RichTextContent = memo(function RichTextContent({
           onPointerCancel={endTableResize}
           dangerouslySetInnerHTML={{ __html: sanitizeRichHtml(value.slice(RICH_TEXT_PREFIX.length)) }}
         />
+
       ) : (
         <div
           key={value}
