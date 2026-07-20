@@ -497,7 +497,7 @@ function SimulationDetailPage() {
         <h1 className="mt-4 text-xl font-bold text-zinc-900">제출이 완료됐어요</h1>
         <p className="mt-2 text-sm text-zinc-500">
           {isExpertSimulation
-            ? "현직자 모범답안과 AI 활용 기록을 확인할 수 있어요."
+            ? "현직자 모범답안과 AI 활용 평가 결과를 확인할 수 있어요."
             : applicationSent
               ? `${sim.company_name}에 답안이 전달돼요. 관심이 있으면 먼저 연락드릴 수 있어요.`
               : "지원하기를 누르면 이력서와 시뮬레이션 답안이 기업 담당자 화면에 표시돼요."}
@@ -510,7 +510,7 @@ function SimulationDetailPage() {
               search={submittedId ? { submission: submittedId } : {}}
             >
               <Button className="w-full rounded-md bg-zinc-900 text-white hover:bg-zinc-700">
-                현직자 피드백 보기
+                리포트 보러 가기
               </Button>
             </Link>
           ) : (
