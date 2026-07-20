@@ -181,14 +181,14 @@ function Index() {
 
           <div className="reference-logo-strip" aria-label="참여 기업 예시">
             <div>
-              {["LOGO A", "B컴퍼니", "Ccorp", "디랩스", "EVERY", "에프원", "Gwork", "한올"].map((name) => (
-                <b key={name}>{name}</b>
-              ))}
-              {["LOGO A", "B컴퍼니", "Ccorp", "디랩스", "EVERY", "에프원", "Gwork", "한올"].map((name) => (
-                <b key={`${name}-repeat`}>{name}</b>
-              ))}
+              {Array.from({ length: 4 }).flatMap((_, i) =>
+                ["LOGO A", "B컴퍼니", "Ccorp", "디랩스", "EVERY", "에프원", "Gwork", "한올"].map(
+                  (name) => <b key={`${name}-${i}`}>{name}</b>,
+                ),
+              )}
             </div>
           </div>
+
         </section>
 
         <div className="reference-shell">
