@@ -20,6 +20,10 @@ dist-ssr
 .wrangler/
 .dev.vars
 
+# Claude Code (로컬 전용)
+CLAUDE.md
+.claude/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
