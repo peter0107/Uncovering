@@ -205,9 +205,9 @@ function Index() {
             </header>
 
             <div className="reference-expert-grid">
-              <ExpertCard title="직군이 아니라, 실무자 기준">
+              <ExpertCard title="현업의 업무가 제시됩니다.">
                 <p>
-                  CRM 마케터, UI/UX 디자이너, 반도체 공정 엔지니어, 브랜드 디자이너. 현직자가 매일 마주치는 상황과 자료를 그대로 가져와 과제로 만들어요.
+                  현직자가 매일 마주치는 상황과 자료를 그대로 가져와 과제로 만들어요.
                 </p>
                 <div className="reference-tags">
                   <span>CRM 마케터</span>
