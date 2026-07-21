@@ -1789,6 +1789,16 @@ function StepEditor({
 
             {(showAll || activePanel === "questions") && (
               <div className="mt-5 border-t border-neutral-200 pt-4">
+                {!showAll && (
+                  <div className="mb-4">
+                    <RichTextEditor
+                      label="힌트"
+                      value={step.hint ?? ""}
+                      onChange={(value) => updateStep(stepIndex, { hint: value })}
+                      placeholder="필요한 힌트를 작성하세요."
+                    />
+                  </div>
+                )}
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-xs font-semibold text-neutral-700">답변 질문</p>
                 </div>

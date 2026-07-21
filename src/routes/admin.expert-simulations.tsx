@@ -487,7 +487,7 @@ function AdminExpertSimulations() {
 
               <div className="grid gap-4 md:grid-cols-3">
                 <Field
-                  label="직무명"
+                  label="도메인"
                   value={form.jobTitle}
                   onChange={(value) => updateForm("jobTitle", value)}
                   required
@@ -499,7 +499,7 @@ function AdminExpertSimulations() {
                   required
                 />
                 <SelectField
-                  label="도메인"
+                  label="직무군"
                   value={form.domain}
                   onChange={(value) => updateForm("domain", value)}
                   options={DOMAIN_CATEGORIES}
@@ -864,6 +864,16 @@ function ExpertStepEditor({
             )}
             {(showAll || activePanel === "questions") && (
               <div className="mt-4 border-t border-neutral-200 pt-4">
+                {!showAll && (
+                  <div className="mb-4">
+                    <RichTextEditor
+                      label="힌트"
+                      value={step.hint ?? ""}
+                      onChange={(value) => updateStep(stepIndex, { hint: value })}
+                      placeholder="필요한 힌트를 작성하세요."
+                    />
+                  </div>
+                )}
                 <p className="text-xs font-semibold">답변 질문</p>
                 <div className="mt-3">
                   <div className="grid gap-3">
