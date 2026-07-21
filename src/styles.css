@@ -1417,6 +1417,20 @@
     gap: 1rem;
   }
 
+  .reference-header span[title] {
+    color: #fff !important;
+  }
+
+  .reference-header button[aria-label="프로필 메뉴"] {
+    border-color: rgb(255 255 255 / 45%);
+    background: transparent;
+    color: #fff;
+  }
+
+  .reference-header button[aria-label="프로필 메뉴"]:hover {
+    background: rgb(255 255 255 / 12%);
+  }
+
   .reference-start-link {
     display: inline-flex;
     height: 2.25rem;
