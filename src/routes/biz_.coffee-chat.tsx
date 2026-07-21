@@ -3,6 +3,7 @@ import { CircleCheck, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
+import { BrandLogo } from "@/components/BrandLogo";
 import { Calendar } from "@/components/ui/calendar";
 import { TurnstileWidget, type TurnstileHandle } from "@/components/turnstile-widget";
 import {
@@ -162,8 +163,8 @@ function BizCoffeeChat() {
   return (
     <div className="flex min-h-screen flex-col bg-white text-neutral-900">
       <header className="flex h-14 items-center border-b border-neutral-200 px-6">
-        <Link to="/biz" className="text-sm font-semibold tracking-tight">
-          Beginner
+        <Link to="/biz" aria-label="Beginner 기업 페이지">
+          <BrandLogo className="h-5 w-auto" />
         </Link>
         <span className="ml-1 text-xs font-light text-neutral-500">biz</span>
       </header>

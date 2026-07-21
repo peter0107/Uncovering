@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, CalendarClock, FileText } from "lucide-react";
 
+import { BrandLogo } from "@/components/BrandLogo";
+
 export const Route = createFileRoute("/biz_/contact")({
   head: () => ({
     meta: [
@@ -18,8 +20,8 @@ function BizContact() {
   return (
     <div className="flex min-h-screen flex-col bg-white text-neutral-900">
       <header className="flex h-14 items-center border-b border-neutral-200 px-6">
-        <Link to="/biz" className="text-sm font-semibold tracking-tight">
-          Beginner
+        <Link to="/biz" aria-label="Beginner 기업 페이지">
+          <BrandLogo className="h-5 w-auto" />
         </Link>
         <span className="ml-1 text-xs font-light text-neutral-500">biz</span>
       </header>

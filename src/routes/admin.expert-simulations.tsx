@@ -4,6 +4,7 @@ import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } fro
 import { toast } from "sonner";
 
 import { ExpertSimulationCard } from "@/components/ExpertSimulationCard";
+import { BrandLogo } from "@/components/BrandLogo";
 import { RichTextEditor } from "@/components/RichTextEditor";
 import { useAuth } from "@/hooks/use-auth";
 import { DOMAIN_CATEGORIES } from "@/lib/domain-categories";
@@ -900,7 +901,8 @@ function AdminShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-white text-neutral-900">
       <header className="flex h-14 items-center justify-between border-b border-neutral-300 bg-neutral-100 px-6">
         <Link to="/admin" className="text-sm font-semibold tracking-tight hover:text-neutral-600">
-          Beginner <span className="ml-2 text-xs font-normal text-neutral-500">Admin</span>
+          <BrandLogo className="inline-block h-5 w-auto align-middle" />
+          <span className="ml-2 text-xs font-normal text-neutral-500">Admin</span>
         </Link>
         <Link to="/biz" className="text-xs font-medium text-neutral-500 hover:text-neutral-900">
           기업 페이지

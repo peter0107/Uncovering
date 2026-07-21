@@ -3,6 +3,7 @@ import { ArrowRight, Check, Menu, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
 import { AccountMenu } from "@/components/AccountMenu";
+import { BrandLogo } from "@/components/BrandLogo";
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/")({
@@ -19,13 +20,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Brand() {
-  return (
-    <img
-      src="/beginner-logo.png"
-      alt="Beginner"
-      className="reference-brand"
-    />
-  );
+  return <BrandLogo className="reference-brand" />;
 }
 
 function Header({

@@ -10,6 +10,7 @@ import {
 import { useEffect } from "react";
 
 import { useAuth } from "@/hooks/use-auth";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -42,9 +43,9 @@ function AdminHome() {
   return (
     <div className="min-h-screen bg-white text-neutral-900">
       <header className="flex h-14 items-center justify-between border-b border-neutral-300 bg-neutral-100 px-6">
-        <div>
-          <span className="text-sm font-semibold tracking-tight">Beginner</span>
-          <span className="ml-2 text-xs text-neutral-500">Admin</span>
+        <div className="flex items-center gap-2">
+          <BrandLogo className="h-5 w-auto" />
+          <span className="text-xs text-neutral-500">Admin</span>
         </div>
         <Link to="/biz" className="text-xs font-medium text-neutral-500 hover:text-neutral-900">
           기업 페이지

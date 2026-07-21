@@ -28,6 +28,7 @@ import { toast } from "sonner";
 
 import { SimulationCardPreview } from "@/components/SimulationCardPreview";
 import { RichTextEditor } from "@/components/RichTextEditor";
+import { BrandLogo } from "@/components/BrandLogo";
 import {
   Dialog,
   DialogContent,
@@ -1838,7 +1839,7 @@ function AdminShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-white text-neutral-900">
       <header className="flex h-14 items-center justify-between border-b border-neutral-300 bg-neutral-100 px-6">
         <Link to="/admin" className="hover:text-neutral-600">
-          <span className="text-sm font-semibold tracking-tight">Beginner</span>
+          <BrandLogo className="inline-block h-5 w-auto" />
           <span className="ml-2 text-xs text-neutral-500">Admin</span>
         </Link>
         <Link to="/biz" className="text-xs font-medium text-neutral-500 hover:text-neutral-900">

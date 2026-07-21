@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 
+import { BrandLogo } from "@/components/BrandLogo";
 import { getApplicantsByCompanyCode } from "@/lib/applicants.functions";
 
 export const Route = createFileRoute("/biz")({
@@ -44,8 +45,8 @@ function BizIndex() {
   return (
     <div className="flex min-h-screen flex-col bg-white text-neutral-900">
       <header className="flex h-14 items-center border-b border-neutral-200 px-6">
-        <a href="/biz" className="text-sm font-semibold tracking-tight">
-          Beginner
+        <a href="/biz" aria-label="Beginner 기업 페이지">
+          <BrandLogo className="h-5 w-auto" />
         </a>
         <span className="ml-1 text-xs font-light text-neutral-500">biz</span>
       </header>
