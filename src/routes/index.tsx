@@ -245,6 +245,8 @@ function Index() {
 
       <main>
         <section className="reference-hero" aria-labelledby="reference-home-title">
+          <span className="reference-hero-glow reference-hero-glow-one" aria-hidden="true" />
+          <span className="reference-hero-glow reference-hero-glow-two" aria-hidden="true" />
           <span className="reference-hero-shape reference-hero-shape-one" aria-hidden="true" />
           <span className="reference-hero-shape reference-hero-shape-two" aria-hidden="true" />
           <span className="reference-hero-shape reference-hero-shape-three" aria-hidden="true" />
@@ -252,7 +254,7 @@ function Index() {
             <h1 id="reference-home-title">
               직무가 고민될 때,
               <br />
-              <em>직접 경험</em>해보세요
+              <em>직접 경험해보세요</em>
             </h1>
             <Link to="/expert-simulations" className="reference-hero-action">
               무료로 시작하기 <ArrowRight aria-hidden="true" />
