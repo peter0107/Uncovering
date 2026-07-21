@@ -1343,9 +1343,10 @@
   .reference-header-inner {
     position: relative;
     display: flex;
-    height: 3.75rem;
+    min-height: 0;
     align-items: center;
     justify-content: space-between;
+    padding: 1rem 3rem;
   }
 
   .reference-brand {
@@ -1460,51 +1461,72 @@
     position: relative;
     z-index: 1;
     display: flex;
-    min-height: 31rem;
+    min-height: 0;
     align-items: center;
     flex-direction: column;
     justify-content: center;
-    gap: 2rem;
-    padding-top: 4.5rem;
-    padding-bottom: 4.5rem;
+    gap: 2.25rem;
+    padding: 5.5rem 3rem 3.75rem;
     text-align: center;
   }
 
   .reference-hero h1 {
     margin: 0;
     color: #1a2340;
-    font-size: clamp(3.25rem, 6vw, 4rem);
+    font-size: 4rem;
     font-weight: 850;
-    letter-spacing: -0.065em;
-    line-height: 1.16;
+    letter-spacing: -1.5px;
+    line-height: 1.2;
     animation: reference-hero-enter 560ms ease-out both;
   }
 
   .reference-hero h1 em {
+    position: relative;
+    z-index: 0;
     color: #1659e3;
     font-style: normal;
-    text-decoration-line: underline;
-    text-decoration-color: rgb(22 89 227 / 25%);
-    text-decoration-thickness: 0.12em;
-    text-underline-offset: 0.11em;
+    text-decoration: none;
   }
 
-  .reference-hero-action,
-  .reference-cta a {
+  .reference-hero h1 em::after {
+    position: absolute;
+    right: -2px;
+    bottom: 6px;
+    left: -2px;
+    z-index: -1;
+    height: 16px;
+    content: "";
+    background: #cfe0ff;
+  }
+
+  .reference-hero-action {
     display: inline-flex;
-    min-height: 3.2rem;
     align-items: center;
     justify-content: center;
     gap: 0.55rem;
     border-radius: 8px;
-    padding: 0 1.85rem;
+    padding: 1rem 2.25rem;
     background: #1659e3;
     color: #fff;
-    font-size: 1rem;
+    font-size: 1.125rem;
     font-weight: 750;
+    letter-spacing: 0.5px;
     line-height: 1;
     text-decoration: none;
     animation: reference-hero-enter 560ms 100ms ease-out both;
+  }
+
+  .reference-cta a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    border-radius: 8px;
+    background: #1659e3;
+    color: #fff;
+    font-weight: 750;
+    line-height: 1;
+    text-decoration: none;
   }
 
   .reference-hero-action:hover,
@@ -1519,9 +1541,9 @@
   }
 
   .reference-hero-caption {
-    margin: -0.85rem 0 0;
+    margin: 0;
     color: #6b7280;
-    font-size: 0.75rem;
+    font-size: 0.875rem;
     line-height: 1.4;
   }
 
@@ -2026,6 +2048,16 @@
       font-size: 0.75rem;
     }
 
+    .reference-header-inner {
+      padding-right: 3rem;
+      padding-left: 3rem;
+    }
+
+    .reference-hero-copy {
+      padding-right: 3rem;
+      padding-left: 3rem;
+    }
+
     .reference-expert-section > .reference-shell,
     .reference-audience > .reference-shell {
       padding-top: 3.5rem;
@@ -2101,8 +2133,12 @@
 
     .reference-hero-copy {
       min-height: 28rem;
-      padding-top: 4rem;
-      padding-bottom: 3rem;
+      padding: 4rem 1.25rem 3rem;
+    }
+
+    .reference-header-inner {
+      padding-right: 1.25rem;
+      padding-left: 1.25rem;
     }
 
     .reference-hero h1 {
