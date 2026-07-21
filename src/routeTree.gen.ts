@@ -10,7 +10,6 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as StartRouteImport } from './routes/start'
-import { Route as SpacingTestRouteImport } from './routes/spacing-test'
 import { Route as SimulationsRouteImport } from './routes/simulations'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as MyRouteImport } from './routes/my'
@@ -36,11 +35,6 @@ import { Route as ExpertSimulationIdFeedbackRouteImport } from './routes/expert-
 const StartRoute = StartRouteImport.update({
   id: '/start',
   path: '/start',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SpacingTestRoute = SpacingTestRouteImport.update({
-  id: '/spacing-test',
-  path: '/spacing-test',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SimulationsRoute = SimulationsRouteImport.update({
@@ -159,7 +153,6 @@ export interface FileRoutesByFullPath {
   '/my': typeof MyRoute
   '/onboarding': typeof OnboardingRoute
   '/simulations': typeof SimulationsRoute
-  '/spacing-test': typeof SpacingTestRoute
   '/start': typeof StartRoute
   '/admin/ai-prompts': typeof AdminAiPromptsRoute
   '/admin/expert-simulations': typeof AdminExpertSimulationsRoute
@@ -184,7 +177,6 @@ export interface FileRoutesByTo {
   '/my': typeof MyRoute
   '/onboarding': typeof OnboardingRoute
   '/simulations': typeof SimulationsRoute
-  '/spacing-test': typeof SpacingTestRoute
   '/start': typeof StartRoute
   '/admin/ai-prompts': typeof AdminAiPromptsRoute
   '/admin/expert-simulations': typeof AdminExpertSimulationsRoute
@@ -210,7 +202,6 @@ export interface FileRoutesById {
   '/my': typeof MyRoute
   '/onboarding': typeof OnboardingRoute
   '/simulations': typeof SimulationsRoute
-  '/spacing-test': typeof SpacingTestRoute
   '/start': typeof StartRoute
   '/admin/ai-prompts': typeof AdminAiPromptsRoute
   '/admin/expert-simulations': typeof AdminExpertSimulationsRoute
@@ -237,7 +228,6 @@ export interface FileRouteTypes {
     | '/my'
     | '/onboarding'
     | '/simulations'
-    | '/spacing-test'
     | '/start'
     | '/admin/ai-prompts'
     | '/admin/expert-simulations'
@@ -262,7 +252,6 @@ export interface FileRouteTypes {
     | '/my'
     | '/onboarding'
     | '/simulations'
-    | '/spacing-test'
     | '/start'
     | '/admin/ai-prompts'
     | '/admin/expert-simulations'
@@ -287,7 +276,6 @@ export interface FileRouteTypes {
     | '/my'
     | '/onboarding'
     | '/simulations'
-    | '/spacing-test'
     | '/start'
     | '/admin/ai-prompts'
     | '/admin/expert-simulations'
@@ -313,7 +301,6 @@ export interface RootRouteChildren {
   MyRoute: typeof MyRoute
   OnboardingRoute: typeof OnboardingRoute
   SimulationsRoute: typeof SimulationsRoute
-  SpacingTestRoute: typeof SpacingTestRoute
   StartRoute: typeof StartRoute
   BizApplyRoute: typeof BizApplyRoute
   BizCoffeeChatRoute: typeof BizCoffeeChatRoute
@@ -331,13 +318,6 @@ declare module '@tanstack/react-router' {
       path: '/start'
       fullPath: '/start'
       preLoaderRoute: typeof StartRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/spacing-test': {
-      id: '/spacing-test'
-      path: '/spacing-test'
-      fullPath: '/spacing-test'
-      preLoaderRoute: typeof SpacingTestRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/simulations': {
@@ -529,7 +509,6 @@ const rootRouteChildren: RootRouteChildren = {
   MyRoute: MyRoute,
   OnboardingRoute: OnboardingRoute,
   SimulationsRoute: SimulationsRoute,
-  SpacingTestRoute: SpacingTestRoute,
   StartRoute: StartRoute,
   BizApplyRoute: BizApplyRoute,
   BizCoffeeChatRoute: BizCoffeeChatRoute,
