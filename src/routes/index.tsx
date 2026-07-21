@@ -259,6 +259,9 @@ function Index() {
             <Link to="/expert-simulations" className="reference-hero-action">
               무료로 시작하기 <ArrowRight aria-hidden="true" />
             </Link>
+            <p className="reference-hero-caption">
+              가입 후 3분이면 첫 과제가 도착해요 · 현직자 시뮬레이션 120+
+            </p>
           </div>
         </section>
 

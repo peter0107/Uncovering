@@ -1513,6 +1513,13 @@
     height: 1.05rem;
   }
 
+  .reference-hero-caption {
+    margin: -0.85rem 0 0;
+    color: #6b7280;
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+
   .reference-hero-glow {
     position: absolute;
     z-index: 0;
