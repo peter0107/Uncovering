@@ -1664,7 +1664,12 @@
     overflow-x: auto;
     padding-bottom: 0.4rem;
     scroll-snap-type: x proximity;
-    scrollbar-width: thin;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .reference-featured-track::-webkit-scrollbar {
+    display: none;
   }
 
   .reference-featured-card,
