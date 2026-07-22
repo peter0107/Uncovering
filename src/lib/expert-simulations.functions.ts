@@ -48,6 +48,7 @@ export type AdminExpertSimulation = {
   jobTitle: string;
   cardBackgroundColor: string;
   cardTextColor: string;
+  profileImageUrl: string;
   modelAnswer: string;
   aiFeedback: string;
   createdAt: string;
@@ -136,6 +137,7 @@ const expertSimulationInputSchema = z.object({
   jobTitle: z.string().trim().min(1).max(100),
   cardBackgroundColor: hexColorSchema.default("#ffffff"),
   cardTextColor: hexColorSchema.default("#18181b"),
+  profileImageUrl: z.string().url().optional().nullable().default(""),
   modelAnswer: z.string().optional().default(""),
   aiFeedback: z.string().optional().default(""),
 });
@@ -146,6 +148,9 @@ const updateExpertSimulationInputSchema = expertSimulationInputSchema.extend({
 
 const expertSimulationIdSchema = z.object({ id: z.string().uuid() });
 const expertSimulationVisibilitySchema = expertSimulationIdSchema.extend({ isPublic: z.boolean() });
+const expertSimulationProfileImageSchema = expertSimulationIdSchema.extend({
+  profileImageUrl: z.string().url(),
+});
 const expertFeedbackInputSchema = z.object({
   simulationId: z.string().uuid(),
   submissionId: z.string().uuid().optional(),
@@ -251,6 +256,7 @@ function mapExpertSimulation(row: Record<string, unknown>): AdminExpertSimulatio
     jobTitle: String(row.expert_job_title ?? ""),
     cardBackgroundColor: String(row.card_background_color ?? "#ffffff"),
     cardTextColor: String(row.card_text_color ?? "#18181b"),
+    profileImageUrl: String(row.expert_profile_image_url ?? ""),
     modelAnswer: String(row.expert_model_answer ?? ""),
     aiFeedback: String(row.expert_ai_feedback ?? ""),
     createdAt: formatDateTime(String(row.created_at ?? "")),
@@ -290,7 +296,7 @@ export const getAdminExpertSimulations = createServerFn({ method: "GET" }).handl
     const { data, error } = await supabaseAdmin
       .from("job_simulations")
       .select(
-        "id, title, role_label, job_family, description, domain, estimated_minutes, simulation_format, selection_mode, single_answer_question, task_prompt, shared_situation, shared_materials, steps, is_public, expert_nickname, expert_company_type, expert_experience_band, expert_job_title, card_background_color, card_text_color, expert_model_answer, expert_ai_feedback, created_at",
+        "id, title, role_label, job_family, description, domain, estimated_minutes, simulation_format, selection_mode, single_answer_question, task_prompt, shared_situation, shared_materials, steps, is_public, expert_nickname, expert_company_type, expert_experience_band, expert_job_title, expert_profile_image_url, card_background_color, card_text_color, expert_model_answer, expert_ai_feedback, created_at",
       )
       .eq("simulation_source", "expert")
       .is("deleted_at", null)
@@ -328,6 +334,7 @@ export const createExpertSimulation = createServerFn({ method: "POST" })
         expert_company_type: data.companyType,
         expert_experience_band: data.experienceBand,
         expert_job_title: data.jobTitle,
+        expert_profile_image_url: data.profileImageUrl || null,
         card_background_color: data.cardBackgroundColor,
         card_text_color: data.cardTextColor,
         expert_model_answer: data.modelAnswer || null,
@@ -365,6 +372,7 @@ export const updateExpertSimulation = createServerFn({ method: "POST" })
         expert_company_type: data.companyType,
         expert_experience_band: data.experienceBand,
         expert_job_title: data.jobTitle,
+        expert_profile_image_url: data.profileImageUrl || null,
         card_background_color: data.cardBackgroundColor,
         card_text_color: data.cardTextColor,
         expert_model_answer: data.modelAnswer || null,
@@ -389,6 +397,21 @@ export const setExpertSimulationVisibility = createServerFn({ method: "POST" })
       .eq("simulation_source", "expert")
       .is("deleted_at", null);
     if (error) throw new Error("공개 상태를 수정하지 못했습니다.");
+    return { ok: true };
+  });
+
+export const setExpertSimulationProfileImage = createServerFn({ method: "POST" })
+  .inputValidator(expertSimulationProfileImageSchema)
+  .handler(async ({ data }) => {
+    await assertAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("job_simulations")
+      .update({ expert_profile_image_url: data.profileImageUrl })
+      .eq("id", data.id)
+      .eq("simulation_source", "expert")
+      .is("deleted_at", null);
+    if (error) throw new Error("현직자 사진을 저장하지 못했습니다.");
     return { ok: true };
   });
 

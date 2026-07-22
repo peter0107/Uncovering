@@ -1,11 +1,28 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ChevronDown, ChevronUp, ExternalLink, Plus, Save, Trash2 } from "lucide-react";
-import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type ChangeEvent,
+  type FormEvent,
+  type PointerEvent as ReactPointerEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { toast } from "sonner";
 
 import { ExpertSimulationCard } from "@/components/ExpertSimulationCard";
 import { BrandLogo } from "@/components/BrandLogo";
 import { RichTextEditor } from "@/components/RichTextEditor";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Slider } from "@/components/ui/slider";
 import { useAuth } from "@/hooks/use-auth";
 import { DOMAIN_CATEGORIES } from "@/lib/domain-categories";
 import {
@@ -14,6 +31,7 @@ import {
   EXPERT_COMPANY_TYPES,
   EXPERT_EXPERIENCE_BANDS,
   getAdminExpertSimulations,
+  setExpertSimulationProfileImage,
   setExpertSimulationVisibility,
   updateExpertSimulation,
   type AdminExpertSimulation,
@@ -23,6 +41,7 @@ import type {
   SelectionMode,
   SimulationFormat,
 } from "@/lib/simulations.functions";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/admin/expert-simulations")({
   head: () => ({ meta: [{ title: "Beginner - 현직자 시뮬레이션 관리" }] }),
@@ -48,9 +67,84 @@ type ExpertSimulationForm = {
   jobTitle: string;
   cardBackgroundColor: string;
   cardTextColor: string;
+  profileImageUrl: string;
   modelAnswer: string;
   aiFeedback: string;
 };
+
+type ProfilePhotoEditor = {
+  previewUrl: string;
+  sourceWidth: number;
+  sourceHeight: number;
+  zoom: number;
+  offsetX: number;
+  offsetY: number;
+};
+
+type PhotoDragState = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  startOffsetX: number;
+  startOffsetY: number;
+  overflowX: number;
+  overflowY: number;
+};
+
+const PROFILE_PHOTO_SIZE = 512;
+const PHOTO_DRAG_SENSITIVITY = 1.4;
+
+function clampPhotoOffset(value: number) {
+  return Math.max(-100, Math.min(100, value));
+}
+
+function loadImage(src: string) {
+  return new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = reject;
+    image.src = src;
+  });
+}
+
+function getPhotoCropGeometry(
+  sourceWidth: number,
+  sourceHeight: number,
+  options: Pick<ProfilePhotoEditor, "zoom" | "offsetX" | "offsetY">,
+) {
+  const baseScale = Math.max(PROFILE_PHOTO_SIZE / sourceWidth, PROFILE_PHOTO_SIZE / sourceHeight);
+  const drawWidth = sourceWidth * baseScale * options.zoom;
+  const drawHeight = sourceHeight * baseScale * options.zoom;
+  const overflowX = Math.max(0, drawWidth - PROFILE_PHOTO_SIZE);
+  const overflowY = Math.max(0, drawHeight - PROFILE_PHOTO_SIZE);
+
+  return {
+    drawWidth,
+    drawHeight,
+    drawX: (PROFILE_PHOTO_SIZE - drawWidth) / 2 - (overflowX * options.offsetX) / 100,
+    drawY: (PROFILE_PHOTO_SIZE - drawHeight) / 2 - (overflowY * options.offsetY) / 100,
+  };
+}
+
+async function createCroppedProfilePhotoBlob(editor: ProfilePhotoEditor) {
+  const image = await loadImage(editor.previewUrl);
+  const canvas = document.createElement("canvas");
+  canvas.width = PROFILE_PHOTO_SIZE;
+  canvas.height = PROFILE_PHOTO_SIZE;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("사진 편집을 준비하지 못했습니다.");
+
+  const geometry = getPhotoCropGeometry(image.naturalWidth, image.naturalHeight, editor);
+  context.drawImage(image, geometry.drawX, geometry.drawY, geometry.drawWidth, geometry.drawHeight);
+
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error("사진을 만들지 못했습니다."))),
+      "image/jpeg",
+      0.92,
+    );
+  });
+}
 
 function createStep(): AdminSimulationStep {
   return {
@@ -86,6 +180,7 @@ function createEmptyForm(): ExpertSimulationForm {
     jobTitle: "",
     cardBackgroundColor: "#18181b",
     cardTextColor: "#ffffff",
+    profileImageUrl: "",
     modelAnswer: "",
     aiFeedback: "",
   };
@@ -119,6 +214,7 @@ function formFromSimulation(simulation: AdminExpertSimulation): ExpertSimulation
     jobTitle: simulation.jobTitle,
     cardBackgroundColor: simulation.cardBackgroundColor,
     cardTextColor: simulation.cardTextColor,
+    profileImageUrl: simulation.profileImageUrl,
     modelAnswer: simulation.modelAnswer,
     aiFeedback: simulation.aiFeedback,
   };
@@ -155,7 +251,11 @@ function AdminExpertSimulations() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [actioningId, setActioningId] = useState<string | null>(null);
+  const [profilePhotoEditor, setProfilePhotoEditor] = useState<ProfilePhotoEditor | null>(null);
+  const [uploadingProfilePhoto, setUploadingProfilePhoto] = useState(false);
   const loadedUserIdRef = useRef<string | null>(null);
+  const profilePhotoInputRef = useRef<HTMLInputElement>(null);
+  const profilePhotoDragRef = useRef<PhotoDragState | null>(null);
 
   const selected = useMemo(
     () => simulations.find((simulation) => simulation.id === selectedId) ?? null,
@@ -220,6 +320,133 @@ function AdminExpertSimulations() {
     setForm((current) => ({ ...current, [key]: value }));
   };
 
+  const openProfilePhotoPicker = () => {
+    if (!selectedId) return;
+    profilePhotoInputRef.current?.click();
+  };
+
+  const closeProfilePhotoEditor = () => {
+    if (uploadingProfilePhoto) return;
+    if (profilePhotoEditor) URL.revokeObjectURL(profilePhotoEditor.previewUrl);
+    setProfilePhotoEditor(null);
+  };
+
+  const handleProfilePhotoFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("이미지 파일만 업로드할 수 있습니다.");
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    try {
+      const image = await loadImage(previewUrl);
+      setProfilePhotoEditor({
+        previewUrl,
+        sourceWidth: image.naturalWidth,
+        sourceHeight: image.naturalHeight,
+        zoom: 1,
+        offsetX: 0,
+        offsetY: 0,
+      });
+    } catch {
+      URL.revokeObjectURL(previewUrl);
+      toast.error("이미지를 불러오지 못했습니다.");
+    }
+  };
+
+  const beginProfilePhotoDrag = (
+    event: ReactPointerEvent<HTMLDivElement>,
+    editor: ProfilePhotoEditor,
+  ) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    const geometry = getPhotoCropGeometry(editor.sourceWidth, editor.sourceHeight, editor);
+    event.currentTarget.setPointerCapture(event.pointerId);
+    profilePhotoDragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startOffsetX: editor.offsetX,
+      startOffsetY: editor.offsetY,
+      overflowX: Math.max(0, geometry.drawWidth - PROFILE_PHOTO_SIZE),
+      overflowY: Math.max(0, geometry.drawHeight - PROFILE_PHOTO_SIZE),
+    };
+  };
+
+  const moveProfilePhotoDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = profilePhotoDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    event.preventDefault();
+
+    setProfilePhotoEditor((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        offsetX:
+          drag.overflowX > 0
+            ? clampPhotoOffset(
+                drag.startOffsetX -
+                  ((event.clientX - drag.startX) * 100 * PHOTO_DRAG_SENSITIVITY) / drag.overflowX,
+              )
+            : current.offsetX,
+        offsetY:
+          drag.overflowY > 0
+            ? clampPhotoOffset(
+                drag.startOffsetY -
+                  ((event.clientY - drag.startY) * 100 * PHOTO_DRAG_SENSITIVITY) / drag.overflowY,
+              )
+            : current.offsetY,
+      };
+    });
+  };
+
+  const endProfilePhotoDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (profilePhotoDragRef.current?.pointerId !== event.pointerId) return;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    profilePhotoDragRef.current = null;
+  };
+
+  const applyProfilePhoto = async () => {
+    if (!profilePhotoEditor || !selectedId || !user) return;
+    setUploadingProfilePhoto(true);
+    try {
+      const blob = await createCroppedProfilePhotoBlob(profilePhotoEditor);
+      const objectPath = `${user.id}/expert-profile/${selectedId}-${Date.now()}.jpg`;
+      const { error: uploadError } = await supabase.storage
+        .from("simulation-card-assets")
+        .upload(objectPath, blob, { contentType: "image/jpeg", upsert: false });
+      if (uploadError) throw uploadError;
+
+      const { data: publicUrl } = supabase.storage
+        .from("simulation-card-assets")
+        .getPublicUrl(objectPath);
+      if (!publicUrl.publicUrl) throw new Error("사진 주소를 만들지 못했습니다.");
+
+      await setExpertSimulationProfileImage({
+        data: { id: selectedId, profileImageUrl: publicUrl.publicUrl },
+      });
+      setSimulations((current) =>
+        current.map((simulation) =>
+          simulation.id === selectedId
+            ? { ...simulation, profileImageUrl: publicUrl.publicUrl }
+            : simulation,
+        ),
+      );
+      setForm((current) => ({ ...current, profileImageUrl: publicUrl.publicUrl }));
+      URL.revokeObjectURL(profilePhotoEditor.previewUrl);
+      setProfilePhotoEditor(null);
+      toast.success("현직자 사진을 변경했습니다.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "사진을 저장하지 못했습니다.");
+    } finally {
+      setUploadingProfilePhoto(false);
+    }
+  };
+
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (form.simulationFormat === "selection" && !hasValidSteps(form.steps)) {
@@ -257,6 +484,7 @@ function AdminExpertSimulations() {
         jobTitle: form.jobTitle,
         cardBackgroundColor: form.cardBackgroundColor,
         cardTextColor: form.cardTextColor,
+        profileImageUrl: form.profileImageUrl,
         modelAnswer: form.modelAnswer,
         aiFeedback: form.aiFeedback,
       };
@@ -382,6 +610,8 @@ function AdminExpertSimulations() {
                       estimatedMinutes={previewMinutes}
                       backgroundColor={preview.cardBackgroundColor}
                       textColor={preview.cardTextColor}
+                      profileImageUrl={preview.profileImageUrl}
+                      onProfileImageClick={isSelected ? openProfilePhotoPicker : undefined}
                       topRight={
                         <button
                           type="button"
@@ -689,6 +919,87 @@ function AdminExpertSimulations() {
           </section>
         </div>
       )}
+      <input
+        ref={profilePhotoInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleProfilePhotoFileChange}
+      />
+      <Dialog open={Boolean(profilePhotoEditor)} onOpenChange={(open) => !open && closeProfilePhotoEditor()}>
+        <DialogContent className="max-w-md rounded-md shadow-none data-[state=open]:slide-in-from-left-0 data-[state=closed]:slide-out-to-left-0">
+          <DialogHeader>
+            <DialogTitle>현직자 사진 편집</DialogTitle>
+          </DialogHeader>
+          {profilePhotoEditor &&
+            (() => {
+              const preview = getPhotoCropGeometry(
+                profilePhotoEditor.sourceWidth,
+                profilePhotoEditor.sourceHeight,
+                profilePhotoEditor,
+              );
+              return (
+                <div className="space-y-5">
+                  <div
+                    className="relative mx-auto h-56 w-56 touch-none overflow-hidden rounded-none bg-zinc-100 cursor-grab active:cursor-grabbing"
+                    onPointerDown={(event) => beginProfilePhotoDrag(event, profilePhotoEditor)}
+                    onPointerMove={moveProfilePhotoDrag}
+                    onPointerUp={endProfilePhotoDrag}
+                    onPointerCancel={endProfilePhotoDrag}
+                  >
+                    <img
+                      src={profilePhotoEditor.previewUrl}
+                      alt="현직자 사진 미리보기"
+                      draggable={false}
+                      className="pointer-events-none absolute max-w-none select-none"
+                      style={{
+                        width: `${(preview.drawWidth / PROFILE_PHOTO_SIZE) * 100}%`,
+                        height: `${(preview.drawHeight / PROFILE_PHOTO_SIZE) * 100}%`,
+                        left: `${(preview.drawX / PROFILE_PHOTO_SIZE) * 100}%`,
+                        top: `${(preview.drawY / PROFILE_PHOTO_SIZE) * 100}%`,
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <div className="mb-2 flex items-center justify-between text-xs font-medium text-neutral-600">
+                      <span>확대</span>
+                      <span>{profilePhotoEditor.zoom.toFixed(1)}x</span>
+                    </div>
+                    <Slider
+                      value={[profilePhotoEditor.zoom]}
+                      min={1}
+                      max={3}
+                      step={0.05}
+                      onValueChange={([zoom]) =>
+                        setProfilePhotoEditor((current) =>
+                          current ? { ...current, zoom: zoom ?? 1 } : current,
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+              );
+            })()}
+          <DialogFooter>
+            <button
+              type="button"
+              onClick={closeProfilePhotoEditor}
+              disabled={uploadingProfilePhoto}
+              className="h-9 rounded-md border border-neutral-300 px-3 text-sm font-medium hover:bg-neutral-50 disabled:opacity-50"
+            >
+              취소
+            </button>
+            <button
+              type="button"
+              onClick={() => void applyProfilePhoto()}
+              disabled={uploadingProfilePhoto}
+              className="h-9 rounded-md bg-neutral-900 px-3 text-sm font-medium text-white hover:bg-neutral-800 disabled:opacity-50"
+            >
+              {uploadingProfilePhoto ? "적용 중..." : "적용"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminShell>
   );
 }

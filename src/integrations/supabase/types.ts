@@ -517,6 +517,7 @@ export type Database = {
           expert_job_title: string | null
           expert_model_answer: string | null
           expert_nickname: string | null
+          expert_profile_image_url: string | null
           id: string
           is_public: boolean
           job_family: string | null
@@ -547,6 +548,7 @@ export type Database = {
           expert_job_title?: string | null
           expert_model_answer?: string | null
           expert_nickname?: string | null
+          expert_profile_image_url?: string | null
           id?: string
           is_public?: boolean
           job_family?: string | null
@@ -577,6 +579,7 @@ export type Database = {
           expert_job_title?: string | null
           expert_model_answer?: string | null
           expert_nickname?: string | null
+          expert_profile_image_url?: string | null
           id?: string
           is_public?: boolean
           job_family?: string | null

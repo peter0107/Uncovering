@@ -38,6 +38,7 @@ type FeaturedExpertSimulation = {
   jobTitle: string;
   backgroundColor: string;
   textColor: string;
+  profileImageUrl: string;
 };
 
 function Header({
@@ -149,7 +150,7 @@ function FeaturedExpertSimulations() {
       const { data, error } = await supabase
         .from("job_simulations")
         .select(
-          "id, title, role_label, job_family, description, estimated_minutes, expert_nickname, expert_company_type, expert_experience_band, expert_job_title, card_background_color, card_text_color",
+          "id, title, role_label, job_family, description, estimated_minutes, expert_nickname, expert_company_type, expert_experience_band, expert_job_title, expert_profile_image_url, card_background_color, card_text_color",
         )
         .eq("simulation_source", "expert")
         .eq("is_public", true)
@@ -171,6 +172,7 @@ function FeaturedExpertSimulations() {
             jobTitle: row.expert_job_title || row.role_label || "",
             backgroundColor: row.card_background_color || "#18181b",
             textColor: row.card_text_color || "#ffffff",
+            profileImageUrl: row.expert_profile_image_url || "",
           })),
         );
       }
@@ -221,6 +223,7 @@ function FeaturedExpertSimulations() {
                   estimatedMinutes={simulation.estimatedMinutes}
                   backgroundColor={simulation.backgroundColor}
                   textColor={simulation.textColor}
+                  profileImageUrl={simulation.profileImageUrl}
                   compact
                   className="h-full"
                 />

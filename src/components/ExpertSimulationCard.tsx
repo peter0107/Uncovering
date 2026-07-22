@@ -48,6 +48,8 @@ type ExpertSimulationCardProps = {
   estimatedMinutes?: number | null;
   backgroundColor?: string | null;
   textColor?: string | null;
+  profileImageUrl?: string | null;
+  onProfileImageClick?: () => void;
   compact?: boolean;
   topRight?: ReactNode;
   bottomRight?: ReactNode;
@@ -65,6 +67,8 @@ export function ExpertSimulationCard({
   estimatedMinutes,
   backgroundColor,
   textColor,
+  profileImageUrl,
+  onProfileImageClick,
   compact = false,
   topRight,
   bottomRight,
@@ -75,6 +79,16 @@ export function ExpertSimulationCard({
   const meta = [companyType, experienceBand, jobTitle].filter(Boolean).join(" · ");
   const summary = (description?.trim() || title).replace(/\s+/g, " ");
   const ProfileIcon = getProfileIcon(`${nickname}:${jobTitle}:${roleLabel}`);
+  const profileClassName = cn(
+    "grid shrink-0 place-items-center overflow-hidden rounded-md border border-current bg-transparent",
+    onProfileImageClick && "cursor-pointer transition-opacity hover:opacity-75",
+    compact ? "h-7 w-7" : "h-9 w-9",
+  );
+  const profileContent = profileImageUrl ? (
+    <img src={profileImageUrl} alt="" className="h-full w-full object-cover" />
+  ) : (
+    <ProfileIcon className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} strokeWidth={2} />
+  );
 
   return (
     <article
@@ -91,15 +105,20 @@ export function ExpertSimulationCard({
         style={{ backgroundColor: background, color: foreground }}
       >
         <div className="flex min-w-0 flex-1 items-center gap-2.5">
-          <span
-            aria-hidden="true"
-            className={cn(
-              "grid shrink-0 place-items-center rounded-md border border-current bg-transparent",
-              compact ? "h-7 w-7" : "h-9 w-9",
-            )}
-          >
-            <ProfileIcon className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} strokeWidth={2} />
-          </span>
+          {onProfileImageClick ? (
+            <button
+              type="button"
+              onClick={onProfileImageClick}
+              aria-label="현직자 사진 변경"
+              className={profileClassName}
+            >
+              {profileContent}
+            </button>
+          ) : (
+            <span aria-hidden="true" className={profileClassName}>
+              {profileContent}
+            </span>
+          )}
           <div className="min-w-0">
             <p className={cn("truncate font-bold leading-tight", compact ? "text-xs" : "text-sm")}>
               {nickname}
