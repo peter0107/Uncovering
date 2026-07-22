@@ -85,8 +85,8 @@ export function ExpertSimulationCard({
     >
       <div
         className={cn(
-          "relative flex shrink-0 basis-[34%] items-end overflow-hidden",
-          compact ? "p-3" : "p-4",
+          "relative flex shrink-0 items-end overflow-hidden",
+          compact ? "basis-[30%] p-2.5" : "basis-[34%] p-4",
         )}
         style={{ backgroundColor: background, color: foreground }}
       >

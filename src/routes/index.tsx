@@ -221,6 +221,7 @@ function FeaturedExpertSimulations() {
                   estimatedMinutes={simulation.estimatedMinutes}
                   backgroundColor={simulation.backgroundColor}
                   textColor={simulation.textColor}
+                  compact
                   className="h-full"
                 />
               </Link>
