@@ -76,6 +76,15 @@ type SimulationDetail = {
 
 const MAX_ANSWER_LENGTH = 1000;
 
+// 제출 시 난이도 자기평가 5단계 (DB에는 1~5 정수로 저장)
+const DIFFICULTY_OPTIONS = [
+  { value: 1, label: "매우 쉬웠어요" },
+  { value: 2, label: "쉬웠어요" },
+  { value: 3, label: "적당했어요" },
+  { value: 4, label: "어려웠어요" },
+  { value: 5, label: "매우 어려웠어요" },
+] as const;
+
 function AnswerTextarea({
   id,
   value,
@@ -160,6 +169,7 @@ function SimulationDetailPage() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [stepIdx, setStepIdx] = useState(0);
   const [consent, setConsent] = useState<boolean | null>(null);
+  const [difficultyRating, setDifficultyRating] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [applying, setApplying] = useState(false);
   const [submittedAt, setSubmittedAt] = useState<Date | null>(null);
@@ -392,6 +402,10 @@ function SimulationDetailPage() {
       response_text = responseText;
     }
 
+    if (difficultyRating === null) {
+      toast.error("시뮬레이션 난이도를 평가해주세요.");
+      return;
+    }
     if (consent === null) {
       toast.error("답안 전송 동의 여부를 선택해주세요.");
       return;
@@ -414,6 +428,7 @@ function SimulationDetailPage() {
         submitted_at: now.toISOString(),
         duration_sec: Math.round((now.getTime() - startedAt.getTime()) / 1000),
         answer_transmission_consent: consent,
+        difficulty_rating: difficultyRating,
         ai_chat_log: chatMessages,
         ...(response_json ? { response_json } : {}),
       })
@@ -595,6 +610,29 @@ function SimulationDetailPage() {
           </span>
         </div>
       )}
+    </div>
+  );
+
+  const difficultyBlock = (
+    <div className="mt-6 shrink-0 rounded-md border border-zinc-200 p-5">
+      <p className="text-sm font-semibold text-zinc-900">이 시뮬레이션의 난이도는 어땠나요?</p>
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+        {DIFFICULTY_OPTIONS.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => setDifficultyRating(option.value)}
+            className={cn(
+              "flex-1 rounded-md border-2 px-2 py-3 text-center text-sm transition-colors",
+              difficultyRating === option.value
+                ? "border-zinc-900 bg-zinc-900 text-white"
+                : "border-zinc-200 bg-white text-zinc-800 hover:border-zinc-400",
+            )}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 
@@ -887,7 +925,8 @@ function SimulationDetailPage() {
               </div>
             )}
 
-            {/* 마지막 스텝: 동의 */}
+            {/* 마지막 스텝: 난이도 평가 + 동의 */}
+            {isLast && difficultyBlock}
             {isLast && consentBlock}
 
             {/* 네비게이션 */}
@@ -975,6 +1014,7 @@ function SimulationDetailPage() {
             />
           </div>
 
+          {difficultyBlock}
           {consentBlock}
 
           <Button

@@ -769,6 +769,7 @@ export type Database = {
           ai_chat_log: Json
           answer_transmission_consent: boolean | null
           created_at: string | null
+          difficulty_rating: number | null
           duration_sec: number | null
           id: string
           job_seeker_id: string
@@ -784,6 +785,7 @@ export type Database = {
           ai_chat_log?: Json
           answer_transmission_consent?: boolean | null
           created_at?: string | null
+          difficulty_rating?: number | null
           duration_sec?: number | null
           id?: string
           job_seeker_id: string
@@ -799,6 +801,7 @@ export type Database = {
           ai_chat_log?: Json
           answer_transmission_consent?: boolean | null
           created_at?: string | null
+          difficulty_rating?: number | null
           duration_sec?: number | null
           id?: string
           job_seeker_id?: string
