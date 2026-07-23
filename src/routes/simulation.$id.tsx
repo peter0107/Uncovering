@@ -579,14 +579,13 @@ function SimulationDetailPage() {
   const isUnofficial = !isExpertSimulation && !sim.company_is_partner;
   const header = (
     <div>
-      {isExpertSimulation && (
-        <Link
-          to="/expert-simulations"
-          className="mb-5 inline-flex items-center gap-1 text-sm text-zinc-500 transition-colors hover:text-zinc-900"
-        >
-          <ChevronLeft className="h-4 w-4" /> 현직자 시뮬레이션 목록
-        </Link>
-      )}
+      <Link
+        to={isExpertSimulation ? "/expert-simulations" : "/simulations"}
+        className="mb-5 inline-flex items-center gap-1 text-sm text-zinc-500 transition-colors hover:text-zinc-900"
+      >
+        <ChevronLeft className="h-4 w-4" />
+        {isExpertSimulation ? "현직자 시뮬레이션 목록" : "기업 시뮬레이션 목록"}
+      </Link>
       <div className="flex items-center gap-1.5 text-xs text-zinc-400">
         {isExpertSimulation ? (
           <UserRound className="h-3.5 w-3.5" />
