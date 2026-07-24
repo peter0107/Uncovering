@@ -7,19 +7,32 @@ import { toast } from "sonner";
 import { INITIAL_PROFILE_FORM, JobInterestFields } from "@/lib/profile-fields";
 
 export const Route = createFileRoute("/onboarding")({
+  validateSearch: (search: Record<string, unknown>) => {
+    const redirect = search.redirect;
+    return {
+      redirect:
+        typeof redirect === "string" && redirect.startsWith("/") && !redirect.startsWith("//")
+          ? redirect
+          : undefined,
+    };
+  },
   component: OnboardingPage,
 });
 
 function OnboardingPage() {
   const navigate = useNavigate();
+  const { redirect } = Route.useSearch();
   const { user, loading: authLoading } = useAuth();
   const [jobInterests, setJobInterests] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (authLoading || user) return;
-    navigate({ to: "/login", search: { redirect: "/onboarding" }, replace: true });
-  }, [authLoading, navigate, user]);
+    const loginRedirect = redirect
+      ? `/onboarding?redirect=${encodeURIComponent(redirect)}`
+      : "/onboarding";
+    navigate({ to: "/login", search: { redirect: loginRedirect }, replace: true });
+  }, [authLoading, navigate, redirect, user]);
 
   useEffect(() => {
     if (!user) return;
@@ -51,7 +64,7 @@ function OnboardingPage() {
       return;
     }
 
-    navigate({ to: "/expert-simulations" });
+    navigate({ to: redirect ?? "/expert-simulations", replace: true });
   };
 
   if (authLoading || !user) {

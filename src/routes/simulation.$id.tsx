@@ -162,6 +162,7 @@ function SimulationDetailPage() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const isPreview = preview === "1";
+  const [accessReady, setAccessReady] = useState(isPreview);
 
   const [sim, setSim] = useState<SimulationDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -249,16 +250,54 @@ function SimulationDetailPage() {
   const draftKey = `sim-draft-${id}`;
 
   useEffect(() => {
-    if (authLoading || isPreview || user) return;
-    navigate({
-      to: "/login",
-      search: { redirect: `/simulation/${id}` },
-      replace: true,
-    });
+    if (authLoading) return;
+
+    if (isPreview) {
+      setAccessReady(true);
+      return;
+    }
+
+    if (!user) {
+      setAccessReady(false);
+      navigate({
+        to: "/login",
+        search: { redirect: `/simulation/${id}` },
+        replace: true,
+      });
+      return;
+    }
+
+    let active = true;
+    setAccessReady(false);
+
+    void supabase
+      .from("job_seekers")
+      .select("job_interests")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (!active) return;
+
+        const hasJobInterests = Array.isArray(data?.job_interests) && data.job_interests.length > 0;
+        if (!error && !hasJobInterests) {
+          navigate({
+            to: "/onboarding",
+            search: { redirect: `/simulation/${id}` },
+            replace: true,
+          });
+          return;
+        }
+
+        setAccessReady(true);
+      });
+
+    return () => {
+      active = false;
+    };
   }, [authLoading, id, isPreview, navigate, user]);
 
   useEffect(() => {
-    if (authLoading || (!user && !isPreview)) return;
+    if (authLoading || !accessReady || (!user && !isPreview)) return;
 
     async function loadSimulation() {
       try {
@@ -345,7 +384,7 @@ function SimulationDetailPage() {
     }
 
     void loadSimulation();
-  }, [id, isPreview, user, authLoading]);
+  }, [accessReady, id, isPreview, user, authLoading]);
 
   // 위저드 임시저장 복원 (이탈 방지)
   useEffect(() => {
