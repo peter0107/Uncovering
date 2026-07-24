@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Loader2, LogOut, Trash2, UserRound } from "lucide-react";
+import { Loader2, LogOut, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import {
@@ -12,18 +12,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
-import { deleteMyAccount } from "@/lib/account.functions";
-import { toast } from "sonner";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 
 const displayNameCache = new Map<string, string>();
 
@@ -34,9 +22,6 @@ function fallbackDisplayName(email: string | undefined) {
 export function AccountMenu() {
   const { user, signOut, signingOut } = useAuth();
   const [displayName, setDisplayName] = useState(() => fallbackDisplayName(user?.email));
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [confirmation, setConfirmation] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -74,19 +59,6 @@ export function AccountMenu() {
   if (!user) return null;
 
   const profileLabel = `${displayName.replace(/님$/, "")}님`;
-
-  async function handleDeleteAccount() {
-    if (confirmation !== "탈퇴" || isDeleting) return;
-
-    setIsDeleting(true);
-    try {
-      await deleteMyAccount({ data: { confirmation } });
-      await signOut();
-    } catch (error) {
-      setIsDeleting(false);
-      toast.error(error instanceof Error ? error.message : "회원 탈퇴에 실패했습니다.");
-    }
-  }
 
   return (
     <>
@@ -134,70 +106,9 @@ export function AccountMenu() {
               <LogOut className="h-4 w-4" />
               로그아웃
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onSelect={(event) => {
-                event.preventDefault();
-                setConfirmation("");
-                setDeleteDialogOpen(true);
-              }}
-              className="cursor-pointer text-red-600 focus:text-red-700"
-            >
-              <Trash2 className="h-4 w-4" />
-              회원 탈퇴
-            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-
-      <Dialog
-        open={deleteDialogOpen}
-        onOpenChange={(open) => {
-          if (isDeleting) return;
-          setDeleteDialogOpen(open);
-          if (!open) setConfirmation("");
-        }}
-      >
-        <DialogContent className="max-w-sm rounded-md shadow-none data-[state=closed]:!animate-none data-[state=open]:!animate-none">
-          <DialogHeader>
-            <DialogTitle>회원 탈퇴</DialogTitle>
-            <DialogDescription>
-              계정과 이력서, 제출한 시뮬레이션 답변이 삭제됩니다.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2">
-            <label htmlFor="account-delete-confirmation" className="text-sm font-medium text-foreground">
-              확인을 위해 <span className="text-red-600">탈퇴</span>를 입력하세요.
-            </label>
-            <Input
-              id="account-delete-confirmation"
-              value={confirmation}
-              onChange={(event) => setConfirmation(event.target.value)}
-              autoComplete="off"
-              disabled={isDeleting}
-              className="rounded-md shadow-none"
-            />
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setDeleteDialogOpen(false)}
-              disabled={isDeleting}
-            >
-              취소
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={() => void handleDeleteAccount()}
-              disabled={confirmation !== "탈퇴" || isDeleting}
-            >
-              {isDeleting ? "탈퇴 중..." : "탈퇴하기"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

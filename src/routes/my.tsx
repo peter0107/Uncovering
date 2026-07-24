@@ -77,6 +77,7 @@ import {
   EDUCATION_SCHOOL_TYPES,
 } from "@/lib/profile-fields";
 import { isDomainCategory } from "@/lib/domain-categories";
+import { deleteMyAccount } from "@/lib/account.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/my")({
@@ -1538,6 +1539,9 @@ function MyPage() {
   const [resumePhotoOffsetX, setResumePhotoOffsetX] = useState(0);
   const [resumePhotoOffsetY, setResumePhotoOffsetY] = useState(0);
   const [pendingResumePhoto, setPendingResumePhoto] = useState<PendingResumePhoto | null>(null);
+  const [deleteAccountDialogOpen, setDeleteAccountDialogOpen] = useState(false);
+  const [deleteAccountConfirmation, setDeleteAccountConfirmation] = useState("");
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   const userEmail = user?.email ?? "";
   const defaultResumeId = useMemo(() => resumes.find((resume) => resume.is_default)?.id, [resumes]);
@@ -2550,6 +2554,20 @@ function MyPage() {
     toast.success("이력서가 삭제됐어요.");
   };
 
+  const handleDeleteAccount = async () => {
+    if (deleteAccountConfirmation !== "탈퇴" || deletingAccount) return;
+
+    setDeletingAccount(true);
+    try {
+      await deleteMyAccount({ data: { confirmation: deleteAccountConfirmation } });
+      await supabase.auth.signOut({ scope: "local" });
+      window.location.assign("/");
+    } catch (error) {
+      setDeletingAccount(false);
+      toast.error(error instanceof Error ? error.message : "회원 탈퇴에 실패했습니다.");
+    }
+  };
+
   if (authLoading || hasProfile === null) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-12">
@@ -3071,6 +3089,69 @@ function MyPage() {
           </ul>
         )}
       </div>
+
+      <section className="mt-12 border-t border-zinc-200 pt-6">
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => {
+            setDeleteAccountConfirmation("");
+            setDeleteAccountDialogOpen(true);
+          }}
+          className="h-auto px-0 text-sm font-medium text-red-600 hover:bg-transparent hover:text-red-700"
+        >
+          회원 탈퇴
+        </Button>
+      </section>
+
+      <Dialog
+        open={deleteAccountDialogOpen}
+        onOpenChange={(open) => {
+          if (deletingAccount) return;
+          setDeleteAccountDialogOpen(open);
+          if (!open) setDeleteAccountConfirmation("");
+        }}
+      >
+        <DialogContent className="max-w-sm rounded-md shadow-none data-[state=closed]:!animate-none data-[state=open]:!animate-none">
+          <DialogHeader>
+            <DialogTitle>회원 탈퇴</DialogTitle>
+            <DialogDescription>
+              계정과 이력서, 제출한 시뮬레이션 답변이 삭제됩니다.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="account-delete-confirmation" className="text-sm font-medium text-foreground">
+              확인을 위해 <span className="text-red-600">탈퇴</span>를 입력하세요.
+            </Label>
+            <Input
+              id="account-delete-confirmation"
+              value={deleteAccountConfirmation}
+              onChange={(event) => setDeleteAccountConfirmation(event.target.value)}
+              autoComplete="off"
+              disabled={deletingAccount}
+              className="rounded-md shadow-none"
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteAccountDialogOpen(false)}
+              disabled={deletingAccount}
+            >
+              취소
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => void handleDeleteAccount()}
+              disabled={deleteAccountConfirmation !== "탈퇴" || deletingAccount}
+            >
+              {deletingAccount ? "탈퇴 중..." : "탈퇴하기"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!avatarEditor} onOpenChange={(open) => !open && closeAvatarEditor()}>
         <DialogContent className="max-w-md shadow-none">

@@ -350,7 +350,7 @@ function Index() {
         </section>
       </main>
 
-      <footer className="reference-footer reference-reveal">
+      <footer className="reference-footer">
         <div className="reference-shell">
           <span>© 2026 Beginner. All rights reserved.</span>
           <nav aria-label="하단 메뉴">
