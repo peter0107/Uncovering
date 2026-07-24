@@ -426,6 +426,10 @@ export const Route = createFileRoute("/admin/simulations")({
     meta: [
       { title: "Beginner - 직무 시뮬레이션 관리자" },
       { name: "description", content: "기업별 직무 시뮬레이션을 관리합니다." },
+      { property: "og:title", content: "Beginner - 직무 시뮬레이션 관리자" },
+      { property: "og:description", content: "기업별 직무 시뮬레이션을 관리합니다." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: AdminSimulations,
