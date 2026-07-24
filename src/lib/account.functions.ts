@@ -1,39 +1,38 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
-import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
-
-const deleteAccountSchema = z.object({
-  confirmation: z.literal("탈퇴"),
-});
-
-function getBearerToken(): string {
-  const request = getRequest();
-  const authorization = request?.headers.get("authorization") ?? "";
-  if (!authorization.startsWith("Bearer ")) {
-    throw new Error("로그인이 필요합니다.");
-  }
-
-  return authorization.slice("Bearer ".length).trim();
-}
-
-function createPublicServerClient() {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_PUBLISHABLE_KEY;
-  if (!url || !key) {
-    throw new Error("Backend is not configured");
-  }
-
-  return createClient(url, key, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-}
+import { createClient } from "@supabase/supabase-js";
 
 export const deleteMyAccount = createServerFn({ method: "POST" })
-  .validator(deleteAccountSchema)
+  .inputValidator((data) => z.object({ confirmation: z.literal("탈퇴") }).parse(data))
   .handler(async () => {
-    const token = getBearerToken();
-    const publicClient = createPublicServerClient();
+    const request = getRequest();
+    const authorization = request?.headers.get("authorization") ?? "";
+    if (!authorization.startsWith("Bearer ")) {
+      throw new Error("로그인이 필요합니다.");
+    }
+
+    const token = authorization.slice("Bearer ".length).trim();
+    const url = process.env.SUPABASE_URL;
+    const key = process.env.SUPABASE_PUBLISHABLE_KEY;
+    if (!url || !key) {
+      throw new Error("Backend is not configured");
+    }
+
+    const publicClient = createClient(url, key, {
+      auth: { autoRefreshToken: false, persistSession: false },
+      global: {
+        fetch: (input, init) => {
+          const headers = new Headers(init?.headers);
+          if (key.startsWith("sb_") && headers.get("Authorization") === `Bearer ${key}`) {
+            headers.delete("Authorization");
+          }
+          headers.set("apikey", key);
+          return fetch(input, { ...init, headers });
+        },
+      },
+    });
+
     const { data: userData, error: userError } = await publicClient.auth.getUser(token);
     const user = userData.user;
 
