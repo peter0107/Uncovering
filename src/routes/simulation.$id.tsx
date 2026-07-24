@@ -556,8 +556,11 @@ function SimulationDetailPage() {
     return (
       <div className="mx-auto max-w-md px-4 py-16 text-center">
         <p className="text-zinc-500">시뮬레이션을 찾을 수 없어요.</p>
-        <Link to="/simulations" className="mt-4 inline-block text-sm text-zinc-700 underline">
-          추천 목록으로 돌아가기
+        <Link
+          to="/simulations"
+          className="mt-4 inline-flex items-center gap-1.5 text-sm text-zinc-500 transition-colors hover:text-zinc-900"
+        >
+          <ChevronLeft className="h-4 w-4" /> 추천 목록으로 돌아가기
         </Link>
       </div>
     );

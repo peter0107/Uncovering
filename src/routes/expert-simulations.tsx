@@ -214,7 +214,7 @@ function ExpertSimulationsPage() {
     <main className="mx-auto max-w-5xl px-4 py-12">
       <Link
         to="/"
-        className="inline-flex items-center gap-1 text-sm text-zinc-500 transition-colors hover:text-zinc-900"
+        className="inline-flex items-center gap-1.5 text-sm text-zinc-500 transition-colors hover:text-zinc-900"
       >
         <ArrowLeft className="h-4 w-4" /> 홈으로
       </Link>

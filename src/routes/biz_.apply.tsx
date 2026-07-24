@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CircleCheck } from "lucide-react";
+import { ArrowLeft, CircleCheck } from "lucide-react";
 import { useRef, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
@@ -128,9 +128,9 @@ function BizApply() {
               </p>
               <Link
                 to="/biz"
-                className="mt-8 inline-flex h-10 items-center justify-center rounded-md border border-neutral-300 px-4 text-sm font-medium text-neutral-700 transition-colors hover:border-neutral-900 hover:text-neutral-900"
+                className="mt-8 inline-flex items-center gap-1.5 text-sm text-neutral-500 transition-colors hover:text-neutral-900"
               >
-                코드 입력으로 돌아가기
+                <ArrowLeft className="h-4 w-4" /> 코드 입력으로 돌아가기
               </Link>
             </div>
           ) : (

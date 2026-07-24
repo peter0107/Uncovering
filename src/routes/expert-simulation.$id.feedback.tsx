@@ -49,8 +49,11 @@ function ExpertSimulationFeedbackPage() {
     return (
       <main className="mx-auto max-w-5xl px-4 py-16">
         <p className="text-sm text-zinc-500">{error || "피드백을 불러오지 못했습니다."}</p>
-        <Link to="/expert-simulations" className="mt-5 inline-block text-sm underline">
-          현직자 시뮬레이션으로 돌아가기
+        <Link
+          to="/expert-simulations"
+          className="mt-5 inline-flex items-center gap-1.5 text-sm text-zinc-500 transition-colors hover:text-zinc-900"
+        >
+          <ChevronLeft className="h-4 w-4" /> 현직자 시뮬레이션으로 돌아가기
         </Link>
       </main>
     );
@@ -72,7 +75,7 @@ function ExpertSimulationFeedbackPage() {
       <Link
         to="/simulation/$id"
         params={{ id }}
-        className="inline-flex items-center gap-1 text-sm text-zinc-500 transition-colors hover:text-zinc-900"
+        className="inline-flex items-center gap-1.5 text-sm text-zinc-500 transition-colors hover:text-zinc-900"
       >
         <ChevronLeft className="h-4 w-4" /> 시뮬레이션으로 돌아가기
       </Link>

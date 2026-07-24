@@ -3,7 +3,6 @@ import { ChevronLeft, FileCheck2, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import {
   getCompanySimulationFeedback,
@@ -46,8 +45,11 @@ function CompanySimulationFeedbackPage() {
     return (
       <main className="mx-auto max-w-5xl px-4 py-16">
         <p className="text-sm text-zinc-500">{error || "평가 결과를 불러오지 못했습니다."}</p>
-        <Link to="/my" className="mt-5 inline-block text-sm underline">
-          마이페이지로 돌아가기
+        <Link
+          to="/my"
+          className="mt-5 inline-flex items-center gap-1.5 text-sm text-zinc-500 transition-colors hover:text-zinc-900"
+        >
+          <ChevronLeft className="h-4 w-4" /> 마이페이지로 돌아가기
         </Link>
       </main>
     );
@@ -58,7 +60,7 @@ function CompanySimulationFeedbackPage() {
     <main className="mx-auto max-w-5xl px-4 py-12">
       <Link
         to="/my"
-        className="inline-flex items-center gap-1 text-sm text-zinc-500 transition-colors hover:text-zinc-900"
+        className="inline-flex items-center gap-1.5 text-sm text-zinc-500 transition-colors hover:text-zinc-900"
       >
         <ChevronLeft className="h-4 w-4" /> 마이페이지
       </Link>
@@ -132,10 +134,11 @@ function CompanySimulationFeedbackPage() {
       </div>
 
       <div className="mt-10 border-t border-zinc-200 pt-6">
-        <Link to="/my">
-          <Button variant="outline" className="rounded-md">
-            마이페이지로 돌아가기
-          </Button>
+        <Link
+          to="/my"
+          className="inline-flex items-center gap-1.5 text-sm text-zinc-500 transition-colors hover:text-zinc-900"
+        >
+          <ChevronLeft className="h-4 w-4" /> 마이페이지로 돌아가기
         </Link>
       </div>
     </main>
