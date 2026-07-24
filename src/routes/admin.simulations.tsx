@@ -39,7 +39,6 @@ import {
 } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
 import { useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
 import {
   createCompany,
   createCompanySimulation,
@@ -51,6 +50,7 @@ import {
   setCompanySimulationCardImage,
   updateCompany,
   updateCompanySimulation,
+  uploadSimulationCardAsset,
   type AdminCompany,
   type AdminCompanySimulation,
   type AdminSimulationPrompt,
@@ -388,6 +388,18 @@ async function createCroppedAssetBlob(
   });
 }
 
+function blobToDataUrl(blob: Blob) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") resolve(reader.result);
+      else reject(new Error("이미지 데이터를 읽지 못했습니다."));
+    };
+    reader.onerror = () => reject(new Error("이미지 데이터를 읽지 못했습니다."));
+    reader.readAsDataURL(blob);
+  });
+}
+
 function getAssetEditorImageStyle(editor: AssetEditorState, preset: AssetEditorPreset) {
   const geometry = getAssetImageGeometry({
     imageWidth: editor.imageWidth,
@@ -668,21 +680,17 @@ function AdminSimulations() {
     if (!userId) throw new Error("로그인이 필요합니다.");
 
     const targetId = target.kind === "logo" ? target.companyId : target.simulationId;
-    const objectPath = `${userId}/${target.kind}/${targetId}-${Date.now()}.webp`;
-
-    const { error } = await supabase.storage
-      .from("simulation-card-assets")
-      .upload(objectPath, blob, {
+    const dataUrl = await blobToDataUrl(blob);
+    const { publicUrl } = await uploadSimulationCardAsset({
+      data: {
+        kind: target.kind,
+        targetId,
         contentType: "image/webp",
-        upsert: true,
-      });
+        dataUrl,
+      },
+    });
 
-    if (error) throw error;
-
-    const { data } = supabase.storage.from("simulation-card-assets").getPublicUrl(objectPath);
-    if (!data.publicUrl) throw new Error("업로드한 이미지 주소를 만들지 못했습니다.");
-
-    return data.publicUrl;
+    return publicUrl;
   }
 
   async function saveAssetPublicUrl(publicUrl: string, target: AssetUploadTarget) {
