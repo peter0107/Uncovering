@@ -9,11 +9,14 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as StartRouteImport } from './routes/start'
 import { Route as SimulationsRouteImport } from './routes/simulations'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as MyRouteImport } from './routes/my'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as FaqRouteImport } from './routes/faq'
 import { Route as ExpertSimulationsRouteImport } from './routes/expert-simulations'
 import { Route as BizRouteImport } from './routes/biz'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -34,6 +37,11 @@ import { Route as SimulationIdFeedbackRouteImport } from './routes/simulation.$i
 import { Route as ExpertSimulationIdReviewRouteImport } from './routes/expert-simulation.$id.review'
 import { Route as ExpertSimulationIdFeedbackRouteImport } from './routes/expert-simulation.$id.feedback'
 
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StartRoute = StartRouteImport.update({
   id: '/start',
   path: '/start',
@@ -42,6 +50,11 @@ const StartRoute = StartRouteImport.update({
 const SimulationsRoute = SimulationsRouteImport.update({
   id: '/simulations',
   path: '/simulations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -57,6 +70,11 @@ const MyRoute = MyRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FaqRoute = FaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExpertSimulationsRoute = ExpertSimulationsRouteImport.update({
@@ -163,11 +181,14 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/biz': typeof BizRoute
   '/expert-simulations': typeof ExpertSimulationsRoute
+  '/faq': typeof FaqRoute
   '/login': typeof LoginRoute
   '/my': typeof MyRoute
   '/onboarding': typeof OnboardingRoute
+  '/privacy': typeof PrivacyRoute
   '/simulations': typeof SimulationsRoute
   '/start': typeof StartRoute
+  '/terms': typeof TermsRoute
   '/admin/ai-prompts': typeof AdminAiPromptsRoute
   '/admin/expert-simulations': typeof AdminExpertSimulationsRoute
   '/admin/inquiries': typeof AdminInquiriesRoute
@@ -189,11 +210,14 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRouteWithChildren
   '/biz': typeof BizRoute
   '/expert-simulations': typeof ExpertSimulationsRoute
+  '/faq': typeof FaqRoute
   '/login': typeof LoginRoute
   '/my': typeof MyRoute
   '/onboarding': typeof OnboardingRoute
+  '/privacy': typeof PrivacyRoute
   '/simulations': typeof SimulationsRoute
   '/start': typeof StartRoute
+  '/terms': typeof TermsRoute
   '/admin/ai-prompts': typeof AdminAiPromptsRoute
   '/admin/expert-simulations': typeof AdminExpertSimulationsRoute
   '/admin/inquiries': typeof AdminInquiriesRoute
@@ -216,11 +240,14 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/biz': typeof BizRoute
   '/expert-simulations': typeof ExpertSimulationsRoute
+  '/faq': typeof FaqRoute
   '/login': typeof LoginRoute
   '/my': typeof MyRoute
   '/onboarding': typeof OnboardingRoute
+  '/privacy': typeof PrivacyRoute
   '/simulations': typeof SimulationsRoute
   '/start': typeof StartRoute
+  '/terms': typeof TermsRoute
   '/admin/ai-prompts': typeof AdminAiPromptsRoute
   '/admin/expert-simulations': typeof AdminExpertSimulationsRoute
   '/admin/inquiries': typeof AdminInquiriesRoute
@@ -244,11 +271,14 @@ export interface FileRouteTypes {
     | '/admin'
     | '/biz'
     | '/expert-simulations'
+    | '/faq'
     | '/login'
     | '/my'
     | '/onboarding'
+    | '/privacy'
     | '/simulations'
     | '/start'
+    | '/terms'
     | '/admin/ai-prompts'
     | '/admin/expert-simulations'
     | '/admin/inquiries'
@@ -270,11 +300,14 @@ export interface FileRouteTypes {
     | '/admin'
     | '/biz'
     | '/expert-simulations'
+    | '/faq'
     | '/login'
     | '/my'
     | '/onboarding'
+    | '/privacy'
     | '/simulations'
     | '/start'
+    | '/terms'
     | '/admin/ai-prompts'
     | '/admin/expert-simulations'
     | '/admin/inquiries'
@@ -296,11 +329,14 @@ export interface FileRouteTypes {
     | '/admin'
     | '/biz'
     | '/expert-simulations'
+    | '/faq'
     | '/login'
     | '/my'
     | '/onboarding'
+    | '/privacy'
     | '/simulations'
     | '/start'
+    | '/terms'
     | '/admin/ai-prompts'
     | '/admin/expert-simulations'
     | '/admin/inquiries'
@@ -323,11 +359,14 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   BizRoute: typeof BizRoute
   ExpertSimulationsRoute: typeof ExpertSimulationsRoute
+  FaqRoute: typeof FaqRoute
   LoginRoute: typeof LoginRoute
   MyRoute: typeof MyRoute
   OnboardingRoute: typeof OnboardingRoute
+  PrivacyRoute: typeof PrivacyRoute
   SimulationsRoute: typeof SimulationsRoute
   StartRoute: typeof StartRoute
+  TermsRoute: typeof TermsRoute
   BizApplyRoute: typeof BizApplyRoute
   BizCoffeeChatRoute: typeof BizCoffeeChatRoute
   BizContactRoute: typeof BizContactRoute
@@ -340,6 +379,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/start': {
       id: '/start'
       path: '/start'
@@ -352,6 +398,13 @@ declare module '@tanstack/react-router' {
       path: '/simulations'
       fullPath: '/simulations'
       preLoaderRoute: typeof SimulationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/onboarding': {
@@ -373,6 +426,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/faq': {
+      id: '/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof FaqRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/expert-simulations': {
@@ -548,11 +608,14 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   BizRoute: BizRoute,
   ExpertSimulationsRoute: ExpertSimulationsRoute,
+  FaqRoute: FaqRoute,
   LoginRoute: LoginRoute,
   MyRoute: MyRoute,
   OnboardingRoute: OnboardingRoute,
+  PrivacyRoute: PrivacyRoute,
   SimulationsRoute: SimulationsRoute,
   StartRoute: StartRoute,
+  TermsRoute: TermsRoute,
   BizApplyRoute: BizApplyRoute,
   BizCoffeeChatRoute: BizCoffeeChatRoute,
   BizContactRoute: BizContactRoute,

@@ -354,9 +354,9 @@ function Index() {
         <div className="reference-shell">
           <span>© 2026 Beginner. All rights reserved.</span>
           <nav aria-label="하단 메뉴">
-            <a href="#faq">자주 묻는 질문</a>
-            <a href="#terms">이용약관</a>
-            <a href="#privacy">개인정보처리방침</a>
+            <Link to="/faq">자주 묻는 질문</Link>
+            <Link to="/terms">이용약관</Link>
+            <Link to="/privacy">개인정보처리방침</Link>
           </nav>
         </div>
       </footer>
