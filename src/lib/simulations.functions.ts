@@ -237,6 +237,13 @@ const companySimulationCardImageInputSchema = z.object({
   cardImageUrl: z.string().min(1),
 });
 
+const simulationAssetUploadInputSchema = z.object({
+  kind: z.enum(["logo", "cardImage"]),
+  targetId: z.string().uuid(),
+  contentType: z.literal("image/webp"),
+  dataUrl: z.string().startsWith("data:image/webp;base64,").max(8_000_000),
+});
+
 const adminAiPromptSettingsInputSchema = z.object({
   settings: z
     .array(
@@ -1114,6 +1121,37 @@ export const setCompanySimulationCardImage = createServerFn({ method: "POST" })
     }
 
     return { ok: true };
+  });
+
+export const uploadSimulationCardAsset = createServerFn({ method: "POST" })
+  .inputValidator(simulationAssetUploadInputSchema)
+  .handler(async ({ data }) => {
+    await assertAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const base64 = data.dataUrl.replace("data:image/webp;base64,", "");
+    const bytes = Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
+    const objectPath = `admin/${data.kind}/${data.targetId}-${Date.now()}.webp`;
+
+    const { error } = await supabaseAdmin.storage
+      .from("simulation-card-assets")
+      .upload(objectPath, bytes, {
+        contentType: data.contentType,
+        upsert: true,
+      });
+
+    if (error) {
+      console.error("Failed to upload simulation card asset:", error);
+      throw new Error("배경 사진을 업로드하지 못했습니다.");
+    }
+
+    const { data: publicUrlData } = supabaseAdmin.storage
+      .from("simulation-card-assets")
+      .getPublicUrl(objectPath);
+
+    if (!publicUrlData.publicUrl) throw new Error("업로드한 이미지 주소를 만들지 못했습니다.");
+
+    return { publicUrl: publicUrlData.publicUrl };
   });
 
 export const deleteCompanySimulation = createServerFn({ method: "POST" })
