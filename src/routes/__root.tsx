@@ -28,15 +28,17 @@ function GlobalNavigationOverlay() {
 
 function SiteLayout({ children }: { children: React.ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const bare =
-    pathname === "/" ||
+  const isHome = pathname === "/";
+  const usesOwnHeader =
+    isHome ||
     pathname.startsWith("/onboarding") ||
     pathname.startsWith("/biz") ||
     pathname.startsWith("/admin");
-  if (bare) return <>{children}</>;
+  if (isHome) return <>{children}</>;
+
   return (
     <div className="flex min-h-screen flex-col">
-      <SiteHeader />
+      {!usesOwnHeader && <SiteHeader />}
       <main className="flex-1">{children}</main>
       <SiteFooter />
     </div>
