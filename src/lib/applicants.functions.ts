@@ -57,6 +57,7 @@ export type ApplicantAiReview = {
     concerns: string[];
   };
   aiUtilization: {
+    applicable: boolean;
     score: number;
     summary: string;
     strengths: string[];
@@ -210,6 +211,7 @@ const aiReviewAnalysisSchema = z.object({
     concerns: z.array(z.string()),
   }),
   aiUtilization: z.object({
+    applicable: z.boolean().default(true),
     score: z.number().min(0).max(100),
     summary: z.string(),
     strengths: z.array(z.string()),
@@ -299,6 +301,7 @@ const companyApplicantsSchema = z.object({
         concerns: z.array(z.string()),
       }),
       aiUtilization: z.object({
+        applicable: z.boolean().default(true),
         score: z.number().min(0).max(100),
         summary: z.string(),
         strengths: z.array(z.string()),

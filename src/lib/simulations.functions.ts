@@ -100,6 +100,7 @@ export type AdminSubmissionAiReview = {
     concerns: string[];
   };
   aiUtilization: {
+    applicable: boolean;
     score: number;
     summary: string;
     strengths: string[];
@@ -269,6 +270,8 @@ const adminSubmissionAiReviewSchema = z.object({
     concerns: z.array(z.string().max(2000)).max(20),
   }),
   aiUtilization: z.object({
+    // 기존 저장 기록엔 없으므로 하위호환을 위해 기본값 true (평가됨)로 둔다.
+    applicable: z.boolean().default(true),
     score: z.number().int().min(0).max(100),
     summary: z.string().max(10000),
     strengths: z.array(z.string().max(2000)).max(20),

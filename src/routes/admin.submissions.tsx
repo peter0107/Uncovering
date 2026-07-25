@@ -468,10 +468,12 @@ function AiReviewDialog({
                   secondaryLabel="보완할 점"
                   secondaryItems={draft.aiUtilization.improvements}
                   isEditing={isEditing}
+                  notApplicable={draft.aiUtilization.applicable === false}
                   onChange={(next) =>
                     changeDraft({
                       ...draft,
                       aiUtilization: {
+                        applicable: draft.aiUtilization.applicable,
                         score: next.score,
                         summary: next.summary,
                         strengths: next.strengths,
@@ -536,6 +538,7 @@ function ReviewCategory({
   secondaryItems,
   isEditing,
   onChange,
+  notApplicable = false,
 }: {
   title: string;
   score: number;
@@ -545,6 +548,7 @@ function ReviewCategory({
   secondaryItems: string[];
   isEditing: boolean;
   onChange: (value: ReviewCategoryValue) => void;
+  notApplicable?: boolean;
 }) {
   const update = (patch: Partial<ReviewCategoryValue>) =>
     onChange({
@@ -571,6 +575,8 @@ function ReviewCategory({
               className="h-8 w-16 rounded-md border border-neutral-300 px-2 text-sm text-neutral-900 outline-none focus:border-neutral-700"
             />
           </label>
+        ) : notApplicable ? (
+          <p className="text-sm font-medium text-neutral-500">평가 대상 아님</p>
         ) : (
           <p className="text-sm font-semibold tabular-nums">{score}점</p>
         )}

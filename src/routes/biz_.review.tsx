@@ -1562,7 +1562,9 @@ function AiReviewDialog({
                 <section className="py-5 md:pl-5">
                   <p className="text-sm font-semibold text-neutral-900">AI 활용 능력 평가</p>
                   <p className="mt-2 text-2xl font-semibold tracking-tight">
-                    {review.aiUtilization.score}점
+                    {review.aiUtilization.applicable === false
+                      ? "평가 대상 아님"
+                      : `${review.aiUtilization.score}점`}
                   </p>
                   <p className="mt-3 text-sm leading-6 text-neutral-700">
                     {review.aiUtilization.summary}

@@ -22,8 +22,13 @@ export const COMPANY_AI_REVIEW_TOOL = {
       aiUtilization: {
         type: "object",
         additionalProperties: false,
-        required: ["score", "summary", "strengths", "improvements"],
+        required: ["applicable", "score", "summary", "strengths", "improvements"],
         properties: {
+          applicable: {
+            type: "boolean",
+            description:
+              "AI 어시스트를 실질적으로 사용했으면 true, 사용 기록이 없어 평가 대상이 아니면 false. false일 때 score는 0으로 두고 지원자를 감점하지 않는다.",
+          },
           score: { type: "integer", minimum: 0, maximum: 100 },
           summary: { type: "string" },
           strengths: { type: "array", items: { type: "string" }, maxItems: 20 },

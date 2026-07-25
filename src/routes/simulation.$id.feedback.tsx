@@ -110,7 +110,11 @@ function CompanySimulationFeedbackPage() {
                 improvementLabel="보완"
               />
               <ReviewBlock
-                title={`AI 활용 능력 ${review.aiUtilization.score}점`}
+                title={
+                  review.aiUtilization.applicable === false
+                    ? "AI 활용 능력 · 평가 대상 아님"
+                    : `AI 활용 능력 ${review.aiUtilization.score}점`
+                }
                 summary={review.aiUtilization.summary}
                 strengths={review.aiUtilization.strengths}
                 improvements={review.aiUtilization.improvements}
