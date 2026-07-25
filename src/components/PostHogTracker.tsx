@@ -9,11 +9,28 @@ const EXCLUDED_POSTHOG_HOSTS = new Set([
   "127.0.0.1",
 ]);
 const EXCLUDED_POSTHOG_EMAILS = new Set(["standard1414@g.skku.edu"]);
+// Google 가입은 OAuth 리다이렉트로 페이지를 떠나 클릭 시점 캡처가 유실되므로,
+// 복귀 후 created_at이 이 시간 이내면 신규 가입으로 판단해 user_signed_up을 보낸다.
+const SIGNUP_DETECTION_WINDOW_MS = 10 * 60 * 1000;
+
+function markSignupCaptured(userId: string): boolean {
+  const key = `ph_signup_captured_${userId}`;
+  try {
+    if (window.localStorage.getItem(key)) return false;
+    window.localStorage.setItem(key, "1");
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export function PostHogTracker() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { user, loading } = useAuth();
   const email = user?.email?.trim().toLowerCase();
+  const userId = user?.id;
+  const provider = user?.app_metadata?.provider;
+  const createdAt = user?.created_at;
   const hostname = typeof window !== "undefined" ? window.location.hostname.toLowerCase() : "";
   const isExcludedHost = EXCLUDED_POSTHOG_HOSTS.has(hostname);
   const isExcludedEmail = email ? EXCLUDED_POSTHOG_EMAILS.has(email) : false;
@@ -66,6 +83,18 @@ export function PostHogTracker() {
 
       if (email) {
         posthog.identify(email, { email });
+
+        // 이메일 가입은 login.tsx에서 클릭 시점에 캡처하므로 Google 가입만 여기서 감지
+        const createdAtMs = createdAt ? Date.parse(createdAt) : Number.NaN;
+        if (
+          provider === "google" &&
+          userId &&
+          Number.isFinite(createdAtMs) &&
+          Date.now() - createdAtMs < SIGNUP_DETECTION_WINDOW_MS &&
+          markSignupCaptured(userId)
+        ) {
+          posthog.capture("user_signed_up", { email, method: "google" });
+        }
         return;
       }
 
@@ -75,7 +104,7 @@ export function PostHogTracker() {
     return () => {
       cancelled = true;
     };
-  }, [loading, isExcluded, email]);
+  }, [loading, isExcluded, email, userId, provider, createdAt]);
 
   return null;
 }
