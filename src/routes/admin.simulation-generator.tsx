@@ -49,6 +49,13 @@ function buildRationaleMarkdown(draft: GeneratedSimulationDraft): string {
   const lines: string[] = [];
   lines.push(`# ${draft.simulation.title} — 생성 근거`);
   lines.push("");
+  if (draft.rationale.webResearchFacts.length > 0) {
+    lines.push("## 웹 검색으로 확인한 기업 정보");
+    draft.rationale.webResearchFacts.forEach((item) => {
+      lines.push(`- ${item.fact} (${item.source})`);
+    });
+    lines.push("");
+  }
   lines.push("## 평가 기준");
   draft.rationale.criteria.forEach((c, i) => {
     lines.push(`${i + 1}. **${c.title}**`);
@@ -411,10 +418,23 @@ function AdminSimulationGenerator() {
             <div>
               <h2 className="text-sm font-semibold tracking-wide text-neutral-500">생성 근거</h2>
               <div className="mt-3 rounded-md border border-neutral-200 p-4">
+                {draft.rationale.webResearchFacts.length > 0 && (
+                  <div className="border-b border-neutral-100 pb-4">
+                    <p className="text-sm font-semibold text-neutral-900">웹 검색으로 확인한 기업 정보</p>
+                    <ul className="mt-2 flex flex-col gap-1.5">
+                      {draft.rationale.webResearchFacts.map((item, index) => (
+                        <li key={index} className="text-xs leading-5 text-neutral-700">
+                          <span>{item.fact}</span>
+                          <span className="ml-1 text-neutral-400">{item.source}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 {draft.rationale.criteria.length === 0 && (
                   <p className="text-sm text-neutral-400">추출된 평가 기준이 없어요.</p>
                 )}
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-4 pt-4">
                   {draft.rationale.criteria.map((c, i) => (
                     <div key={i}>
                       <p className="text-sm font-semibold text-neutral-900">
