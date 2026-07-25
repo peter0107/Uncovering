@@ -155,6 +155,14 @@ const toolOutputSchema = z.object({
 // Claude tool 정의 (구조화 출력 강제)
 // ============================================================
 const GENERATE_TOOL_NAME = "record_simulation_draft";
+const WEB_SEARCH_TOOL = {
+  // Anthropic 서버 도구라 별도 실행이나 tool_result 전달이 필요하지 않습니다.
+  type: "web_search_20260209",
+  name: "web_search",
+  // 기업 확인에 필요한 검색만 허용해 비용과 응답 시간을 제한합니다.
+  max_uses: 2,
+} as const;
+const MAX_WEB_SEARCH_CONTINUATIONS = 2;
 
 const GENERATE_TOOL = {
   name: GENERATE_TOOL_NAME,
@@ -303,6 +311,12 @@ function buildPrompt(input: GenerateSimulationInput, instruction: string): strin
 
   return `${filledInstruction}
 
+## 기업·브랜드 사실 사용 원칙
+- 기업·브랜드에 관한 내용은 웹 검색 결과 또는 아래 채용공고 원문에서 확인된 사실만 사용하세요.
+- 모회사, 자회사, 인수 기업의 사업·제품·고객·조직을 서로 혼동하지 마세요.
+- 확인되지 않은 사업, 제품, 타깃 고객, 조직 구조, 최근 이슈는 작성하지 마세요.
+- 검색 결과가 부족하거나 기업을 특정할 수 없으면 기업 정보를 추정하지 말고, 아래 직무와 채용공고 정보 중심의 일반적인 시뮬레이션을 만드세요.
+
 ## 대상
 - 기업명: ${input.companyName}
 - 직무명: ${input.roleName}
@@ -313,6 +327,117 @@ ${input.note ? `- 참고사항: ${input.note}` : ""}
 ${sourcesBlock}
 
 반드시 record_simulation_draft 도구를 한 번 호출해 simulation과 rationale을 모두 채워 기록하세요.`;
+}
+
+function buildWebResearchPrompt(input: GenerateSimulationInput): string {
+  return `다음 기업 또는 브랜드와 직무에 맞는 지원 대비 시뮬레이션을 만들기 전에 웹 검색을 수행하세요.
+
+대상:
+- 기업·브랜드명: ${input.companyName}
+- 직무명: ${input.roleName}
+
+검색 원칙:
+- 기업·브랜드의 실제 사업, 주요 서비스·제품, 고객, 최근 공개 이슈를 확인하세요.
+- 모회사, 자회사, 인수 기업을 반드시 구분하고, 동일 기업인지 확실하지 않은 검색 결과는 사용하지 마세요.
+- 확인된 사실과 출처만 이후 생성에 사용할 수 있도록 검색 결과를 정리하세요.
+- 검색 결과가 부족하거나 기업을 특정할 수 없으면, 사실을 추정하거나 보완하지 마세요.
+- 지금은 시뮬레이션을 생성하지 말고 web_search 도구로 확인 가능한 사실을 조사하세요.`;
+}
+
+type AnthropicContentBlock = Record<string, unknown>;
+type AnthropicMessage = {
+  role: "user" | "assistant";
+  content: string | AnthropicContentBlock[];
+};
+type AnthropicPayload = Record<string, unknown> & {
+  content?: unknown;
+  stop_reason?: unknown;
+};
+
+function getAnthropicErrorMessage(payload: Record<string, unknown>): string {
+  return typeof payload.error === "object" &&
+    payload.error !== null &&
+    typeof (payload.error as { message?: unknown }).message === "string"
+    ? (payload.error as { message: string }).message
+    : "Anthropic API 요청에 실패했습니다.";
+}
+
+function getContentBlocks(payload: AnthropicPayload): AnthropicContentBlock[] {
+  if (!Array.isArray(payload.content)) {
+    throw new Error("AI 응답에 콘텐츠가 없습니다.");
+  }
+
+  return payload.content.filter(
+    (part): part is AnthropicContentBlock =>
+      typeof part === "object" && part !== null && !Array.isArray(part),
+  );
+}
+
+async function requestAnthropic(
+  apiKey: string,
+  body: Record<string, unknown>,
+): Promise<{ response: Response; payload: AnthropicPayload }> {
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(55_000),
+  });
+  const payload = (await response.json()) as AnthropicPayload;
+  return { response, payload };
+}
+
+async function collectWebResearch(
+  apiKey: string,
+  model: string,
+  input: GenerateSimulationInput,
+): Promise<AnthropicMessage[] | null> {
+  const messages: AnthropicMessage[] = [{ role: "user", content: buildWebResearchPrompt(input) }];
+
+  try {
+    let result = await requestAnthropic(apiKey, {
+      model,
+      max_tokens: 3_000,
+      tools: [WEB_SEARCH_TOOL],
+      tool_choice: { type: "tool", name: "web_search" },
+      messages,
+    });
+
+    for (let attempt = 0; attempt <= MAX_WEB_SEARCH_CONTINUATIONS; attempt += 1) {
+      if (!result.response.ok) {
+        console.warn("Company web research failed:", getAnthropicErrorMessage(result.payload));
+        return null;
+      }
+
+      const content = getContentBlocks(result.payload);
+      messages.push({ role: "assistant", content });
+
+      if (result.payload.stop_reason !== "pause_turn") {
+        return result.payload.stop_reason === "max_tokens" ? null : messages;
+      }
+
+      if (attempt === MAX_WEB_SEARCH_CONTINUATIONS) {
+        console.warn("Company web research paused too many times.");
+        return null;
+      }
+
+      result = await requestAnthropic(apiKey, {
+        model,
+        max_tokens: 3_000,
+        tools: [WEB_SEARCH_TOOL],
+        messages,
+      });
+    }
+  } catch (error) {
+    // 검색은 보조 정보입니다. 장애가 있어도 JD 기반 초안 생성은 계속합니다.
+    console.warn("Company web research unavailable:", error);
+  }
+
+  return null;
 }
 
 // ============================================================
@@ -337,31 +462,28 @@ export const generateSimulationDraft = createServerFn({ method: "POST" })
     }
     const instruction =
       savedPrompt?.prompt?.trim() || COMPANY_AI_PROMPT_DEFAULTS[GENERATOR_PROMPT_KEY].prompt;
+    const model = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5";
+    const researchMessages = await collectWebResearch(apiKey, model, data);
+    const generationMessages: AnthropicMessage[] = researchMessages
+      ? [
+          ...researchMessages,
+          {
+            role: "user",
+            content: `${buildPrompt(data, instruction)}\n\n위의 웹 검색으로 확인된 사실만 기업·브랜드 맥락에 사용하고, 이제 구조화된 초안을 생성하세요.`,
+          },
+        ]
+      : [{ role: "user", content: buildPrompt(data, instruction) }];
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5",
-        max_tokens: 16000,
-        tools: [GENERATE_TOOL],
-        tool_choice: { type: "tool", name: GENERATE_TOOL_NAME },
-        messages: [{ role: "user", content: buildPrompt(data, instruction) }],
-      }),
+    const { response, payload } = await requestAnthropic(apiKey, {
+      model,
+      max_tokens: 16_000,
+      // 검색 결과 블록을 이어 쓰는 경우에도 동일한 서버 도구 정의를 유지해야 합니다.
+      tools: researchMessages ? [WEB_SEARCH_TOOL, GENERATE_TOOL] : [GENERATE_TOOL],
+      tool_choice: { type: "tool", name: GENERATE_TOOL_NAME },
+      messages: generationMessages,
     });
-
-    const payload = (await response.json()) as Record<string, unknown>;
     if (!response.ok) {
-      const message =
-        typeof payload.error === "object" &&
-        payload.error !== null &&
-        typeof (payload.error as { message?: unknown }).message === "string"
-          ? (payload.error as { message: string }).message
-          : "AI 생성 요청에 실패했습니다.";
+      const message = getAnthropicErrorMessage(payload);
       console.error("Simulation generation request failed:", message);
       throw new Error("AI 생성에 실패했어요. 잠시 후 다시 시도해주세요.");
     }
