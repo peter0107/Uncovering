@@ -80,14 +80,17 @@ function CompanySimulationFeedbackPage() {
             <h2 className="text-lg font-semibold">제출 답변</h2>
           </div>
           <div className="mt-4 space-y-5 text-sm leading-6 text-zinc-700">
-            {feedback.submission.responseAnswers.map((answer) => (
-              <section key={answer.id || answer.label} className="border-b border-zinc-200 pb-5 last:border-0">
-                <h3 className="font-semibold text-zinc-900">{answer.label}</h3>
-                <p className="mt-2 whitespace-pre-wrap">{answer.answer}</p>
-              </section>
-            ))}
-            {feedback.submission.responseText && (
+            {feedback.submission.responseAnswers.length > 0 ? (
+              feedback.submission.responseAnswers.map((answer) => (
+                <section key={answer.id || answer.label} className="border-b border-zinc-200 pb-5 last:border-0">
+                  <h3 className="font-semibold text-zinc-900">{answer.label}</h3>
+                  <p className="mt-2 whitespace-pre-wrap">{answer.answer}</p>
+                </section>
+              ))
+            ) : feedback.submission.responseText ? (
               <p className="whitespace-pre-wrap">{feedback.submission.responseText}</p>
+            ) : (
+              <p className="text-zinc-500">제출한 답변을 불러오지 못했어요.</p>
             )}
           </div>
         </section>

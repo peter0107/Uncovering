@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, FileCheck2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 
@@ -73,11 +73,10 @@ function ExpertSimulationFeedbackPage() {
   return (
     <main className="mx-auto max-w-5xl px-4 py-12">
       <Link
-        to="/simulation/$id"
-        params={{ id }}
+        to="/my"
         className="inline-flex items-center gap-1.5 text-sm text-zinc-500 transition-colors hover:text-zinc-900"
       >
-        <ChevronLeft className="h-4 w-4" /> 시뮬레이션으로 돌아가기
+        <ChevronLeft className="h-4 w-4" /> 마이페이지
       </Link>
 
       <div className="mt-5 border-b border-zinc-200 pb-6">
@@ -90,7 +89,31 @@ function ExpertSimulationFeedbackPage() {
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1.25fr)_minmax(280px,0.75fr)]">
         <section className="min-w-0">
-          <h2 className="text-lg font-semibold">현직자 모범답안</h2>
+          <div className="flex items-center gap-2">
+            <FileCheck2 className="h-5 w-5 text-zinc-700" />
+            <h2 className="text-lg font-semibold">내가 제출한 답변</h2>
+          </div>
+          <div className="mt-4 space-y-5 text-sm leading-6 text-zinc-700">
+            {feedback.submission.responseAnswers.length > 0 ? (
+              feedback.submission.responseAnswers.map((answer) => (
+                <section
+                  key={answer.id || answer.label}
+                  className="border-b border-zinc-200 pb-5 last:border-0"
+                >
+                  <h3 className="font-semibold text-zinc-900">{answer.label}</h3>
+                  <p className="mt-2 whitespace-pre-wrap">{answer.answer}</p>
+                </section>
+              ))
+            ) : feedback.submission.responseText ? (
+              <p className="whitespace-pre-wrap">{feedback.submission.responseText}</p>
+            ) : (
+              <p className="text-zinc-500">제출한 답변을 불러오지 못했어요.</p>
+            )}
+          </div>
+
+          <h2 className="mt-10 border-t border-zinc-200 pt-8 text-lg font-semibold">
+            현직자 모범답안
+          </h2>
           {feedback.simulation.modelAnswer ? (
             <div className="prose prose-zinc mt-4 max-w-none text-sm prose-headings:tracking-tight prose-table:text-sm">
               <RichTextContent value={feedback.simulation.modelAnswer} />

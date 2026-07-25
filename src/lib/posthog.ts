@@ -5,6 +5,8 @@ let posthogPromise: Promise<PostHogClient | null> | null = null;
 function getPostHogConfig() {
   const apiKey = import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN?.trim();
   if (!apiKey || typeof window === "undefined") return null;
+  // 프로덕션 도메인에서만 수집한다 (lovable.app 프리뷰·localhost 제외)
+  if (window.location.hostname !== "beginner.today") return null;
 
   return {
     apiKey,
@@ -14,6 +16,7 @@ function getPostHogConfig() {
       defaults: "2025-05-24" as const,
       capture_exceptions: true,
       capture_pageview: false,
+      disable_session_recording: false,
       debug: import.meta.env.DEV,
     },
   };

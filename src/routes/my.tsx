@@ -2585,7 +2585,7 @@ function MyPage() {
           <p className="mt-2 text-sm text-zinc-500">
             온보딩을 완료하면 프로필과 추천 시뮬레이션을 볼 수 있어요.
           </p>
-          <Link to="/onboarding">
+          <Link to="/onboarding" search={{ redirect: undefined }}>
             <Button className="mt-6 rounded-md bg-zinc-900 text-white hover:bg-zinc-700">
               온보딩 시작하기
             </Button>

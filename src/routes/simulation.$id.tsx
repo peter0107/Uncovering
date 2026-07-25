@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { capturePostHogEvent } from "@/lib/posthog";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { chatWithSimulationAssistant } from "@/lib/ai-chat.functions";
@@ -483,6 +484,7 @@ function SimulationDetailPage() {
       toast.error("제출 확인 중 오류가 발생했어요. 다시 시도해 주세요.");
       return;
     }
+    void capturePostHogEvent("simulation_complete", { simulation_id: sim.id });
     if (typeof window !== "undefined") {
       try {
         window.localStorage.removeItem(draftKey);

@@ -15,6 +15,7 @@ import { SimulationCardPreview } from "@/components/SimulationCardPreview";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
+import { capturePostHogEvent } from "@/lib/posthog";
 import { isDomainCategory } from "@/lib/domain-categories";
 import { INITIAL_PROFILE_FORM, JobInterestFields } from "@/lib/profile-fields";
 import { toast } from "sonner";
@@ -140,7 +141,12 @@ export function SimCard({ sim }: { sim: Simulation }) {
   const roleLine = sim.role_label || sim.job_family || sim.title;
 
   return (
-    <Link to="/simulation/$id" params={{ id: sim.id }} className="block h-full">
+    <Link
+      to="/simulation/$id"
+      params={{ id: sim.id }}
+      className="block h-full"
+      onClick={() => void capturePostHogEvent("simulation_start", { simulation_id: sim.id })}
+    >
       <SimulationCardPreview
         companyName={sim.company_name}
         companyDescription={sim.company_description}
@@ -192,7 +198,7 @@ function EmptyState({ hasOnboarding }: { hasOnboarding: boolean }) {
           : "관심 직무와 기업을 설정하면 맞춤 시뮬레이션을 추천해 드려요."}
       </p>
       {!hasOnboarding && (
-        <Link to="/onboarding" className="mt-6">
+        <Link to="/onboarding" search={{ redirect: undefined }} className="mt-6">
           <Button className="rounded-md bg-zinc-900 text-white hover:bg-zinc-700">
             온보딩 시작하기
           </Button>
