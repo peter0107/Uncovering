@@ -160,9 +160,10 @@ const WEB_SEARCH_TOOL = {
   type: "web_search_20260209",
   name: "web_search",
   // 기업 확인에 필요한 검색만 허용해 비용과 응답 시간을 제한합니다.
-  max_uses: 2,
+  max_uses: 1,
 } as const;
 const MAX_WEB_SEARCH_CONTINUATIONS = 2;
+const ANTHROPIC_REQUEST_TIMEOUT_MS = 120_000;
 
 const GENERATE_TOOL = {
   name: GENERATE_TOOL_NAME,
@@ -385,7 +386,8 @@ async function requestAnthropic(
       "Content-Type": "application/json",
     },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(55_000),
+    // 웹 검색은 서버 도구 실행과 pause_turn 재개가 있어 일반 생성보다 오래 걸릴 수 있습니다.
+    signal: AbortSignal.timeout(ANTHROPIC_REQUEST_TIMEOUT_MS),
   });
   const payload = (await response.json()) as AnthropicPayload;
   return { response, payload };
