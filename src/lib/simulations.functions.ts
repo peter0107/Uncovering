@@ -1050,6 +1050,26 @@ export const createCompanySimulation = createServerFn({ method: "POST" })
       throw new Error("Invalid company code");
     }
 
+    let cardImageUrl = data.cardImageUrl.trim();
+    if (!cardImageUrl) {
+      const { data: existingCard, error: cardError } = await supabaseAdmin
+        .from("job_simulations")
+        .select("card_image_url")
+        .eq("company_id", company.id)
+        .is("deleted_at", null)
+        .not("card_image_url", "is", null)
+        .neq("card_image_url", "")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (cardError) {
+        console.error("Failed to load company card image:", cardError);
+      } else {
+        cardImageUrl = String(existingCard?.card_image_url ?? "");
+      }
+    }
+
     const { data: row, error } = await supabaseAdmin
       .from("job_simulations")
       .insert({
@@ -1057,7 +1077,7 @@ export const createCompanySimulation = createServerFn({ method: "POST" })
         title: data.title,
         role_label: data.roleLabel,
         description: data.description,
-        card_image_url: data.cardImageUrl.trim() || null,
+        card_image_url: cardImageUrl || null,
         job_family: jobFamily,
         domain: data.domain,
         estimated_minutes: data.estimatedMinutes,
