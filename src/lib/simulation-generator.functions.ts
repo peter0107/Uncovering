@@ -53,7 +53,7 @@ async function assertAdmin() {
 // ============================================================
 const generateInputSchema = z.object({
   companyName: z.string().trim().min(1).max(100),
-  roleName: z.string().trim().min(1).max(100),
+  roleName: z.string().trim().max(100).optional().default(""),
   domain: z.enum(DOMAIN_CATEGORIES),
   sources: z
     .array(
@@ -174,7 +174,11 @@ const GENERATE_TOOL = {
             type: "string",
             description: "시뮬레이션 제목. 반드시 '{기업명} {직무명} 지원 대비 시뮬레이션' 형태.",
           },
-          roleLabel: { type: "string", description: "직무명 (예: 그로스마케터)" },
+          roleLabel: {
+            type: "string",
+            description:
+              "직무명 (예: 그로스마케터). 입력 직무명이 없으면 JD에서 실제 채용 직무명을 추출해 기록.",
+          },
           description: { type: "string", description: "카드에 보일 한 줄 설명 (해요체)" },
           estimatedMinutes: { type: "integer", description: "전체 예상 소요 시간(분)" },
           steps: {
@@ -294,19 +298,23 @@ function buildPrompt(input: GenerateSimulationInput, instruction: string): strin
 
   const filledInstruction = instruction
     .replaceAll("{{기업명}}", input.companyName)
-    .replaceAll("{{직무명}}", input.roleName)
+    .replaceAll("{{직무명}}", input.roleName || "JD에서 추출한 직무명")
     .replaceAll("{{도메인}}", input.domain);
+
+  const roleTarget = input.roleName || "JD에서 실제 채용 직무명을 추출";
 
   return `${filledInstruction}
 
 ## 대상
 - 기업명: ${input.companyName}
-- 직무명: ${input.roleName}
+- 직무명: ${roleTarget}
 - 도메인: ${input.domain}
 ${input.note ? `- 참고사항: ${input.note}` : ""}
 
 ## 채용공고 원문 (평가 기준 추출용)
 ${sourcesBlock}
+
+${input.roleName ? "" : "직무명 입력값이 비어 있습니다. JD에 명시된 채용 직무명을 하나 골라 roleLabel에 정확히 기록하고, 제목에도 같은 직무명을 사용하세요. 추측이나 포괄적인 직무군 이름은 쓰지 마세요."}
 
 반드시 record_simulation_draft 도구를 한 번 호출해 simulation과 rationale을 모두 채워 기록하세요.`;
 }
@@ -389,13 +397,15 @@ export const generateSimulationDraft = createServerFn({ method: "POST" })
       };
     });
 
+    const generatedRoleName = raw.simulation.roleLabel.trim();
+
     return {
       companyName: data.companyName,
-      roleName: data.roleName,
+      roleName: generatedRoleName,
       domain: data.domain,
       simulation: {
         title: raw.simulation.title.trim(),
-        roleLabel: raw.simulation.roleLabel.trim() || data.roleName,
+        roleLabel: generatedRoleName,
         description: raw.simulation.description.trim(),
         estimatedMinutes: raw.simulation.estimatedMinutes ?? null,
         steps,

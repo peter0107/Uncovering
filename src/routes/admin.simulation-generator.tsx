@@ -103,7 +103,6 @@ function AdminSimulationGenerator() {
 
   const canGenerate =
     companyName.trim().length > 0 &&
-    roleName.trim().length > 0 &&
     sources.some((s) => s.jd.trim().length > 0);
 
   function updateSource(index: number, patch: Partial<SourceInput>) {
@@ -145,6 +144,7 @@ function AdminSimulationGenerator() {
         },
       });
       setDraft(result);
+      setRoleName(result.roleName);
       // 기업명이 일치하는 등록 기업이 있으면 저장 대상으로 미리 선택
       const matched = companies.find((c) => c.name.trim() === result.companyName.trim());
       setSaveCompanyCode(matched?.code ?? "");
@@ -239,7 +239,7 @@ function AdminSimulationGenerator() {
             <input
               value={roleName}
               onChange={(e) => setRoleName(e.target.value)}
-              placeholder="예: 그로스마케터"
+              placeholder="비워두면 JD에서 자동 추출"
               className="h-10 rounded-md border border-neutral-300 bg-white px-3 text-sm outline-none focus:border-neutral-900"
             />
           </label>
