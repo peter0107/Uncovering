@@ -14,6 +14,7 @@ import {
 import {
   createCompanySimulation,
   getAdminCompanies,
+  resolveGeneratedCompany,
   type AdminCompany,
 } from "@/lib/simulations.functions";
 
@@ -103,6 +104,7 @@ function AdminSimulationGenerator() {
 
   const canGenerate =
     companyName.trim().length > 0 &&
+    roleName.trim().length > 0 &&
     sources.some((s) => s.jd.trim().length > 0);
 
   function updateSource(index: number, patch: Partial<SourceInput>) {
@@ -144,7 +146,6 @@ function AdminSimulationGenerator() {
         },
       });
       setDraft(result);
-      setRoleName(result.roleName);
       // 기업명이 일치하는 등록 기업이 있으면 저장 대상으로 미리 선택
       const matched = companies.find((c) => c.name.trim() === result.companyName.trim());
       setSaveCompanyCode(matched?.code ?? "");
@@ -158,15 +159,26 @@ function AdminSimulationGenerator() {
 
   async function handleSave() {
     if (!draft || isSaving) return;
-    if (!saveCompanyCode) {
-      toast.error("저장할 기업을 선택해주세요. 등록된 기업이 없다면 먼저 기업을 추가하세요.");
-      return;
-    }
     setIsSaving(true);
     try {
+      let companyCode = saveCompanyCode;
+      if (!companyCode) {
+        const company = await resolveGeneratedCompany({
+          data: {
+            name: draft.companyName,
+            roleLabel: draft.simulation.roleLabel,
+          },
+        });
+        companyCode = company.code;
+        setSaveCompanyCode(companyCode);
+        setCompanies((current) =>
+          current.some((item) => item.id === company.id) ? current : [...current, company],
+        );
+      }
+
       const result = await createCompanySimulation({
         data: {
-          companyCode: saveCompanyCode,
+          companyCode,
           title: draft.simulation.title,
           roleLabel: draft.simulation.roleLabel,
           description: draft.simulation.description,
@@ -239,7 +251,7 @@ function AdminSimulationGenerator() {
             <input
               value={roleName}
               onChange={(e) => setRoleName(e.target.value)}
-              placeholder="비워두면 JD에서 자동 추출"
+              placeholder="예: 그로스 마케터"
               className="h-10 rounded-md border border-neutral-300 bg-white px-3 text-sm outline-none focus:border-neutral-900"
             />
           </label>
@@ -456,7 +468,7 @@ function AdminSimulationGenerator() {
                 onChange={(e) => setSaveCompanyCode(e.target.value)}
                 className="h-9 rounded-md border border-neutral-300 bg-white px-2 text-sm outline-none focus:border-neutral-900"
               >
-                <option value="">기업 선택…</option>
+                <option value="">자동 생성</option>
                 {companies.map((company) => (
                   <option key={company.id} value={company.code}>
                     {company.name} ({company.code})

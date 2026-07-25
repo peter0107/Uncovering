@@ -53,7 +53,7 @@ async function assertAdmin() {
 // ============================================================
 const generateInputSchema = z.object({
   companyName: z.string().trim().min(1).max(100),
-  roleName: z.string().trim().max(100).optional().default(""),
+  roleName: z.string().trim().min(1).max(100),
   domain: z.enum(DOMAIN_CATEGORIES),
   sources: z
     .array(
@@ -298,23 +298,19 @@ function buildPrompt(input: GenerateSimulationInput, instruction: string): strin
 
   const filledInstruction = instruction
     .replaceAll("{{기업명}}", input.companyName)
-    .replaceAll("{{직무명}}", input.roleName || "JD에서 추출한 직무명")
+    .replaceAll("{{직무명}}", input.roleName)
     .replaceAll("{{도메인}}", input.domain);
-
-  const roleTarget = input.roleName || "JD에서 실제 채용 직무명을 추출";
 
   return `${filledInstruction}
 
 ## 대상
 - 기업명: ${input.companyName}
-- 직무명: ${roleTarget}
+- 직무명: ${input.roleName}
 - 도메인: ${input.domain}
 ${input.note ? `- 참고사항: ${input.note}` : ""}
 
 ## 채용공고 원문 (평가 기준 추출용)
 ${sourcesBlock}
-
-${input.roleName ? "" : "직무명 입력값이 비어 있습니다. JD에 명시된 채용 직무명을 하나 골라 roleLabel에 정확히 기록하고, 제목에도 같은 직무명을 사용하세요. 추측이나 포괄적인 직무군 이름은 쓰지 마세요."}
 
 반드시 record_simulation_draft 도구를 한 번 호출해 simulation과 rationale을 모두 채워 기록하세요.`;
 }
@@ -397,15 +393,13 @@ export const generateSimulationDraft = createServerFn({ method: "POST" })
       };
     });
 
-    const generatedRoleName = raw.simulation.roleLabel.trim();
-
     return {
       companyName: data.companyName,
-      roleName: generatedRoleName,
+      roleName: data.roleName,
       domain: data.domain,
       simulation: {
         title: raw.simulation.title.trim(),
-        roleLabel: generatedRoleName,
+        roleLabel: raw.simulation.roleLabel.trim() || data.roleName,
         description: raw.simulation.description.trim(),
         estimatedMinutes: raw.simulation.estimatedMinutes ?? null,
         steps,

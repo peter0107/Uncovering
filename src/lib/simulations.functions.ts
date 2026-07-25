@@ -171,6 +171,11 @@ const createCompanyInputSchema = z.object({
   isPartner: z.boolean().optional().default(false),
 });
 
+const resolveGeneratedCompanyInputSchema = z.object({
+  name: z.string().trim().min(1).max(100),
+  roleLabel: z.string().trim().max(100).optional().default(""),
+});
+
 const updateCompanyInputSchema = createCompanyInputSchema.extend({
   id: z.string().uuid(),
 });
@@ -907,6 +912,52 @@ export const createCompany = createServerFn({ method: "POST" })
     if (error) {
       console.error("Failed to create company:", error);
       throw new Error("Failed to create company");
+    }
+
+    return mapAdminCompany(row as Record<string, unknown>);
+  });
+
+export const resolveGeneratedCompany = createServerFn({ method: "POST" })
+  .inputValidator(resolveGeneratedCompanyInputSchema)
+  .handler(async ({ data }) => {
+    await assertAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const name = data.name.trim();
+
+    const { data: existing, error: existingError } = await supabaseAdmin
+      .from("companies")
+      .select("id, code, unique_code, name, description, logo_url, role_label, is_partner, created_at")
+      .eq("name", name)
+      .limit(1)
+      .maybeSingle();
+
+    if (existingError) {
+      console.error("Failed to find generated company:", existingError);
+      throw new Error("기업 정보를 확인하지 못했습니다.");
+    }
+
+    if (existing) {
+      return mapAdminCompany(existing as Record<string, unknown>);
+    }
+
+    const code = `AUTO-${crypto.randomUUID().slice(0, 12)}`.toUpperCase();
+    const { data: row, error } = await supabaseAdmin
+      .from("companies")
+      .insert({
+        name,
+        code,
+        unique_code: code,
+        description: "",
+        logo_url: null,
+        role_label: data.roleLabel.trim() || name,
+        is_partner: false,
+      })
+      .select("id, code, unique_code, name, description, logo_url, role_label, is_partner, created_at")
+      .single();
+
+    if (error) {
+      console.error("Failed to create generated company:", error);
+      throw new Error("기업을 자동 생성하지 못했습니다.");
     }
 
     return mapAdminCompany(row as Record<string, unknown>);
