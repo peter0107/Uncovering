@@ -17,5 +17,7 @@ drop table if exists public.user_roles cascade;
 drop table if exists public.profiles cascade;
 drop table if exists public.admin_emails cascade;
 
-drop function if exists public.has_role(uuid, public.app_role);
+-- Storage RLS 정책도 이 함수를 참조하므로 함께 정리해야 새 프로젝트에서
+-- 기존 서비스 스키마를 안전하게 제거할 수 있다.
+drop function if exists public.has_role(uuid, public.app_role) cascade;
 drop type if exists public.app_role;
