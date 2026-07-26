@@ -652,7 +652,7 @@ function SimulationDetailPage() {
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-400" />
           <span>
             이 시뮬레이션은 {sim.company_name}와 무관하며, 공개된 채용공고를 참고해 Beginner가
-            제작한 지원 대비용 콘텐츠예요. 지금은 답안이 기업에 전달되지 않아요.
+            제작한 지원 대비용 콘텐츠예요.
           </span>
         </div>
       )}
