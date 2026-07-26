@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Check, Menu, X } from "lucide-react";
-import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type MouseEvent, type PointerEvent, type ReactNode } from "react";
 
 import { AccountMenu } from "@/components/AccountMenu";
 import { BrandLogo } from "@/components/BrandLogo";
@@ -77,6 +77,57 @@ const FEATURED_COMPANY_PRIORITY = [
 function getFeaturedCompanyPriority(companyName: string): number {
   const index = FEATURED_COMPANY_PRIORITY.findIndex((name) => companyName.includes(name));
   return index === -1 ? FEATURED_COMPANY_PRIORITY.length : index;
+}
+
+function useHorizontalDragScroll() {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const pointerStartRef = useRef({ x: 0, scrollLeft: 0 });
+  const didDragRef = useRef(false);
+  const [isDragging, setIsDragging] = useState(false);
+
+  function handlePointerDown(event: PointerEvent<HTMLDivElement>) {
+    if (event.pointerType !== "mouse" || event.button !== 0 || !trackRef.current) return;
+
+    pointerStartRef.current = {
+      x: event.clientX,
+      scrollLeft: trackRef.current.scrollLeft,
+    };
+    didDragRef.current = false;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setIsDragging(true);
+  }
+
+  function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
+    if (!isDragging || !trackRef.current) return;
+
+    const distance = event.clientX - pointerStartRef.current.x;
+    if (Math.abs(distance) > 3) didDragRef.current = true;
+    trackRef.current.scrollLeft = pointerStartRef.current.scrollLeft - distance;
+  }
+
+  function finishDragging(event: PointerEvent<HTMLDivElement>) {
+    if (!isDragging) return;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    setIsDragging(false);
+  }
+
+  function handleClickCapture(event: MouseEvent<HTMLDivElement>) {
+    if (!didDragRef.current) return;
+    event.preventDefault();
+    event.stopPropagation();
+    didDragRef.current = false;
+  }
+
+  return {
+    trackRef,
+    isDragging,
+    handlePointerDown,
+    handlePointerMove,
+    finishDragging,
+    handleClickCapture,
+  };
 }
 
 function Header({
@@ -182,6 +233,7 @@ function ExpertCard({
 function FeaturedExpertSimulations() {
   const [simulations, setSimulations] = useState<FeaturedExpertSimulation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const dragScroll = useHorizontalDragScroll();
 
   useEffect(() => {
     async function loadFeaturedSimulations() {
@@ -229,7 +281,15 @@ function FeaturedExpertSimulations() {
           <Link to="/expert-simulations">전체 보기 <ArrowRight aria-hidden="true" /></Link>
         </div>
 
-        <div className="reference-featured-track">
+        <div
+          ref={dragScroll.trackRef}
+          className={`reference-featured-track reference-featured-track-draggable${dragScroll.isDragging ? " is-dragging" : ""}`}
+          onPointerDown={dragScroll.handlePointerDown}
+          onPointerMove={dragScroll.handlePointerMove}
+          onPointerUp={dragScroll.finishDragging}
+          onPointerCancel={dragScroll.finishDragging}
+          onClickCapture={dragScroll.handleClickCapture}
+        >
           {isLoading &&
             Array.from({ length: 5 }, (_, index) => (
               <div className="reference-featured-skeleton" key={index}>
@@ -279,6 +339,7 @@ function FeaturedExpertSimulations() {
 function FeaturedCompanySimulations() {
   const [simulations, setSimulations] = useState<FeaturedCompanySimulation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const dragScroll = useHorizontalDragScroll();
 
   useEffect(() => {
     async function loadFeaturedSimulations() {
@@ -336,7 +397,15 @@ function FeaturedCompanySimulations() {
           <Link to="/simulations">전체 보기 <ArrowRight aria-hidden="true" /></Link>
         </div>
 
-        <div className="reference-featured-track">
+        <div
+          ref={dragScroll.trackRef}
+          className={`reference-featured-track reference-featured-track-draggable${dragScroll.isDragging ? " is-dragging" : ""}`}
+          onPointerDown={dragScroll.handlePointerDown}
+          onPointerMove={dragScroll.handlePointerMove}
+          onPointerUp={dragScroll.finishDragging}
+          onPointerCancel={dragScroll.finishDragging}
+          onClickCapture={dragScroll.handleClickCapture}
+        >
           {isLoading &&
             Array.from({ length: 5 }, (_, index) => (
               <div className="reference-featured-skeleton" key={index}>
