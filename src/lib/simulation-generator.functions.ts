@@ -182,11 +182,11 @@ const WEB_SEARCH_TOOL = {
   // Anthropic 서버 도구라 별도 실행이나 tool_result 전달이 필요하지 않습니다.
   type: "web_search_20260209",
   name: "web_search",
-  // 기업 확인에 필요한 검색만 허용해 비용과 응답 시간을 제한합니다.
-  max_uses: 1,
+  // 기업 맥락과 직무 요건을 분리해 확인하되, 과도한 검색 비용은 막습니다.
+  max_uses: 3,
 } as const;
 const MAX_WEB_SEARCH_CONTINUATIONS = 2;
-const ANTHROPIC_REQUEST_TIMEOUT_MS = 120_000;
+const ANTHROPIC_REQUEST_TIMEOUT_MS = 180_000;
 
 const GENERATE_TOOL = {
   name: GENERATE_TOOL_NAME,
@@ -376,14 +376,22 @@ ${sourcesBlock}
 }
 
 function buildWebResearchPrompt(input: GenerateSimulationInput): string {
-  return `다음 기업 또는 브랜드와 직무에 맞는 지원 대비 시뮬레이션을 만들기 전에 웹 검색을 수행하세요.
+  return `다음 기업 또는 브랜드와 직무에 맞는 지원 대비 시뮬레이션을 만들기 전에, 아래 순서대로 최대 3회 웹 검색을 수행하세요.
 
 대상:
 - 기업·브랜드명: ${input.companyName}
 - 직무명: ${input.roleName}
 
-검색 원칙:
-- 기업·브랜드의 실제 사업, 주요 서비스·제품, 고객, 최근 공개 이슈를 확인하세요.
+검색 순서:
+1. "${input.companyName} 공식 홈페이지 사업 서비스 제품"으로 기업의 실제 사업과 주요 서비스·제품을 조사하세요.
+2. "${input.companyName} 뉴스룸 보도자료 최근 이슈"로 최근 공개 이슈를 조사하세요.
+3. "${input.companyName} ${input.roleName} 채용"으로 JD에 없는 직무 맥락을 보완하세요.
+
+출처 및 사실 확인 원칙:
+- 기업 공식 홈페이지·서비스 페이지·뉴스룸·보도자료·IR 자료를 가장 먼저 사용하세요.
+- 공식 출처가 부족할 때만 신뢰 가능한 언론·공식 인터뷰를 보조 근거로 사용하세요.
+- 채용 플랫폼·채용 공고는 직무 요건을 확인하는 보조 출처일 뿐, 기업의 사업·제품·고객·최근 이슈를 단정하는 근거로 사용하지 마세요.
+- 실제 사업, 주요 서비스·제품, 고객·이용자, 최근 공개 이슈를 각각 확인 가능한 범위에서 조사하세요.
 - 모회사, 자회사, 인수 기업을 반드시 구분하고, 동일 기업인지 확실하지 않은 검색 결과는 사용하지 마세요.
 - 확인된 사실과 출처만 이후 생성에 사용할 수 있도록 검색 결과를 정리하세요.
 - 검색 결과가 부족하거나 기업을 특정할 수 없으면, 사실을 추정하거나 보완하지 마세요.
