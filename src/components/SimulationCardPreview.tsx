@@ -117,7 +117,8 @@ export function SimulationCardPreview({
   return (
     <article
       className={cn(
-        "group flex aspect-[4/3] flex-col overflow-hidden rounded-md border border-zinc-200 bg-white text-left transition-colors hover:border-zinc-900",
+        "group flex flex-col overflow-hidden rounded-md border border-zinc-200 bg-white text-left transition-colors hover:border-zinc-900",
+        compact ? "aspect-[4/2.8]" : "aspect-[4/3]",
         className,
       )}
     >

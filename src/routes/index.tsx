@@ -338,6 +338,7 @@ function FeaturedCompanySimulations() {
                   domain={simulation.domain}
                   estimatedMinutes={simulation.estimatedMinutes}
                   isPartner={simulation.companyIsPartner}
+                  compact
                   className="h-full"
                 />
               </Link>
