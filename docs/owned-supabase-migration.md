@@ -33,6 +33,9 @@ npx supabase@latest --workdir .owned-supabase-workdir link --project-ref nismhxl
 npx supabase@latest --workdir .owned-supabase-workdir db push
 ```
 
+`link` is needed only once per machine. Re-running the preparation script refreshes
+the copied migrations without removing the linked-project metadata.
+
 The historical migrations include seed data. That data is cleared in the next
 step so the CSV export becomes the only imported public-data snapshot.
 

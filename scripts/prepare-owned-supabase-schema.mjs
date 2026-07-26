@@ -33,7 +33,8 @@ const files = (await readdir(sourceDir))
 
 const duplicateOffsets = new Map();
 
-await rm(workdir, { recursive: true, force: true });
+// Keep Supabase CLI's linked-project metadata in .supabase between reruns.
+await rm(targetDir, { recursive: true, force: true });
 await mkdir(targetDir, { recursive: true });
 
 for (const file of files) {
