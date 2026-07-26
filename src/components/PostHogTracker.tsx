@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
-import { getPostHogClient } from "@/lib/posthog";
+import { consumeGoogleLoginPending, getPostHogClient } from "@/lib/posthog";
 
 const EXCLUDED_POSTHOG_HOSTS = new Set([
   "efe62646-aba5-4e7f-a36e-bfb36fc5947e.lovableproject.com",
@@ -84,16 +84,23 @@ export function PostHogTracker() {
       if (email) {
         posthog.identify(email, { email });
 
+        // Google OAuth는 전면 리다이렉트로 클릭 시점 캡처가 유실되므로
+        // 가입·로그인 모두 복귀 후 이 지점에서 판별해 전송한다
+        const loginPending = consumeGoogleLoginPending();
+
         // 이메일 가입은 login.tsx에서 클릭 시점에 캡처하므로 Google 가입만 여기서 감지
         const createdAtMs = createdAt ? Date.parse(createdAt) : Number.NaN;
-        if (
+        const isNewGoogleSignup =
           provider === "google" &&
-          userId &&
+          !!userId &&
           Number.isFinite(createdAtMs) &&
           Date.now() - createdAtMs < SIGNUP_DETECTION_WINDOW_MS &&
-          markSignupCaptured(userId)
-        ) {
+          markSignupCaptured(userId);
+
+        if (isNewGoogleSignup) {
           posthog.capture("user_signed_up", { email, method: "google" });
+        } else if (loginPending && provider === "google") {
+          posthog.capture("user_logged_in", { email, method: "google" });
         }
         return;
       }

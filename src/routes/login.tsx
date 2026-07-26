@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/use-auth";
 import { getPostLoginPath } from "@/lib/admin";
-import { capturePostHogEvent } from "@/lib/posthog";
+import { capturePostHogEvent, markGoogleLoginPending } from "@/lib/posthog";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
@@ -177,6 +177,7 @@ function LoginPage() {
           className="w-full"
           onClick={async () => {
             const target = getPostLoginPath(email, redirect);
+            markGoogleLoginPending();
             const result = await lovable.auth.signInWithOAuth("google", {
               redirect_uri: `${window.location.origin}${target}`,
               extraParams: { prompt: "select_account" },
@@ -185,7 +186,6 @@ function LoginPage() {
               toast.error("Google 로그인에 실패했습니다.");
               return;
             }
-            void capturePostHogEvent("user_logged_in", { method: "google" });
             if (result.redirected) return;
             navigate({ to: target, replace: true });
           }}

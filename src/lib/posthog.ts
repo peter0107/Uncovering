@@ -36,6 +36,32 @@ export function getPostHogClient() {
   return posthogPromise;
 }
 
+const GOOGLE_LOGIN_PENDING_KEY = "ph_google_login_pending";
+// OAuth 복귀가 이 시간을 넘기면 중도 이탈로 보고 플래그를 무시한다
+const GOOGLE_LOGIN_PENDING_TTL_MS = 10 * 60 * 1000;
+
+// Google OAuth는 전면 리다이렉트라 클릭 시점 캡처가 유실된다.
+// 클릭 시 플래그만 남기고, 복귀 후 PostHogTracker가 소비해 user_logged_in을 보낸다.
+export function markGoogleLoginPending() {
+  try {
+    window.localStorage.setItem(GOOGLE_LOGIN_PENDING_KEY, String(Date.now()));
+  } catch {
+    // localStorage 불가 환경에서는 로그인 이벤트만 포기한다
+  }
+}
+
+export function consumeGoogleLoginPending(): boolean {
+  try {
+    const raw = window.localStorage.getItem(GOOGLE_LOGIN_PENDING_KEY);
+    if (!raw) return false;
+    window.localStorage.removeItem(GOOGLE_LOGIN_PENDING_KEY);
+    const markedAt = Number(raw);
+    return Number.isFinite(markedAt) && Date.now() - markedAt < GOOGLE_LOGIN_PENDING_TTL_MS;
+  } catch {
+    return false;
+  }
+}
+
 export async function capturePostHogEvent(
   event: string,
   properties?: Record<string, unknown>,

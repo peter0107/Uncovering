@@ -16,6 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
+import { capturePostHogEvent, markGoogleLoginPending } from "@/lib/posthog";
 
 type Props = {
   trigger: React.ReactNode;
@@ -54,6 +55,7 @@ export function SignupDialog({ trigger, redirectTo = "/experiences", defaultMode
           toast.error(error.message);
           return;
         }
+        void capturePostHogEvent("user_signed_up", { email, method: "email" }, email);
         toast.success("회원가입이 완료되었습니다. 메일함에서 인증을 완료해주세요.");
         setOpen(false);
       } else {
@@ -62,6 +64,7 @@ export function SignupDialog({ trigger, redirectTo = "/experiences", defaultMode
           toast.error(error.message);
           return;
         }
+        void capturePostHogEvent("user_logged_in", { email, method: "email" }, email);
         toast.success("로그인되었습니다.");
         setOpen(false);
         navigate({ to: redirectTo });
@@ -181,6 +184,7 @@ export function SignupDialog({ trigger, redirectTo = "/experiences", defaultMode
           size="lg"
           className="w-full"
           onClick={async () => {
+            markGoogleLoginPending();
             const result = await lovable.auth.signInWithOAuth("google", {
               redirect_uri: window.location.origin,
               extraParams: { prompt: "select_account" },
