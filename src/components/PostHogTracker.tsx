@@ -3,11 +3,7 @@ import { useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { consumeGoogleLoginPending, getPostHogClient } from "@/lib/posthog";
 
-const EXCLUDED_POSTHOG_HOSTS = new Set([
-  "efe62646-aba5-4e7f-a36e-bfb36fc5947e.lovableproject.com",
-  "localhost",
-  "127.0.0.1",
-]);
+const EXCLUDED_POSTHOG_HOSTS = new Set(["localhost", "127.0.0.1"]);
 const EXCLUDED_POSTHOG_EMAILS = new Set(["standard1414@g.skku.edu"]);
 // Google 가입은 OAuth 리다이렉트로 페이지를 떠나 클릭 시점 캡처가 유실되므로,
 // 복귀 후 created_at이 이 시간 이내면 신규 가입으로 판단해 user_signed_up을 보낸다.

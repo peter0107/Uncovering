@@ -682,7 +682,7 @@ export const evaluateAdminSubmissionWithAi = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<AdminSubmissionAiReview> => {
     await assertAdmin();
     const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) throw new Error("ANTHROPIC_API_KEY 환경변수를 Lovable에 설정해주세요.");
+    if (!apiKey) throw new Error("ANTHROPIC_API_KEY 환경변수를 서버 환경에 설정해주세요.");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: submission, error: submissionError } = await supabaseAdmin

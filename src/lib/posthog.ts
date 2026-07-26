@@ -5,7 +5,7 @@ let posthogPromise: Promise<PostHogClient | null> | null = null;
 function getPostHogConfig() {
   const apiKey = import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN?.trim();
   if (!apiKey || typeof window === "undefined") return null;
-  // 프로덕션 도메인에서만 수집한다 (lovable.app 프리뷰·localhost 제외)
+  // 프로덕션 도메인에서만 수집한다 (스테이징·localhost 제외)
   if (window.location.hostname !== "beginner.today") return null;
 
   return {

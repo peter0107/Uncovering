@@ -827,7 +827,7 @@ function extractJobPostingCandidates(html: string, sourceUrl: URL): JobPostingCa
 async function generateApplicantAiReview(applicant: Applicant) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    throw new Error("ANTHROPIC_API_KEY 환경변수를 Lovable에 설정해주세요.");
+    throw new Error("ANTHROPIC_API_KEY 환경변수를 서버 환경에 설정해주세요.");
   }
 
   const evaluationMaterial = {

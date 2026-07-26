@@ -13,11 +13,7 @@ declare global {
 
 const CLARITY_SCRIPT_ID = "microsoft-clarity";
 const clarityProjectId = import.meta.env.VITE_CLARITY_PROJECT_ID?.trim();
-const EXCLUDED_CLARITY_HOSTS = new Set([
-  "efe62646-aba5-4e7f-a36e-bfb36fc5947e.lovableproject.com",
-  "localhost",
-  "127.0.0.1",
-]);
+const EXCLUDED_CLARITY_HOSTS = new Set(["localhost", "127.0.0.1"]);
 const EXCLUDED_CLARITY_EMAILS = new Set(["standard1414@g.skku.edu"]);
 
 function injectClarity(projectId: string) {

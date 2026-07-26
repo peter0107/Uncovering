@@ -122,8 +122,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
       { name: "twitter:title", content: "Beginner - 직접 경험해보고 확인하는 직무 시뮬레이션" },
       { name: "twitter:description", content: "내가 원하는 직무를 직접 경험해보세요. 나의 AI 활용 능력까지 평가 받아보세요." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d3de3777-9abf-405e-98f7-92db0d548996/id-preview-5964f416--7f9ca802-38e4-4c9e-9c3d-9f7551ac81e3.lovable.app-1784364704836.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d3de3777-9abf-405e-98f7-92db0d548996/id-preview-5964f416--7f9ca802-38e4-4c9e-9c3d-9f7551ac81e3.lovable.app-1784364704836.png" },
+      { property: "og:image", content: "https://beginner.today/og-image.png" },
+      { name: "twitter:image", content: "https://beginner.today/og-image.png" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
