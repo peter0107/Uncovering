@@ -180,7 +180,9 @@ const toolOutputSchema = z.object({
 const GENERATE_TOOL_NAME = "record_simulation_draft";
 const WEB_SEARCH_TOOL = {
   // Anthropic 서버 도구라 별도 실행이나 tool_result 전달이 필요하지 않습니다.
-  type: "web_search_20260209",
+  // 최신 web_search_20260209는 code_execution 경유만 허용해서 직접 tool_choice가 불가하므로
+  // 직접 호출을 지원하는 web_search_20250305를 사용합니다.
+  type: "web_search_20250305",
   name: "web_search",
   // 기업 맥락과 직무 요건을 분리해 확인하되, 과도한 검색 비용은 막습니다.
   max_uses: 3,
