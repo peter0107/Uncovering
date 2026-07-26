@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Check, Menu, X } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
 
 import { AccountMenu } from "@/components/AccountMenu";
 import { BrandLogo } from "@/components/BrandLogo";
@@ -56,6 +56,28 @@ type FeaturedCompanySimulation = {
   companyLogoUrl: string;
   companyIsPartner: boolean;
 };
+
+const FEATURED_COMPANY_PRIORITY = [
+  "삼성전자",
+  "현대자동차",
+  "네이버",
+  "카카오",
+  "쿠팡",
+  "토스",
+  "당근",
+  "무신사",
+  "배달의민족",
+  "데이원컴퍼니",
+  "부스터스",
+  "페이타랩",
+  "앳홈",
+  "모먼츠컴퍼니",
+];
+
+function getFeaturedCompanyPriority(companyName: string): number {
+  const index = FEATURED_COMPANY_PRIORITY.findIndex((name) => companyName.includes(name));
+  return index === -1 ? FEATURED_COMPANY_PRIORITY.length : index;
+}
 
 function Header({
   isMenuOpen,
@@ -269,11 +291,10 @@ function FeaturedCompanySimulations() {
         .eq("is_public", true)
         .is("deleted_at", null)
         .order("created_at", { ascending: false })
-        .limit(5);
+        .limit(100);
 
       if (!error) {
-        setSimulations(
-          (data ?? []).map((row) => ({
+        const mappedSimulations = (data ?? []).map((row) => ({
             id: row.id,
             title: row.title,
             roleLabel: row.role_label || row.job_family || row.title,
@@ -285,8 +306,16 @@ function FeaturedCompanySimulations() {
             companyDescription: row.companies?.description || "",
             companyLogoUrl: row.companies?.logo_url || "",
             companyIsPartner: row.companies?.is_partner ?? false,
-          })),
-        );
+          }));
+
+        mappedSimulations.sort((a, b) => {
+          const priorityDifference =
+            getFeaturedCompanyPriority(a.companyName) - getFeaturedCompanyPriority(b.companyName);
+          if (priorityDifference !== 0) return priorityDifference;
+          return a.companyName.localeCompare(b.companyName, "ko");
+        });
+
+        setSimulations(mappedSimulations.slice(0, 5));
       }
 
       setIsLoading(false);
@@ -296,7 +325,11 @@ function FeaturedCompanySimulations() {
   }, []);
 
   return (
-    <section className="reference-featured" aria-labelledby="featured-company-simulations-title">
+    <section
+      id="company-simulations"
+      className="reference-featured"
+      aria-labelledby="featured-company-simulations-title"
+    >
       <div className="reference-shell">
         <div className="reference-featured-heading">
           <h2 id="featured-company-simulations-title">기업 시뮬레이션</h2>
@@ -353,6 +386,14 @@ function Index() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const closeMenu = () => setIsMenuOpen(false);
 
+  const scrollToCompanySimulations = (event: MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    document.getElementById("company-simulations")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  };
+
   useEffect(() => {
     const sections = Array.from(document.querySelectorAll<HTMLElement>(".reference-reveal"));
 
@@ -396,9 +437,13 @@ function Index() {
               <br />
               <em>직접 경험</em>해보세요
             </h1>
-            <Link to="/expert-simulations" className="reference-hero-action">
+            <a
+              href="#company-simulations"
+              className="reference-hero-action"
+              onClick={scrollToCompanySimulations}
+            >
               무료로 시작하기 <ArrowRight aria-hidden="true" />
-            </Link>
+            </a>
             <p className="reference-hero-caption">
               가입 후 3분이면 첫 과제가 도착해요 · 현직자 시뮬레이션 120+
             </p>
@@ -458,9 +503,9 @@ function Index() {
           <div className="reference-shell reference-cta-inner">
             <h2>첫 과제, 지금 무료로 받아보세요</h2>
             <p>현직자가 제시한 업무를 직접 경험해보세요.</p>
-            <Link to="/expert-simulations">
+            <a href="#company-simulations" onClick={scrollToCompanySimulations}>
               무료로 시작하기 <ArrowRight aria-hidden="true" />
-            </Link>
+            </a>
           </div>
         </section>
       </main>
