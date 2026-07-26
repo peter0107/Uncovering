@@ -82,6 +82,7 @@ function getFeaturedCompanyPriority(companyName: string): number {
 function useHorizontalDragScroll() {
   const trackRef = useRef<HTMLDivElement>(null);
   const pointerStartRef = useRef({ x: 0, scrollLeft: 0 });
+  const isPressedRef = useRef(false);
   const didDragRef = useRef(false);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -92,21 +93,28 @@ function useHorizontalDragScroll() {
       x: event.clientX,
       scrollLeft: trackRef.current.scrollLeft,
     };
+    isPressedRef.current = true;
     didDragRef.current = false;
-    event.currentTarget.setPointerCapture(event.pointerId);
-    setIsDragging(true);
+    // 누른 시점에 캡처·is-dragging을 걸면 클릭이 카드에 닿지 않으므로
+    // 실제 이동(3px 초과)이 감지될 때 드래그 모드로 전환한다
   }
 
   function handlePointerMove(event: PointerEvent<HTMLDivElement>) {
-    if (!isDragging || !trackRef.current) return;
+    if (!isPressedRef.current || !trackRef.current) return;
 
     const distance = event.clientX - pointerStartRef.current.x;
-    if (Math.abs(distance) > 3) didDragRef.current = true;
+    if (!didDragRef.current) {
+      if (Math.abs(distance) <= 3) return;
+      didDragRef.current = true;
+      event.currentTarget.setPointerCapture(event.pointerId);
+      setIsDragging(true);
+    }
     trackRef.current.scrollLeft = pointerStartRef.current.scrollLeft - distance;
   }
 
   function finishDragging(event: PointerEvent<HTMLDivElement>) {
-    if (!isDragging) return;
+    if (!isPressedRef.current) return;
+    isPressedRef.current = false;
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
