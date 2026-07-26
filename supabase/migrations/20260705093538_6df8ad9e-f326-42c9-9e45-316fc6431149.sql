@@ -79,15 +79,19 @@ alter table submissions       enable row level security;
 alter table job_simulations   enable row level security;
 alter table companies         enable row level security;
 
+drop policy if exists seeker_self_all on job_seekers;
 create policy seeker_self_all on job_seekers
   for all using (auth.uid() = id);
 
+drop policy if exists sub_self_all on submissions;
 create policy sub_self_all on submissions
   for all using (auth.uid() = job_seeker_id);
 
+drop policy if exists sim_read_public on job_simulations;
 create policy sim_read_public on job_simulations
   for select using (true);
 
+drop policy if exists company_read_public on companies;
 create policy company_read_public on companies
   for select using (true);
 
