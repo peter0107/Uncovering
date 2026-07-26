@@ -10,6 +10,7 @@ import { DOMAIN_CATEGORIES } from "@/lib/domain-categories";
 import {
   generateSimulationDraft,
   type GeneratedSimulationDraft,
+  type WebResearchCategory,
 } from "@/lib/simulation-generator.functions";
 import {
   createCompanySimulation,
@@ -41,6 +42,14 @@ const PLATFORMS = [
 
 type SourceInput = { platform: string; jd: string };
 
+const webResearchCategoryLabels: Record<WebResearchCategory, string> = {
+  business: "실제 사업",
+  product: "주요 서비스·제품",
+  customer: "고객",
+  recent_issue: "최근 공개 이슈",
+  other: "기타 확인 사실",
+};
+
 function createSource(platform: string = PLATFORMS[0]): SourceInput {
   return { platform, jd: "" };
 }
@@ -52,7 +61,7 @@ function buildRationaleMarkdown(draft: GeneratedSimulationDraft): string {
   if (draft.rationale.webResearchFacts.length > 0) {
     lines.push("## 웹 검색으로 확인한 기업 정보");
     draft.rationale.webResearchFacts.forEach((item) => {
-      lines.push(`- ${item.fact} (${item.source})`);
+      lines.push(`- [${webResearchCategoryLabels[item.category]}] ${item.fact} (${item.source})`);
     });
     lines.push("");
   }
@@ -424,6 +433,9 @@ function AdminSimulationGenerator() {
                     <ul className="mt-2 flex flex-col gap-1.5">
                       {draft.rationale.webResearchFacts.map((item, index) => (
                         <li key={index} className="text-xs leading-5 text-neutral-700">
+                          <span className="mr-1 font-medium text-neutral-500">
+                            [{webResearchCategoryLabels[item.category]}]
+                          </span>
                           <span>{item.fact}</span>
                           <span className="ml-1 text-neutral-400">{item.source}</span>
                         </li>

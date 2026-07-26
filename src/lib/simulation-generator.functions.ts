@@ -81,9 +81,12 @@ export type GeneratedUnreflected = {
 };
 
 export type GeneratedWebResearchFact = {
+  category: WebResearchCategory;
   fact: string;
   source: string;
 };
+
+export type WebResearchCategory = "business" | "product" | "customer" | "recent_issue" | "other";
 
 export type GeneratedSimulationDraft = {
   companyName: string;
@@ -127,6 +130,10 @@ const toolOutputSchema = z.object({
     webResearchFacts: z
       .array(
         z.object({
+          category: z
+            .enum(["business", "product", "customer", "recent_issue", "other"])
+            .optional()
+            .default("other"),
           fact: z.string().max(500).optional().default(""),
           source: z.string().max(200).optional().default(""),
         }),
@@ -251,8 +258,14 @@ const GENERATE_TOOL = {
             items: {
               type: "object",
               additionalProperties: false,
-              required: ["fact", "source"],
+              required: ["category", "fact", "source"],
               properties: {
+                category: {
+                  type: "string",
+                  enum: ["business", "product", "customer", "recent_issue", "other"],
+                  description:
+                    "기업 실제 사업은 business, 주요 서비스·제품은 product, 고객·이용자는 customer, 최근 공개 이슈는 recent_issue, 그 외 확인 사실은 other",
+                },
                 fact: { type: "string", description: "검색으로 확인된 사실 한 문장" },
                 source: { type: "string", description: "확인에 사용한 출처명 또는 도메인" },
               },
@@ -348,7 +361,7 @@ function buildPrompt(input: GenerateSimulationInput, instruction: string): strin
 - 모회사, 자회사, 인수 기업의 사업·제품·고객·조직을 서로 혼동하지 마세요.
 - 확인되지 않은 사업, 제품, 타깃 고객, 조직 구조, 최근 이슈는 작성하지 마세요.
 - 검색 결과가 부족하거나 기업을 특정할 수 없으면 기업 정보를 추정하지 말고, 아래 직무와 채용공고 정보 중심의 일반적인 시뮬레이션을 만드세요.
-- 웹 검색을 사용한 경우, record_simulation_draft의 rationale.webResearchFacts에 생성에 활용한 확인 사실을 최대 4개까지 짧게 기록하세요. 출처명 또는 도메인을 함께 쓰고, 검색 결과 또는 출처가 불명확하면 빈 배열로 두세요.
+- 웹 검색을 사용한 경우, record_simulation_draft의 rationale.webResearchFacts에 생성에 활용한 확인 사실을 최대 4개까지 짧게 기록하세요. 실제 사업(business), 주요 서비스·제품(product), 고객(customer), 최근 공개 이슈(recent_issue)를 검색으로 확인한 범위에서 우선 기록하고, 각 항목에 출처명 또는 도메인을 함께 쓰세요. 확인되지 않은 범주는 만들지 말고, 검색 결과 또는 출처가 불명확하면 빈 배열로 두세요.
 
 ## 대상
 - 기업명: ${input.companyName}
@@ -562,7 +575,11 @@ export const generateSimulationDraft = createServerFn({ method: "POST" })
       },
       rationale: {
         webResearchFacts: raw.rationale.webResearchFacts
-          .map((fact) => ({ fact: fact.fact.trim(), source: fact.source.trim() }))
+          .map((fact) => ({
+            category: fact.category,
+            fact: fact.fact.trim(),
+            source: fact.source.trim(),
+          }))
           .filter((fact) => fact.fact.length > 0 && fact.source.length > 0),
         criteria: raw.rationale.criteria.map((c) => ({
           title: c.title.trim(),
