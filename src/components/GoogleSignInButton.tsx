@@ -39,7 +39,7 @@ export function GoogleSignInButton({ onSuccess }: Props) {
         google.accounts.id.initialize({
           client_id: clientId,
           nonce: hashedNonce,
-          auto_select: true,
+          auto_select: false,
           use_fedcm_for_prompt: true,
           callback: async ({ credential }) => {
             if (cancelled) return;
@@ -86,6 +86,7 @@ export function GoogleSignInButton({ onSuccess }: Props) {
     if (!google || isLoading) return;
 
     setIsLoading(true);
+    google.accounts.id.disableAutoSelect();
     google.accounts.id.prompt((notification) => {
       if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
         setIsLoading(false);
@@ -119,7 +120,7 @@ export function GoogleSignInButton({ onSuccess }: Props) {
           d="M12 5.94c1.47 0 2.79.51 3.83 1.5l2.87-2.87A9.64 9.64 0 0 0 12 2a10 10 0 0 0-8.96 5.45l3.35 2.62C7.18 7.7 9.39 5.94 12 5.94Z"
         />
       </svg>
-      {isLoading ? "Google 로그인 중..." : "Google 로그인"}
+      {isLoading ? "Google 로그인 중..." : "Google 계정으로 계속하기"}
     </button>
   );
 }

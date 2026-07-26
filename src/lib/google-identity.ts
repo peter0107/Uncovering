@@ -20,6 +20,7 @@ export type GoogleIdentity = {
       prompt(
         callback?: (notification: GooglePromptMomentNotification) => void,
       ): void;
+      disableAutoSelect(): void;
       renderButton(
         parent: HTMLElement,
         options: {
