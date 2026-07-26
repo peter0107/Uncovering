@@ -2,15 +2,24 @@ type GoogleCredentialResponse = {
   credential: string;
 };
 
-type GoogleIdentity = {
+type GooglePromptMomentNotification = {
+  isNotDisplayed(): boolean;
+  isSkippedMoment(): boolean;
+};
+
+export type GoogleIdentity = {
   accounts: {
     id: {
       initialize(options: {
         client_id: string;
         callback(response: GoogleCredentialResponse): void;
         nonce?: string;
+        auto_select?: boolean;
         use_fedcm_for_prompt?: boolean;
       }): void;
+      prompt(
+        callback?: (notification: GooglePromptMomentNotification) => void,
+      ): void;
       renderButton(
         parent: HTMLElement,
         options: {
