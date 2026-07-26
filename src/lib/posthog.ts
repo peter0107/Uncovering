@@ -62,6 +62,52 @@ export function consumeGoogleLoginPending(): boolean {
   }
 }
 
+const SIMULATION_ENTRY_KEY = "ph_simulation_entry";
+// 로그인·온보딩 경유 시간을 감안한 유효기간. 넘기면 direct로 집계한다
+const SIMULATION_ENTRY_TTL_MS = 30 * 60 * 1000;
+
+export type SimulationEntrySource = "home" | "simulations" | "expert_simulations";
+
+// simulation_start는 상세 화면 진입 시점에 찍는다. 카드 클릭은 출발지만 남겨서
+// 로그인·온보딩 리다이렉트를 거쳐 도착해도 entry 속성으로 이어지게 한다.
+export function markSimulationEntry(simulationId: string, source: SimulationEntrySource) {
+  try {
+    window.localStorage.setItem(
+      SIMULATION_ENTRY_KEY,
+      JSON.stringify({ simulationId, source, markedAt: Date.now() }),
+    );
+  } catch {
+    // localStorage 불가 환경에서는 출발지 구분만 포기한다 (direct로 집계)
+  }
+}
+
+export function consumeSimulationEntry(simulationId: string): SimulationEntrySource | null {
+  try {
+    const raw = window.localStorage.getItem(SIMULATION_ENTRY_KEY);
+    if (!raw) return null;
+    window.localStorage.removeItem(SIMULATION_ENTRY_KEY);
+    const parsed = JSON.parse(raw) as {
+      simulationId?: unknown;
+      source?: unknown;
+      markedAt?: unknown;
+    };
+    if (parsed.simulationId !== simulationId) return null;
+    if (typeof parsed.markedAt !== "number" || Date.now() - parsed.markedAt > SIMULATION_ENTRY_TTL_MS) {
+      return null;
+    }
+    if (
+      parsed.source === "home" ||
+      parsed.source === "simulations" ||
+      parsed.source === "expert_simulations"
+    ) {
+      return parsed.source;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export async function capturePostHogEvent(
   event: string,
   properties?: Record<string, unknown>,

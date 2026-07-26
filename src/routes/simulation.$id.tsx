@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate, useBlocker } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import {
   Building2,
@@ -29,7 +29,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { capturePostHogEvent } from "@/lib/posthog";
+import { capturePostHogEvent, consumeSimulationEntry } from "@/lib/posthog";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { chatWithSimulationAssistant } from "@/lib/ai-chat.functions";
@@ -177,6 +177,7 @@ function SimulationDetailPage() {
   const [submittedId, setSubmittedId] = useState<string | null>(null);
   const [applicationSent, setApplicationSent] = useState(false);
   const [startedAt] = useState(() => new Date());
+  const startCapturedRef = useRef<string | null>(null);
 
   // AI 어시스트 대화 (제출 시 함께 저장돼 기업 담당자 화면에도 노출됨)
   type ChatMessage = { role: "user" | "assistant"; content: string; at: string };
@@ -385,6 +386,20 @@ function SimulationDetailPage() {
 
     void loadSimulation();
   }, [accessReady, id, isPreview, user, authLoading]);
+
+  // simulation_start는 카드 클릭이 아니라 상세 화면 실제 진입 시점에 찍는다.
+  // 로그인·온보딩 리다이렉트를 거쳐 도착한 경우도 여기서 잡힌다 (entry = 출발지)
+  useEffect(() => {
+    if (isPreview || !accessReady || !user || !sim) return;
+    if (startCapturedRef.current === sim.id) return;
+    startCapturedRef.current = sim.id;
+    const entry = consumeSimulationEntry(sim.id) ?? "direct";
+    void capturePostHogEvent("simulation_start", {
+      simulation_id: sim.id,
+      simulation_source: sim.simulation_source,
+      entry,
+    });
+  }, [isPreview, accessReady, user, sim]);
 
   // 위저드 임시저장 복원 (이탈 방지)
   useEffect(() => {

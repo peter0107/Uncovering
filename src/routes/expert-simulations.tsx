@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
-import { capturePostHogEvent } from "@/lib/posthog";
+import { markSimulationEntry } from "@/lib/posthog";
 import { supabase } from "@/integrations/supabase/client";
 import { DOMAIN_CATEGORIES, isDomainCategory } from "@/lib/domain-categories";
 import { INITIAL_PROFILE_FORM, JobInterestFields } from "@/lib/profile-fields";
@@ -316,9 +316,7 @@ function ExpertSimulationsPage() {
                   to="/simulation/$id"
                   params={{ id: simulation.id }}
                   className="block h-full"
-                  onClick={() =>
-                    void capturePostHogEvent("simulation_start", { simulation_id: simulation.id })
-                  }
+                  onClick={() => markSimulationEntry(simulation.id, "expert_simulations")}
                 >
                   <ExpertSimulationCard
                     nickname={simulation.nickname}
