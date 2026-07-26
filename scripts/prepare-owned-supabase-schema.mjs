@@ -1,4 +1,4 @@
-import { cp, mkdir, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -7,6 +7,13 @@ const sourceDir = path.join(rootDir, 'supabase', 'migrations');
 const workdir = path.join(rootDir, '.owned-supabase-workdir');
 const targetDir = path.join(workdir, 'supabase', 'migrations');
 const projectRef = process.env.SUPABASE_PROJECT_ID ?? 'nismhxliklzjxpiszuaj';
+
+// A few historical seed migrations were authored before the schema columns
+// they use received their final migration. The original project already had
+// those columns, but a clean project needs the dependency order below.
+const migrationTimestampOverrides = new Map([
+  ['20260718155557_79e1132a-e915-45cf-96a8-53e534bd09a0.sql', '20260719110001'],
+]);
 
 function nextTimestamp(timestamp, offset) {
   const year = Number(timestamp.slice(0, 4));
@@ -27,6 +34,14 @@ function nextTimestamp(timestamp, offset) {
   ].join('');
 }
 
+function makePolicyCreationIdempotent(sql) {
+  return sql.replace(
+    /create\s+policy\s+((?:"[^"]+")|(?:[a-z_][a-z0-9_$]*))\s+on\s+((?:(?:public|storage)\.)?[a-z_][a-z0-9_$]*)/gi,
+    (statement, policyName, tableName) =>
+      `drop policy if exists ${policyName} on ${tableName};\n${statement}`,
+  );
+}
+
 const files = (await readdir(sourceDir))
   .filter((file) => /^\d{14}_.+\.sql$/.test(file))
   .sort((left, right) => left.localeCompare(right));
@@ -38,12 +53,14 @@ await rm(targetDir, { recursive: true, force: true });
 await mkdir(targetDir, { recursive: true });
 
 for (const file of files) {
-  const timestamp = file.slice(0, 14);
+  const timestamp = migrationTimestampOverrides.get(file) ?? file.slice(0, 14);
   const offset = duplicateOffsets.get(timestamp) ?? 0;
   duplicateOffsets.set(timestamp, offset + 1);
 
-  const targetName = offset === 0 ? file : `${nextTimestamp(timestamp, offset)}_${file.slice(15)}`;
-  await cp(path.join(sourceDir, file), path.join(targetDir, targetName));
+  const suffix = file.slice(15);
+  const targetName = `${offset === 0 ? timestamp : nextTimestamp(timestamp, offset)}_${suffix}`;
+  const sql = await readFile(path.join(sourceDir, file), 'utf8');
+  await writeFile(path.join(targetDir, targetName), makePolicyCreationIdempotent(sql));
 }
 
 await writeFile(
