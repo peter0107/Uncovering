@@ -29,14 +29,13 @@ function StartDispatcher() {
     (async () => {
       const { data, error } = await supabase
         .from("job_seekers")
-        .select("id, education_level, job_interests")
+        .select("id, job_interests")
         .eq("id", user.id)
         .maybeSingle();
 
       const completed =
         !error &&
         !!data &&
-        !!data.education_level &&
         Array.isArray(data.job_interests) &&
         data.job_interests.length > 0;
 

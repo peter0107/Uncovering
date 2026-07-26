@@ -64,7 +64,7 @@ function OnboardingPage() {
       return;
     }
 
-    navigate({ to: redirect ?? "/expert-simulations", replace: true });
+    navigate({ to: redirect ?? "/simulations", replace: true });
   };
 
   if (authLoading || !user) {

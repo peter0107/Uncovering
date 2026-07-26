@@ -5,6 +5,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { AccountMenu } from "@/components/AccountMenu";
 import { BrandLogo } from "@/components/BrandLogo";
 import { ExpertSimulationCard } from "@/components/ExpertSimulationCard";
+import { SimulationCardPreview } from "@/components/SimulationCardPreview";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,6 +41,20 @@ type FeaturedExpertSimulation = {
   backgroundColor: string;
   textColor: string;
   profileImageUrl: string;
+};
+
+type FeaturedCompanySimulation = {
+  id: string;
+  title: string;
+  roleLabel: string;
+  description: string;
+  domain: string;
+  estimatedMinutes: number | null;
+  cardImageUrl: string;
+  companyName: string;
+  companyDescription: string;
+  companyLogoUrl: string;
+  companyIsPartner: boolean;
 };
 
 function Header({
@@ -185,10 +200,10 @@ function FeaturedExpertSimulations() {
   }, []);
 
   return (
-    <section className="reference-featured" aria-labelledby="featured-simulations-title">
+    <section className="reference-featured reference-featured-expert" aria-labelledby="featured-expert-simulations-title">
       <div className="reference-shell">
         <div className="reference-featured-heading">
-          <h2 id="featured-simulations-title">추천 시뮬레이션</h2>
+          <h2 id="featured-expert-simulations-title">현직자 시뮬레이션</h2>
           <Link to="/expert-simulations">전체 보기 <ArrowRight aria-hidden="true" /></Link>
         </div>
 
@@ -229,6 +244,100 @@ function FeaturedExpertSimulations() {
                   textColor={simulation.textColor}
                   profileImageUrl={simulation.profileImageUrl}
                   compact
+                  className="h-full"
+                />
+              </Link>
+            ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function FeaturedCompanySimulations() {
+  const [simulations, setSimulations] = useState<FeaturedCompanySimulation[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadFeaturedSimulations() {
+      const { data, error } = await supabase
+        .from("job_simulations")
+        .select(
+          "id, title, role_label, job_family, description, domain, estimated_minutes, card_image_url, companies(name, description, logo_url, is_partner)",
+        )
+        .eq("simulation_source", "company")
+        .eq("is_public", true)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      if (!error) {
+        setSimulations(
+          (data ?? []).map((row) => ({
+            id: row.id,
+            title: row.title,
+            roleLabel: row.role_label || row.job_family || row.title,
+            description: row.description || "",
+            domain: row.domain || "",
+            estimatedMinutes: row.estimated_minutes,
+            cardImageUrl: row.card_image_url || "",
+            companyName: row.companies?.name || "기업",
+            companyDescription: row.companies?.description || "",
+            companyLogoUrl: row.companies?.logo_url || "",
+            companyIsPartner: row.companies?.is_partner ?? false,
+          })),
+        );
+      }
+
+      setIsLoading(false);
+    }
+
+    void loadFeaturedSimulations();
+  }, []);
+
+  return (
+    <section className="reference-featured" aria-labelledby="featured-company-simulations-title">
+      <div className="reference-shell">
+        <div className="reference-featured-heading">
+          <h2 id="featured-company-simulations-title">기업 시뮬레이션</h2>
+          <Link to="/simulations">전체 보기 <ArrowRight aria-hidden="true" /></Link>
+        </div>
+
+        <div className="reference-featured-track">
+          {isLoading &&
+            Array.from({ length: 5 }, (_, index) => (
+              <div className="reference-featured-skeleton" key={index}>
+                <Skeleton className="h-[35%] w-full" />
+                <div className="space-y-3 p-4">
+                  <Skeleton className="h-5 w-2/3" />
+                  <Skeleton className="h-3 w-full" />
+                  <Skeleton className="h-3 w-4/5" />
+                </div>
+              </div>
+            ))}
+
+          {!isLoading &&
+            simulations.map((simulation) => (
+              <Link
+                key={simulation.id}
+                to="/simulation/$id"
+                params={{ id: simulation.id }}
+                className="reference-featured-card"
+                onClick={() =>
+                  void capturePostHogEvent("simulation_start", { simulation_id: simulation.id })
+                }
+              >
+                <SimulationCardPreview
+                  companyName={simulation.companyName}
+                  companyDescription={simulation.companyDescription}
+                  companyLogoUrl={simulation.companyLogoUrl}
+                  cardImageUrl={simulation.cardImageUrl}
+                  roleLabel={simulation.roleLabel}
+                  title={simulation.title}
+                  description={simulation.description}
+                  domain={simulation.domain}
+                  estimatedMinutes={simulation.estimatedMinutes}
+                  isPartner={simulation.companyIsPartner}
                   className="h-full"
                 />
               </Link>
@@ -297,6 +406,7 @@ function Index() {
       </div>
 
       <main>
+        <FeaturedCompanySimulations />
         <FeaturedExpertSimulations />
 
         <section id="service" className="reference-expert-section reference-reveal">
