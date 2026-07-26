@@ -1,105 +1,43 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  createGoogleNonce,
-  hashGoogleNonce,
-  loadGoogleIdentity,
-  type GoogleIdentity,
-} from "@/lib/google-identity";
 import { markGoogleLoginPending } from "@/lib/posthog";
 
 type Props = {
   onSuccess?: () => void;
 };
 
-export function GoogleSignInButton({ onSuccess }: Props) {
-  const googleRef = useRef<GoogleIdentity | null>(null);
-  const onSuccessRef = useRef(onSuccess);
-  const [isReady, setIsReady] = useState(false);
+export function GoogleSignInButton({ onSuccess: _onSuccess }: Props) {
   const [isLoading, setIsLoading] = useState(false);
-  onSuccessRef.current = onSuccess;
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function initializeGoogleSignIn() {
-      try {
-        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim();
-        if (!clientId) {
-          throw new Error("VITE_GOOGLE_CLIENT_ID가 설정되지 않았습니다.");
-        }
-
-        const google = await loadGoogleIdentity();
-        const nonce = createGoogleNonce();
-        const hashedNonce = await hashGoogleNonce(nonce);
-
-        if (cancelled) return;
-
-        google.accounts.id.initialize({
-          client_id: clientId,
-          nonce: hashedNonce,
-          auto_select: false,
-          use_fedcm_for_prompt: true,
-          callback: async ({ credential }) => {
-            if (cancelled) return;
-
-            markGoogleLoginPending();
-            setIsLoading(true);
-            const { error } = await supabase.auth.signInWithIdToken({
-              provider: "google",
-              token: credential,
-              nonce,
-            });
-
-            if (error) {
-              setIsLoading(false);
-              toast.error("Google 로그인에 실패했습니다.");
-              console.error("[Google Sign-In]", error);
-              return;
-            }
-
-            onSuccessRef.current?.();
-          },
-        });
-
-        googleRef.current = google;
-        setIsReady(true);
-      } catch (error) {
-        console.error("[Google Sign-In]", error);
-        if (!cancelled) {
-          toast.error("Google 로그인을 준비하지 못했습니다.");
-        }
-      }
-    }
-
-    void initializeGoogleSignIn();
-
-    return () => {
-      cancelled = true;
-      googleRef.current = null;
-    };
-  }, []);
-
-  function handleGoogleSignIn() {
-    const google = googleRef.current;
-    if (!google || isLoading) return;
+  async function handleGoogleSignIn() {
+    if (isLoading) return;
 
     setIsLoading(true);
-    google.accounts.id.disableAutoSelect();
-    google.accounts.id.prompt((notification) => {
-      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-        setIsLoading(false);
-        toast.error("Google 로그인 창을 열지 못했습니다. 잠시 후 다시 시도해주세요.");
-      }
+    markGoogleLoginPending();
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.href,
+        queryParams: {
+          prompt: "select_account",
+        },
+      },
     });
+
+    if (error) {
+      setIsLoading(false);
+      toast.error("Google 로그인에 실패했습니다.");
+      console.error("[Google Sign-In]", error);
+    }
   }
 
   return (
     <button
       type="button"
       onClick={handleGoogleSignIn}
-      disabled={!isReady || isLoading}
+      disabled={isLoading}
       className="flex h-10 w-full items-center justify-center gap-2 rounded-md border border-input bg-background px-4 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
     >
       <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24">
