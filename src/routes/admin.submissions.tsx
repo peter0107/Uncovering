@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { useAuth } from "@/hooks/use-auth";
 import { BrandLogo } from "@/components/BrandLogo";
+import { RichTextContent } from "@/components/RichTextEditor";
 import {
   evaluateAdminSubmissionWithAi,
   getAdminSubmissionAnswers,
@@ -257,16 +258,26 @@ function SubmissionDetail({
                 {submission.responseAnswers.map((answer, index) => (
                   <div key={`${answer.id}-${index}`}>
                     <p className="text-sm font-semibold">{answer.label}</p>
-                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-700">
-                      {answer.answer || "답변 없음"}
-                    </p>
+                    {answer.answer ? (
+                      <RichTextContent
+                        value={answer.answer}
+                        compact
+                        className="mt-2 text-sm leading-6 text-neutral-700"
+                      />
+                    ) : (
+                      <p className="mt-2 text-sm leading-6 text-neutral-700">답변 없음</p>
+                    )}
                   </div>
                 ))}
               </div>
-            ) : (
-              <p className="whitespace-pre-wrap text-sm leading-6 text-neutral-700">
-                {submission.responseText || "답변 없음"}
-              </p>
+            ) : submission.responseText ? (
+                <RichTextContent
+                  value={submission.responseText}
+                  compact
+                  className="text-sm leading-6 text-neutral-700"
+                />
+              ) : (
+                <p className="text-sm leading-6 text-neutral-700">답변 없음</p>
             )}
           </div>
         </section>

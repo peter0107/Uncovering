@@ -3,6 +3,7 @@ import { ChevronLeft, FileCheck2, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 
+import { RichTextContent } from "@/components/RichTextEditor";
 import { useAuth } from "@/hooks/use-auth";
 import {
   getCompanySimulationFeedback,
@@ -84,11 +85,19 @@ function CompanySimulationFeedbackPage() {
               feedback.submission.responseAnswers.map((answer) => (
                 <section key={answer.id || answer.label} className="border-b border-zinc-200 pb-5 last:border-0">
                   <h3 className="font-semibold text-zinc-900">{answer.label}</h3>
-                  <p className="mt-2 whitespace-pre-wrap">{answer.answer}</p>
+                  <RichTextContent
+                    value={answer.answer}
+                    compact
+                    className="mt-2 text-sm leading-6"
+                  />
                 </section>
               ))
             ) : feedback.submission.responseText ? (
-              <p className="whitespace-pre-wrap">{feedback.submission.responseText}</p>
+              <RichTextContent
+                value={feedback.submission.responseText}
+                compact
+                className="text-sm leading-6"
+              />
             ) : (
               <p className="text-zinc-500">제출한 답변을 불러오지 못했어요.</p>
             )}

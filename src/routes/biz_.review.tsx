@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 
 import { BrandLogo } from "@/components/BrandLogo";
+import { RichTextContent } from "@/components/RichTextEditor";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 import {
@@ -1375,12 +1376,12 @@ function ApplicantDetail({
             <InfoBlock title="직무 시뮬레이션 제출 내용">
               <div className="space-y-6">
                 {applicant.simulation.map((step) => (
-                  <p
+                  <RichTextContent
                     key={step.step}
-                    className="whitespace-pre-line text-sm leading-relaxed text-neutral-700"
-                  >
-                    {step.answer}
-                  </p>
+                    value={step.answer}
+                    compact
+                    className="text-sm leading-relaxed text-neutral-700"
+                  />
                 ))}
               </div>
             </InfoBlock>

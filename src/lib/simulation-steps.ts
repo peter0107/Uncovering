@@ -196,10 +196,25 @@ function allPrompts(model: WizardModel): WizardPrompt[] {
   return model.steps.flatMap((step) => step.prompts);
 }
 
-/** 스텝별 답을 기업 화면용 평문 합본으로 만든다 (biz는 whitespace-pre-line 렌더). */
+/** 리치 텍스트 답변을 AI 평가 및 기존 평문 화면에서 쓸 수 있는 텍스트로 바꾼다. */
+export function getPlainAnswerText(value: string): string {
+  return value
+    .replace(/^<!-- beginner-rich-text -->/, "")
+    .replace(/<br\s*\/?\s*>/gi, "\n")
+    .replace(/<\/(p|div|h[1-4]|li|blockquote|pre|tr|td|th)>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+/** 스텝별 답을 기업 화면용 평문 합본으로 만든다. */
 export function buildResponseText(model: WizardModel, answers: Record<string, string>): string {
   return allPrompts(model)
-    .map((p) => `【${p.label}】\n${(answers[p.id] ?? "").trim()}`)
+    .map((p) => `【${p.label}】\n${getPlainAnswerText(answers[p.id] ?? "")}`)
     .join("\n\n");
 }
 
@@ -220,10 +235,10 @@ export function buildResponseJson(
 
 /** 모든 질문에 답이 채워졌는지 */
 export function allAnswered(model: WizardModel, answers: Record<string, string>): boolean {
-  return allPrompts(model).every((p) => (answers[p.id] ?? "").trim().length > 0);
+  return allPrompts(model).every((p) => getPlainAnswerText(answers[p.id] ?? "").length > 0);
 }
 
 /** 특정 스텝의 질문이 모두 채워졌는지 */
 export function stepAnswered(step: WizardStep, answers: Record<string, string>): boolean {
-  return step.prompts.every((p) => (answers[p.id] ?? "").trim().length > 0);
+  return step.prompts.every((p) => getPlainAnswerText(answers[p.id] ?? "").length > 0);
 }

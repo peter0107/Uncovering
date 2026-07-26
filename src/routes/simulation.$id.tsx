@@ -13,7 +13,7 @@ import {
   MessageCircle,
   UserRound,
 } from "lucide-react";
-import { RichTextContent } from "@/components/RichTextEditor";
+import { RichTextContent, RichTextEditor } from "@/components/RichTextEditor";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,6 +39,7 @@ import {
   buildResponseJson,
   buildResponseText,
   buildWizardModel,
+  getPlainAnswerText,
   stepAnswered,
   type WizardModel,
   type WizardStep,
@@ -86,7 +87,7 @@ const DIFFICULTY_OPTIONS = [
   { value: 5, label: "매우 어려웠어요" },
 ] as const;
 
-function AnswerTextarea({
+function AnswerEditor({
   id,
   value,
   onChange,
@@ -102,19 +103,17 @@ function AnswerTextarea({
   ariaLabelledby?: string;
 }) {
   return (
-    <div className={`relative min-h-0 ${containerClassName}`}>
-      <Textarea
+    <div className={`min-h-0 ${containerClassName} ${className}`}>
+      <RichTextEditor
         id={id}
+        ariaLabelledby={ariaLabelledby}
+        label=""
         value={value}
-        onChange={(event) => onChange(event.target.value.slice(0, MAX_ANSWER_LENGTH))}
-        aria-labelledby={ariaLabelledby}
-        maxLength={MAX_ANSWER_LENGTH}
+        onChange={onChange}
         placeholder="여기에 답안을 작성해주세요"
-        className={`min-h-40 resize-none pb-8 ${className}`}
+        minHeight="16rem"
+        maxLength={MAX_ANSWER_LENGTH}
       />
-      <span className="pointer-events-none absolute bottom-2 right-3 bg-background/90 px-1 text-[11px] tabular-nums text-zinc-400">
-        {value.length.toLocaleString()} / {MAX_ANSWER_LENGTH.toLocaleString()}자
-      </span>
     </div>
   );
 }
@@ -435,11 +434,15 @@ function SimulationDetailPage() {
       response_text = buildResponseText(model, answers);
       response_json = buildResponseJson(model, answers);
     } else {
-      if (!responseText.trim()) {
+      if (!getPlainAnswerText(responseText)) {
         toast.error("답안을 작성해주세요.");
         return;
       }
-      response_text = responseText;
+      response_text = getPlainAnswerText(responseText);
+      response_json = {
+        format: "step_wizard_v1",
+        answers: [{ id: "response", label: "답안", answer: responseText.trim() }],
+      };
     }
 
     if (difficultyRating === null) {
@@ -938,7 +941,7 @@ function SimulationDetailPage() {
                       <RichTextContent value={p.bodyMarkdown} compact />
                     </div>
                   )}
-                  <AnswerTextarea
+                  <AnswerEditor
                     value={answers[p.id] ?? ""}
                     onChange={(value) => setAnswer(p.id, value)}
                     containerClassName="mt-2"
@@ -1047,12 +1050,11 @@ function SimulationDetailPage() {
                 </div>
               </Card>
             </div>
-            <AnswerTextarea
+            <AnswerEditor
               id="response"
               value={responseText}
               onChange={setResponseText}
               ariaLabelledby="response-question"
-              className="min-h-64"
               containerClassName="mt-2"
             />
           </div>

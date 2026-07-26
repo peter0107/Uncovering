@@ -359,12 +359,18 @@ export function RichTextEditor({
   onChange,
   placeholder,
   minHeight = "9rem",
+  maxLength,
+  id,
+  ariaLabelledby,
 }: {
-  label: string;
+  label?: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   minHeight?: string;
+  maxLength?: number;
+  id?: string;
+  ariaLabelledby?: string;
 }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -386,11 +392,16 @@ export function RichTextEditor({
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isTableResizing, setIsTableResizing] = useState(false);
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
+  const [characterCount, setCharacterCount] = useState(0);
+
+  const getCharacterCount = () =>
+    editorRef.current?.textContent?.replace(/\u00a0/g, " ").length ?? 0;
 
   useEffect(() => {
     const editor = editorRef.current;
     if (!editor || lastLocalValueRef.current === value) return;
     if (editor.innerHTML !== initialHtml) editor.innerHTML = initialHtml;
+    setCharacterCount(getCharacterCount());
   }, [initialHtml, value]);
 
   const rememberSelection = () => {
@@ -469,6 +480,7 @@ export function RichTextEditor({
 
   const commitChange = () => {
     if (editorRef.current) {
+      setCharacterCount(getCharacterCount());
       const nextValue = toStoredValue(editorRef.current.innerHTML);
       lastLocalValueRef.current = nextValue;
       onChange(nextValue);
@@ -506,6 +518,9 @@ export function RichTextEditor({
 
   const handleEditorInput = () => {
     removeEmptyHeadings();
+    if (maxLength != null && getCharacterCount() > maxLength) {
+      document.execCommand("undo");
+    }
     commitChange();
   };
 
@@ -951,7 +966,7 @@ export function RichTextEditor({
         className="sr-only"
         onChange={onImageFileChange}
       />
-      <p className="mb-2 text-xs font-medium text-neutral-700">{label}</p>
+      {label && <p className="mb-2 text-xs font-medium text-neutral-700">{label}</p>}
       <div className="rounded-md border border-neutral-300 bg-white focus-within:border-neutral-900 focus-within:ring-1 focus-within:ring-neutral-900">
         <div className="border-b border-neutral-200 bg-neutral-50">
           <div className="grid gap-0 px-1.5 py-0.5">
@@ -1123,10 +1138,12 @@ export function RichTextEditor({
         </div>
         <div
           ref={editorRef}
+          id={id}
           contentEditable
           suppressContentEditableWarning
           role="textbox"
           aria-multiline="true"
+          aria-labelledby={ariaLabelledby}
           data-placeholder={placeholder}
           onInput={handleEditorInput}
           onKeyDown={handleEditorKeyDown}
@@ -1149,7 +1166,9 @@ export function RichTextEditor({
               return;
             }
             event.preventDefault();
-            const text = event.clipboardData.getData("text/plain");
+            const text = event.clipboardData
+              .getData("text/plain")
+              .slice(0, maxLength == null ? undefined : Math.max(0, maxLength - getCharacterCount()));
             document.execCommand("insertText", false, text);
           }}
           onClick={(event) => {
@@ -1183,6 +1202,11 @@ export function RichTextEditor({
           className="rich-text-editor prose prose-sm prose-neutral min-w-0 max-w-none overflow-x-auto px-3 py-2 outline-none empty:before:pointer-events-none empty:before:content-[attr(data-placeholder)] empty:before:text-neutral-400 prose-code:rounded-sm prose-code:bg-neutral-100 prose-code:px-1 prose-code:py-0.5 prose-code:font-mono prose-code:before:content-none prose-code:after:content-none prose-pre:rounded-md prose-pre:bg-neutral-900 prose-pre:px-3 prose-pre:py-3 prose-pre:font-mono [&_pre_code]:!bg-transparent [&_pre_code]:!p-0 [&_pre_code]:!text-neutral-50 prose-table:border-collapse prose-th:border prose-th:border-neutral-300 prose-th:bg-neutral-50 prose-th:px-2 prose-th:py-1 prose-td:border prose-td:border-neutral-300 prose-td:px-2 prose-td:py-1"
           style={{ minHeight }}
         />
+        {maxLength != null && (
+          <div className="border-t border-neutral-100 px-3 py-1 text-right text-[11px] tabular-nums text-neutral-400">
+            {characterCount.toLocaleString()} / {maxLength.toLocaleString()}자
+          </div>
+        )}
       </div>
     </div>
   );
