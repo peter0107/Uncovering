@@ -140,14 +140,25 @@ function parsePostgresArray(value) {
 }
 
 const tableConfig = [
-  { table: 'companies' },
-  { table: 'ai_prompt_settings' },
+  { table: 'companies', emptyValues: { description: '' } },
+  { table: 'ai_prompt_settings', onConflict: 'key' },
   {
     table: 'job_seekers',
     arrays: ['majors', 'job_interests', 'company_interests', 'work_regions', 'employment_types'],
     json: ['external_links'],
   },
-  { table: 'job_simulations', json: ['steps'] },
+  {
+    table: 'job_simulations',
+    json: ['steps'],
+    emptyValues: {
+      description: '',
+      steps: [],
+      simulation_format: 'single',
+      selection_mode: 'separated',
+      shared_situation: '',
+      shared_materials: '',
+    },
+  },
   {
     table: 'resumes',
     arrays: ['skills', 'tools'],
@@ -168,9 +179,10 @@ const tableConfig = [
 function normalizeRecord(record, config) {
   const arrays = new Set(config.arrays ?? []);
   const json = new Set(config.json ?? []);
+  const emptyValues = config.emptyValues ?? {};
   return Object.fromEntries(
     Object.entries(record).map(([key, rawValue]) => {
-      if (rawValue === '') return [key, null];
+      if (rawValue === '') return [key, key in emptyValues ? emptyValues[key] : null];
       if (arrays.has(key)) return [key, parsePostgresArray(rawValue)];
       if (json.has(key)) return [key, JSON.parse(rawValue)];
       if (rawValue === 't') return [key, true];
@@ -251,8 +263,12 @@ async function importData() {
       continue;
     }
 
+    const onConflict = config.onConflict ?? (records[0].id ? 'id' : null);
     for (const chunk of chunks(records, 20)) {
-      const { error } = await supabase.from(config.table).insert(chunk);
+      const query = onConflict
+        ? supabase.from(config.table).upsert(chunk, { onConflict })
+        : supabase.from(config.table).insert(chunk);
+      const { error } = await query;
       if (error) throw new Error(`${config.table} import failed: ${error.message}`);
     }
     console.log(`Imported ${records.length} ${config.table} row(s).`);
