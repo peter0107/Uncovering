@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { LayoutGrid } from "lucide-react";
+import { ArrowLeft, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -330,8 +330,14 @@ function SimulationsPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12">
+      <Link
+        to="/"
+        className="inline-flex items-center gap-1.5 text-sm text-zinc-500 transition-colors hover:text-zinc-900"
+      >
+        <ArrowLeft className="h-4 w-4" /> 홈으로
+      </Link>
       {/* 헤더 */}
-      <p className="mb-2 text-sm font-medium text-zinc-500">
+      <p className="mb-2 mt-5 text-sm font-medium text-zinc-500">
         {isGuest ? "직무 시뮬레이션" : "맞춤 추천"}
       </p>
       <h1 className="text-2xl font-bold text-zinc-900 md:text-3xl">
