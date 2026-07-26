@@ -184,8 +184,8 @@ const WEB_SEARCH_TOOL = {
   // 직접 호출을 지원하는 web_search_20250305를 사용합니다.
   type: "web_search_20250305",
   name: "web_search",
-  // 기업 맥락과 직무 요건을 분리해 확인하되, 과도한 검색 비용은 막습니다.
-  max_uses: 3,
+  // 검색 초점별로 독립 요청을 보내므로 각 요청에서는 한 번만 실행합니다.
+  max_uses: 1,
 } as const;
 const MAX_WEB_SEARCH_CONTINUATIONS = 2;
 const ANTHROPIC_REQUEST_TIMEOUT_MS = 180_000;
@@ -377,27 +377,51 @@ ${sourcesBlock}
 반드시 record_simulation_draft 도구를 한 번 호출해 simulation과 rationale을 모두 채워 기록하세요.`;
 }
 
-function buildWebResearchPrompt(input: GenerateSimulationInput): string {
-  return `다음 기업 또는 브랜드와 직무에 맞는 지원 대비 시뮬레이션을 만들기 전에, 아래 순서대로 최대 3회 웹 검색을 수행하세요.
+type CompanySearchIdentity = {
+  inputName: string;
+  companyName: string;
+  brandName: string | null;
+};
 
+function getCompanySearchIdentity(inputName: string): CompanySearchIdentity {
+  const match = inputName.match(/^\s*(.+?)\s*[（(]\s*(.+?)\s*[)）]\s*$/);
+  if (!match) {
+    return { inputName, companyName: inputName, brandName: null };
+  }
+
+  return {
+    inputName,
+    companyName: match[1].trim(),
+    brandName: match[2].trim(),
+  };
+}
+
+function buildWebResearchPrompts(input: GenerateSimulationInput): string[] {
+  const identity = getCompanySearchIdentity(input.companyName);
+  const entityDescription = identity.brandName
+    ? `- 모회사·운영사: ${identity.companyName}\n- 브랜드·서비스: ${identity.brandName}\n- 입력 원문: ${identity.inputName}`
+    : `- 기업·브랜드명: ${identity.companyName}`;
+  const searchTarget = identity.brandName
+    ? `"${identity.brandName}" "${identity.companyName}"`
+    : `"${identity.companyName}"`;
+  const commonRules = `
 대상:
-- 기업·브랜드명: ${input.companyName}
+${entityDescription}
 - 직무명: ${input.roleName}
 
-검색 순서:
-1. "${input.companyName} 공식 홈페이지 사업 서비스 제품"으로 기업의 실제 사업과 주요 서비스·제품을 조사하세요.
-2. "${input.companyName} 뉴스룸 보도자료 최근 이슈"로 최근 공개 이슈를 조사하세요.
-3. "${input.companyName} ${input.roleName} 채용"으로 JD에 없는 직무 맥락을 보완하세요.
+검증 원칙:
+- 위 기업·브랜드와 이름, 운영 관계가 모두 맞는 결과만 사용하세요. 다른 동명 기업·브랜드 결과는 제외하세요.
+- 브랜드가 입력된 경우, 브랜드의 사업을 모회사 사업으로 바꾸어 쓰거나 모회사 전체 사업을 브랜드 사업처럼 쓰지 마세요.
+- 기업 공식 홈페이지·서비스 페이지·뉴스룸·보도자료·IR 자료를 최우선으로 사용하고, 부족할 때만 신뢰 가능한 언론·공식 인터뷰를 보조 근거로 사용하세요.
+- 채용 플랫폼·채용 공고는 직무 요건을 확인하는 보조 출처일 뿐, 사업·제품·고객·최근 이슈를 단정하는 근거로 사용하지 마세요.
+- 확인할 수 없는 사실은 추정하거나 보완하지 마세요.
+- 지금은 시뮬레이션을 생성하지 말고 web_search로 이 검색 초점에 필요한 사실만 조사하세요.`;
 
-출처 및 사실 확인 원칙:
-- 기업 공식 홈페이지·서비스 페이지·뉴스룸·보도자료·IR 자료를 가장 먼저 사용하세요.
-- 공식 출처가 부족할 때만 신뢰 가능한 언론·공식 인터뷰를 보조 근거로 사용하세요.
-- 채용 플랫폼·채용 공고는 직무 요건을 확인하는 보조 출처일 뿐, 기업의 사업·제품·고객·최근 이슈를 단정하는 근거로 사용하지 마세요.
-- 실제 사업, 주요 서비스·제품, 고객·이용자, 최근 공개 이슈를 각각 확인 가능한 범위에서 조사하세요.
-- 모회사, 자회사, 인수 기업을 반드시 구분하고, 동일 기업인지 확실하지 않은 검색 결과는 사용하지 마세요.
-- 확인된 사실과 출처만 이후 생성에 사용할 수 있도록 검색 결과를 정리하세요.
-- 검색 결과가 부족하거나 기업을 특정할 수 없으면, 사실을 추정하거나 보완하지 마세요.
-- 지금은 시뮬레이션을 생성하지 말고 web_search 도구로 확인 가능한 사실을 조사하세요.`;
+  return [
+    `다음 기업 또는 브랜드의 실제 사업과 주요 서비스·제품을 조사하세요. 검색어는 ${searchTarget} 공식 홈페이지 사업 서비스 제품을 우선 사용하세요.${commonRules}`,
+    `다음 기업 또는 브랜드의 고객·이용자와 최근 공개 이슈를 조사하세요. 검색어는 ${searchTarget} 뉴스룸 보도자료 최근 이슈를 우선 사용하세요.${commonRules}`,
+    `다음 기업 또는 브랜드의 ${input.roleName} 직무 맥락을 조사하세요. 검색어는 ${searchTarget} "${input.roleName}" 채용을 우선 사용하세요. 이 검색에서는 직무 요건만 보완하고, 기업 사실은 공식 확인 내용만 사용하세요.${commonRules}`,
+  ];
 }
 
 type AnthropicContentBlock = Record<string, unknown>;
@@ -448,12 +472,12 @@ async function requestAnthropic(
   return { response, payload };
 }
 
-async function collectWebResearch(
+async function collectWebResearchForFocus(
   apiKey: string,
   model: string,
-  input: GenerateSimulationInput,
+  prompt: string,
 ): Promise<AnthropicMessage[] | null> {
-  const messages: AnthropicMessage[] = [{ role: "user", content: buildWebResearchPrompt(input) }];
+  const messages: AnthropicMessage[] = [{ role: "user", content: prompt }];
 
   try {
     let result = await requestAnthropic(apiKey, {
@@ -495,6 +519,21 @@ async function collectWebResearch(
   }
 
   return null;
+}
+
+async function collectWebResearch(
+  apiKey: string,
+  model: string,
+  input: GenerateSimulationInput,
+): Promise<AnthropicMessage[] | null> {
+  const allResearchMessages: AnthropicMessage[] = [];
+
+  for (const prompt of buildWebResearchPrompts(input)) {
+    const messages = await collectWebResearchForFocus(apiKey, model, prompt);
+    if (messages) allResearchMessages.push(...messages);
+  }
+
+  return allResearchMessages.length > 0 ? allResearchMessages : null;
 }
 
 // ============================================================
