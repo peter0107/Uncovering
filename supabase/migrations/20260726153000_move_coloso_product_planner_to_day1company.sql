@@ -10,7 +10,10 @@ begin
   limit 1;
 
   if target_company_id is null then
-    raise exception 'DAY1-F3FF 기업을 찾을 수 없습니다.';
+    -- 새 프로젝트의 schema 적용 단계에서는 기업 CSV를 아직 넣지 않았다.
+    -- 이후 데이터 복원 시 현재 회사/시뮬레이션 관계가 그대로 들어오므로,
+    -- 여기서 임시 기업을 만들거나 migration 전체를 중단하지 않는다.
+    return;
   end if;
 
   update public.job_simulations
