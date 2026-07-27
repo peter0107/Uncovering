@@ -137,6 +137,10 @@ function buildRationaleMarkdown(draft: GeneratedSimulationDraft): string {
   lines.push(
     `- ${draft.rationale.photoPlan.needed ? "필요" : "불필요"} — ${draft.rationale.photoPlan.reason || "근거 없음"}`,
   );
+  draft.rationale.photoPlan.items.forEach((item) => {
+    lines.push(`  - [${item.step || "단계 미상"}] ${item.description}`);
+    if (item.purpose) lines.push(`    - 용도: ${item.purpose}`);
+  });
   lines.push("");
   lines.push("## 평가 기준");
   draft.rationale.criteria.forEach((c, i) => {
@@ -546,6 +550,26 @@ function AdminSimulationGenerator() {
                     <p className="mt-1.5 text-xs leading-5 text-neutral-700">
                       {draft.rationale.photoPlan.reason || "판단 근거가 기록되지 않았어요."}
                     </p>
+                    {draft.rationale.photoPlan.items.length > 0 && (
+                      <ul className="mt-2 flex flex-col gap-1.5">
+                        {draft.rationale.photoPlan.items.map((item, index) => (
+                          <li
+                            key={index}
+                            className="rounded-r-md border-l-2 border-blue-500 bg-blue-50 px-2.5 py-1.5"
+                          >
+                            {item.step && (
+                              <p className="text-[11px] font-semibold text-blue-700">{item.step}</p>
+                            )}
+                            <p className="text-xs text-neutral-700">{item.description}</p>
+                            {item.purpose && (
+                              <p className="mt-0.5 text-[11px] text-neutral-500">
+                                → {item.purpose}
+                              </p>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 </div>
 

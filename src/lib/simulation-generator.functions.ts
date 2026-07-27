@@ -103,9 +103,16 @@ export type GeneratedSimulationDraft = {
   };
 };
 
+export type GeneratedPhotoItem = {
+  step: string;
+  description: string;
+  purpose: string;
+};
+
 export type GeneratedPhotoPlan = {
   needed: boolean;
   reason: string;
+  items: GeneratedPhotoItem[];
 };
 
 // 도구가 반환한 원본 형태 검증용 스키마
@@ -133,9 +140,20 @@ const toolOutputSchema = z.object({
       .object({
         needed: z.boolean().optional().default(false),
         reason: z.string().max(800).optional().default(""),
+        items: z
+          .array(
+            z.object({
+              step: z.string().max(200).optional().default(""),
+              description: z.string().max(500).optional().default(""),
+              purpose: z.string().max(500).optional().default(""),
+            }),
+          )
+          .max(6)
+          .optional()
+          .default([]),
       })
       .optional()
-      .default({ needed: false, reason: "" }),
+      .default({ needed: false, reason: "", items: [] }),
     webResearchFacts: z
       .array(
         z.object({
@@ -277,8 +295,29 @@ const GENERATE_TOOL = {
               },
               reason: {
                 type: "string",
+                description: "사진이 필요하다/필요 없다고 판단한 전체 근거.",
+              },
+              items: {
+                type: "array",
+                maxItems: 6,
                 description:
-                  "필요하다/필요 없다고 판단한 근거. 필요한 경우 어느 단계에 어떤 사진이 왜 필요한지 함께 쓴다.",
+                  "필요한 사진 목록. needed가 false면 빈 배열. 본문에 사진 설명을 넣은 단계마다 한 항목씩 기록.",
+                items: {
+                  type: "object",
+                  additionalProperties: false,
+                  required: ["step", "description", "purpose"],
+                  properties: {
+                    step: { type: "string", description: "사진이 들어갈 단계 제목" },
+                    description: {
+                      type: "string",
+                      description: "어떤 사진이 필요한지 (예: 매장 진열대를 정면에서 찍은 사진)",
+                    },
+                    purpose: {
+                      type: "string",
+                      description: "그 사진이 이 단계에서 왜 필요한지",
+                    },
+                  },
+                },
               },
             },
           },
@@ -797,6 +836,13 @@ async function generateSimulationDraftFromInput(
       photoPlan: {
         needed: raw.rationale.photoPlan.needed,
         reason: raw.rationale.photoPlan.reason.trim(),
+        items: raw.rationale.photoPlan.items
+          .map((item) => ({
+            step: item.step.trim(),
+            description: item.description.trim(),
+            purpose: item.purpose.trim(),
+          }))
+          .filter((item) => item.description.length > 0),
       },
       webResearchFacts: raw.rationale.webResearchFacts
         .map((fact) => ({
