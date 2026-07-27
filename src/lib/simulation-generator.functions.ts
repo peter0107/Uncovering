@@ -590,7 +590,14 @@ async function generateSimulationDraftFromInput(
   const instruction =
     savedPrompt?.prompt?.trim() || COMPANY_AI_PROMPT_DEFAULTS[GENERATOR_PROMPT_KEY].prompt;
   const model = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5";
+
+  // 어느 구간에서 시간을 쓰는지 로그로 남긴다 (wrangler tail에서 확인).
+  const startedAt = Date.now();
   const researchSummary = await collectWebResearch(apiKey, model, data);
+  const researchMs = Date.now() - startedAt;
+  console.log(
+    `[generator] model=${model} research=${researchMs}ms summary=${researchSummary?.length ?? 0}chars`,
+  );
   const generationMessages: AnthropicMessage[] = [
     {
       role: "user",
@@ -618,13 +625,25 @@ async function generateSimulationDraftFromInput(
       ANTHROPIC_GENERATION_TIMEOUT_MS,
     ));
   } catch (error) {
+    // 타임아웃과 그 외 전송 오류(Anthropic 524, JSON 아닌 응답, 네트워크 실패)를
+    // 구분해서 알린다. 한 문구로 뭉뚱그리면 원인을 찾을 수 없다.
+    const name = error instanceof Error ? error.name : "";
+    const isTimeout = name === "TimeoutError" || name === "AbortError";
     console.error("Simulation generation transport failed:", error);
-    throw new Error("AI 생성 응답 시간이 초과됐어요. 잠시 후 다시 시도해주세요.");
+    throw new Error(
+      isTimeout
+        ? `AI 생성이 ${Math.round(ANTHROPIC_GENERATION_TIMEOUT_MS / 1000)}초 안에 끝나지 않았어요. 다시 시도해주세요.`
+        : `AI 생성 요청이 실패했어요: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
+  console.log(
+    `[generator] generation=${Date.now() - startedAt - researchMs}ms status=${response.status} stop=${String(payload.stop_reason)}`,
+  );
+
   if (!response.ok) {
     const message = getAnthropicErrorMessage(payload);
-    console.error("Simulation generation request failed:", message);
-    throw new Error("AI 생성에 실패했어요. 잠시 후 다시 시도해주세요.");
+    console.error("Simulation generation request failed:", response.status, message);
+    throw new Error(`AI 생성에 실패했어요 (HTTP ${response.status}): ${message}`);
   }
   if (payload.stop_reason === "max_tokens") {
     throw new Error("생성 결과가 너무 길어요. JD를 줄이거나 다시 시도해주세요.");
