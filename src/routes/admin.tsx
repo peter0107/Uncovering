@@ -80,10 +80,10 @@ function AdminHome() {
                     <BriefcaseBusiness className="h-5 w-5" />
                   </div>
                   <h2 className="mt-4 text-base font-semibold text-neutral-900">
-                    직무 시뮬레이션 관리
+                    기업 시뮬레이션 관리
                   </h2>
                   <p className="mt-2 text-sm leading-6 text-neutral-500">
-                    기업 코드별 직무 시뮬레이션을 등록하고 관리합니다.
+                    기업별 직무 시뮬레이션을 등록하고 관리합니다.
                   </p>
                 </div>
                 <ArrowRight className="mt-1 h-4 w-4 text-neutral-400 transition-colors group-hover:text-neutral-900" />

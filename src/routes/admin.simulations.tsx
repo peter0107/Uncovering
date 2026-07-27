@@ -424,9 +424,9 @@ function getAssetEditorImageStyle(editor: AssetEditorState, preset: AssetEditorP
 export const Route = createFileRoute("/admin/simulations")({
   head: () => ({
     meta: [
-      { title: "Beginner - 직무 시뮬레이션 관리자" },
+      { title: "Beginner - 기업 시뮬레이션 관리자" },
       { name: "description", content: "기업별 직무 시뮬레이션을 관리합니다." },
-      { property: "og:title", content: "Beginner - 직무 시뮬레이션 관리자" },
+      { property: "og:title", content: "Beginner - 기업 시뮬레이션 관리자" },
       { property: "og:description", content: "기업별 직무 시뮬레이션을 관리합니다." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -1045,10 +1045,10 @@ function AdminSimulations() {
         <div>
           <p className="text-xs font-medium text-neutral-500">Beginner Admin</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight text-neutral-900">
-            직무 시뮬레이션 관리
+            기업 시뮬레이션 관리
           </h1>
           <p className="mt-2 text-sm text-neutral-500">
-            기업 코드별 직무 시뮬레이션을 등록하고 관리합니다.
+            기업별 직무 시뮬레이션을 등록하고 관리합니다.
           </p>
         </div>
         <button
