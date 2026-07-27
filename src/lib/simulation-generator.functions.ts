@@ -32,7 +32,7 @@ function getBearerToken(): string {
   return token;
 }
 
-async function assertAdmin() {
+async function assertAdmin(): Promise<string> {
   const token = getBearerToken();
   const configuredEmails = (process.env.ADMIN_EMAILS ?? "")
     .split(",")
@@ -46,6 +46,7 @@ async function assertAdmin() {
   if (error || !email || !adminEmails.has(email)) {
     throw new Error("관리자 권한이 없습니다.");
   }
+  return data.user.id;
 }
 
 // ============================================================
@@ -575,13 +576,9 @@ async function collectWebResearch(
   return summaries.length > 0 ? summaries.join("\n\n").slice(0, 7_000) : null;
 }
 
-// ============================================================
-// 서버 함수
-// ============================================================
-export const generateSimulationDraft = createServerFn({ method: "POST" })
-  .inputValidator(generateInputSchema)
-  .handler(async ({ data }): Promise<GeneratedSimulationDraft> => {
-    await assertAdmin();
+async function generateSimulationDraftFromInput(
+  data: GenerateSimulationInput,
+): Promise<GeneratedSimulationDraft> {
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) throw new Error("ANTHROPIC_API_KEY 환경변수를 서버 환경에 설정해주세요.");
@@ -662,34 +659,138 @@ export const generateSimulationDraft = createServerFn({ method: "POST" })
       };
     });
 
-    return {
-      companyName: data.companyName,
-      roleName: data.roleName,
-      domain: data.domain,
-      simulation: {
-        title: raw.simulation.title.trim(),
-        roleLabel: raw.simulation.roleLabel.trim() || data.roleName,
-        description: raw.simulation.description.trim(),
-        estimatedMinutes: raw.simulation.estimatedMinutes ?? null,
-        steps,
-      },
-      rationale: {
-        webResearchFacts: raw.rationale.webResearchFacts
-          .map((fact) => ({
-            category: fact.category,
-            fact: fact.fact.trim(),
-            source: fact.source.trim(),
-          }))
-          .filter((fact) => fact.fact.length > 0 && fact.source.length > 0),
-        criteria: raw.rationale.criteria.map((c) => ({
-          title: c.title.trim(),
-          sources: c.sources.map((s) => ({ platform: s.platform.trim(), quote: s.quote.trim() })),
-          reflectedIn: c.reflectedIn.trim(),
-        })),
-        unreflected: raw.rationale.unreflected.map((u) => ({
-          requirement: u.requirement.trim(),
-          reason: u.reason.trim(),
-        })),
-      },
-    };
+  return {
+    companyName: data.companyName,
+    roleName: data.roleName,
+    domain: data.domain,
+    simulation: {
+      title: raw.simulation.title.trim(),
+      roleLabel: raw.simulation.roleLabel.trim() || data.roleName,
+      description: raw.simulation.description.trim(),
+      estimatedMinutes: raw.simulation.estimatedMinutes ?? null,
+      steps,
+    },
+    rationale: {
+      webResearchFacts: raw.rationale.webResearchFacts
+        .map((fact) => ({
+          category: fact.category,
+          fact: fact.fact.trim(),
+          source: fact.source.trim(),
+        }))
+        .filter((fact) => fact.fact.length > 0 && fact.source.length > 0),
+      criteria: raw.rationale.criteria.map((c) => ({
+        title: c.title.trim(),
+        sources: c.sources.map((s) => ({ platform: s.platform.trim(), quote: s.quote.trim() })),
+        reflectedIn: c.reflectedIn.trim(),
+      })),
+      unreflected: raw.rationale.unreflected.map((u) => ({
+        requirement: u.requirement.trim(),
+        reason: u.reason.trim(),
+      })),
+    },
+  };
+}
+
+export type SimulationGenerationJob = {
+  id: string;
+  status: "queued" | "processing" | "completed" | "failed";
+  draft: GeneratedSimulationDraft | null;
+  errorMessage: string | null;
+};
+
+const jobIdInputSchema = z.object({ jobId: z.string().uuid() });
+
+function mapGenerationJob(row: {
+  id: string;
+  status: string;
+  result: unknown;
+  error_message: string | null;
+}): SimulationGenerationJob {
+  const status = ["queued", "processing", "completed", "failed"].includes(row.status)
+    ? (row.status as SimulationGenerationJob["status"])
+    : "failed";
+
+  return {
+    id: row.id,
+    status,
+    draft: row.result as GeneratedSimulationDraft | null,
+    errorMessage: row.error_message,
+  };
+}
+
+// 버튼 요청은 AI를 직접 호출하지 않고 작업만 기록합니다. Worker Cron이 이 작업을 처리합니다.
+export const enqueueSimulationGeneration = createServerFn({ method: "POST" })
+  .inputValidator(generateInputSchema)
+  .handler(async ({ data }): Promise<SimulationGenerationJob> => {
+    const userId = await assertAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: job, error } = await supabaseAdmin
+      .from("simulation_generation_jobs")
+      .insert({ created_by: userId, payload: data })
+      .select("id, status, result, error_message")
+      .single();
+    if (error || !job) {
+      console.error("Failed to enqueue simulation generation:", error);
+      throw new Error("생성 작업을 시작하지 못했습니다.");
+    }
+    return mapGenerationJob(job);
   });
+
+export const getSimulationGenerationJob = createServerFn({ method: "GET" })
+  .inputValidator(jobIdInputSchema)
+  .handler(async ({ data }): Promise<SimulationGenerationJob> => {
+    await assertAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: job, error } = await supabaseAdmin
+      .from("simulation_generation_jobs")
+      .select("id, status, result, error_message")
+      .eq("id", data.jobId)
+      .maybeSingle();
+    if (error || !job) {
+      throw new Error("생성 작업을 찾을 수 없습니다.");
+    }
+    return mapGenerationJob(job);
+  });
+
+// Cloudflare Worker Cron에서 호출합니다. HTTP 요청과 분리돼 524가 발생하지 않습니다.
+export async function processNextSimulationGenerationJob(): Promise<boolean> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: jobs, error: claimError } = await supabaseAdmin.rpc("claim_simulation_generation_job");
+  if (claimError) {
+    console.error("Failed to claim simulation generation job:", claimError);
+    return false;
+  }
+
+  const job = jobs?.[0];
+  if (!job) return false;
+
+  try {
+    const input = generateInputSchema.parse(job.payload);
+    const draft = await generateSimulationDraftFromInput(input);
+    const { error } = await supabaseAdmin
+      .from("simulation_generation_jobs")
+      .update({
+        status: "completed",
+        result: draft,
+        completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", job.id);
+    if (error) throw error;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "AI 생성에 실패했습니다.";
+    console.error("Simulation generation job failed:", job.id, error);
+    const { error: updateError } = await supabaseAdmin
+      .from("simulation_generation_jobs")
+      .update({
+        status: "failed",
+        error_message: message.slice(0, 500),
+        completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", job.id);
+    if (updateError) console.error("Failed to record simulation generation failure:", updateError);
+  }
+
+  return true;
+}

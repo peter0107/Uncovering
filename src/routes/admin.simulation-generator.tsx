@@ -8,8 +8,10 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { RichTextContent } from "@/components/RichTextEditor";
 import { DOMAIN_CATEGORIES } from "@/lib/domain-categories";
 import {
-  generateSimulationDraft,
+  enqueueSimulationGeneration,
+  getSimulationGenerationJob,
   type GeneratedSimulationDraft,
+  type SimulationGenerationJob,
   type WebResearchCategory,
 } from "@/lib/simulation-generator.functions";
 import {
@@ -94,6 +96,7 @@ function AdminSimulationGenerator() {
   const [note, setNote] = useState("");
 
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationJob, setGenerationJob] = useState<SimulationGenerationJob | null>(null);
   const [draft, setDraft] = useState<GeneratedSimulationDraft | null>(null);
   const [saveCompanyCode, setSaveCompanyCode] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -117,6 +120,43 @@ function AdminSimulationGenerator() {
     loadedUserIdRef.current = userId;
     void loadCompanies();
   }, [authLoading, userId, navigate, loadCompanies]);
+
+  useEffect(() => {
+    if (!generationJob || generationJob.status === "completed" || generationJob.status === "failed") {
+      return;
+    }
+
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const latest = await getSimulationGenerationJob({ data: { jobId: generationJob.id } });
+        if (cancelled) return;
+        setGenerationJob(latest);
+        if (latest.status === "completed" && latest.draft) {
+          setDraft(latest.draft);
+          const matched = companies.find((c) => c.name.trim() === latest.draft?.companyName.trim());
+          setSaveCompanyCode(matched?.code ?? "");
+          setIsGenerating(false);
+          toast.success("시뮬레이션 초안을 생성했어요.");
+        } else if (latest.status === "failed") {
+          setIsGenerating(false);
+          toast.error(latest.errorMessage || "AI 생성에 실패했어요.");
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setIsGenerating(false);
+          toast.error(error instanceof Error ? error.message : "생성 상태를 확인하지 못했습니다.");
+        }
+      }
+    };
+
+    void poll();
+    const timer = window.setInterval(() => void poll(), 3_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [generationJob?.id, generationJob?.status, companies]);
 
   const canGenerate =
     companyName.trim().length > 0 &&
@@ -152,7 +192,7 @@ function AdminSimulationGenerator() {
     setIsGenerating(true);
     setDraft(null);
     try {
-      const result = await generateSimulationDraft({
+      const job = await enqueueSimulationGeneration({
         data: {
           companyName: companyName.trim(),
           roleName: roleName.trim(),
@@ -161,14 +201,10 @@ function AdminSimulationGenerator() {
           note: note.trim(),
         },
       });
-      setDraft(result);
-      // 기업명이 일치하는 등록 기업이 있으면 저장 대상으로 미리 선택
-      const matched = companies.find((c) => c.name.trim() === result.companyName.trim());
-      setSaveCompanyCode(matched?.code ?? "");
-      toast.success("시뮬레이션 초안을 생성했어요.");
+      setGenerationJob(job);
+      toast.success("생성 작업을 시작했어요.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "생성에 실패했어요.");
-    } finally {
       setIsGenerating(false);
     }
   }
@@ -357,7 +393,6 @@ function AdminSimulationGenerator() {
           >
             <Sparkles className="h-4 w-4" /> {isGenerating ? "생성 중..." : "시뮬레이션 생성"}
           </button>
-          <span className="text-xs text-neutral-500">생성에 30초~1분 정도 걸려요.</span>
         </div>
       </section>
 

@@ -32,6 +32,48 @@ export type Database = {
         }
         Relationships: []
       }
+      simulation_generation_jobs: {
+        Row: {
+          attempts: number
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          error_message: string | null
+          id: string
+          payload: Json
+          result: Json | null
+          started_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          error_message?: string | null
+          id?: string
+          payload: Json
+          result?: Json | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          error_message?: string | null
+          id?: string
+          payload?: Json
+          result?: Json | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       applicants: {
         Row: {
           company_id: string
@@ -858,6 +900,10 @@ export type Database = {
       }
     }
     Functions: {
+      claim_simulation_generation_job: {
+        Args: Record<PropertyKey, never>
+        Returns: Database["public"]["Tables"]["simulation_generation_jobs"]["Row"][]
+      }
       get_applicants_by_company_code: {
         Args: { company_code: string }
         Returns: {

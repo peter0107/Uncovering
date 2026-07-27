@@ -2,6 +2,7 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { processNextSimulationGenerationJob } from "./lib/simulation-generator.functions";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -75,6 +76,13 @@ export default {
     } catch (error) {
       console.error(error);
       return brandedErrorResponse();
+    }
+  },
+  async scheduled() {
+    try {
+      await processNextSimulationGenerationJob();
+    } catch (error) {
+      console.error("Simulation generation cron failed:", error);
     }
   },
 };
