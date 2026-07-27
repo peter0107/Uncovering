@@ -322,22 +322,6 @@ const GENERATE_TOOL = {
   },
 } as const;
 
-function getToolInput(payload: Record<string, unknown>): unknown {
-  const content = Array.isArray(payload.content) ? payload.content : [];
-  const toolUse = content.find(
-    (part) =>
-      typeof part === "object" &&
-      part !== null &&
-      (part as { type?: unknown }).type === "tool_use" &&
-      (part as { name?: unknown }).name === GENERATE_TOOL_NAME,
-  ) as { input?: unknown } | undefined;
-
-  if (!toolUse?.input || typeof toolUse.input !== "object" || Array.isArray(toolUse.input)) {
-    throw new Error("AI 생성 결과 형식이 올바르지 않습니다. 다시 시도해주세요.");
-  }
-  return toolUse.input;
-}
-
 // ============================================================
 // 프롬프트
 // ============================================================
@@ -498,6 +482,106 @@ async function requestAnthropic(
   return { response, payload };
 }
 
+// api.anthropic.com도 Cloudflare 뒤에 있어서, 논스트리밍으로 오래 걸리는 요청은
+// 그쪽에서 524를 맞는다(응답 본문이 JSON이 아닌 HTML로 돌아옴). 스트리밍하면 토큰이
+// 계속 흘러 연결이 유지되므로 긴 생성도 끊기지 않는다.
+//
+// tool_choice로 도구 호출을 강제했으므로 결과는 tool_use 블록 하나뿐이다.
+// input_json_delta 조각을 이어 붙여 최종 JSON을 복원한다.
+async function streamAnthropicToolCall(
+  apiKey: string,
+  body: Record<string, unknown>,
+  timeoutMs: number,
+): Promise<{ toolInput: unknown; stopReason: string | null }> {
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ ...body, stream: true }),
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+
+  if (!response.ok || !response.body) {
+    const text = (await response.text()).replace(/\s+/g, " ").trim().slice(0, 240);
+    throw new Error(`Anthropic API 오류 (HTTP ${response.status})${text ? ` - ${text}` : ""}`);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let toolJson = "";
+  let collecting = false;
+  let stopReason: string | null = null;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      let boundary = buffer.indexOf("\n\n");
+      while (boundary !== -1) {
+        const frame = buffer.slice(0, boundary);
+        buffer = buffer.slice(boundary + 2);
+        boundary = buffer.indexOf("\n\n");
+
+        const dataLine = frame.split("\n").find((line) => line.startsWith("data: "));
+        if (!dataLine) continue;
+
+        let event: Record<string, unknown>;
+        try {
+          event = JSON.parse(dataLine.slice(6)) as Record<string, unknown>;
+        } catch {
+          continue;
+        }
+
+        switch (event.type) {
+          case "content_block_start": {
+            const block = event.content_block as { type?: string; name?: string } | undefined;
+            collecting = block?.type === "tool_use" && block.name === GENERATE_TOOL_NAME;
+            break;
+          }
+          case "content_block_delta": {
+            const delta = event.delta as { type?: string; partial_json?: string } | undefined;
+            if (collecting && delta?.type === "input_json_delta") {
+              toolJson += delta.partial_json ?? "";
+            }
+            break;
+          }
+          case "content_block_stop":
+            collecting = false;
+            break;
+          case "message_delta": {
+            const delta = event.delta as { stop_reason?: string } | undefined;
+            if (delta?.stop_reason) stopReason = delta.stop_reason;
+            break;
+          }
+          case "error": {
+            const err = event.error as { message?: string } | undefined;
+            throw new Error(err?.message || "Anthropic 스트림 오류");
+          }
+        }
+      }
+    }
+  } finally {
+    await reader.cancel().catch(() => {});
+  }
+
+  if (!toolJson) {
+    throw new Error("AI가 초안을 기록하지 않았어요. 다시 시도해주세요.");
+  }
+
+  try {
+    return { toolInput: JSON.parse(toolJson), stopReason };
+  } catch {
+    // 스트림이 중간에 끊기면 JSON이 불완전하다. max_tokens 초과가 가장 흔한 원인.
+    throw new Error("생성 결과가 완성되지 않았어요. 다시 시도해주세요.");
+  }
+}
+
 async function collectWebResearchForFocus(
   apiKey: string,
   model: string,
@@ -609,11 +693,10 @@ async function generateSimulationDraftFromInput(
     },
   ];
 
-  let response: Response;
-  let payload: AnthropicPayload;
+  let generated: { toolInput: unknown; stopReason: string | null };
 
   try {
-    ({ response, payload } = await requestAnthropic(
+    generated = await streamAnthropicToolCall(
       apiKey,
       {
         model,
@@ -623,10 +706,9 @@ async function generateSimulationDraftFromInput(
         messages: generationMessages,
       },
       ANTHROPIC_GENERATION_TIMEOUT_MS,
-    ));
+    );
   } catch (error) {
-    // 타임아웃과 그 외 전송 오류(Anthropic 524, JSON 아닌 응답, 네트워크 실패)를
-    // 구분해서 알린다. 한 문구로 뭉뚱그리면 원인을 찾을 수 없다.
+    // 타임아웃과 그 외 전송 오류를 구분해서 알린다. 한 문구로 뭉뚱그리면 원인을 알 수 없다.
     const name = error instanceof Error ? error.name : "";
     const isTimeout = name === "TimeoutError" || name === "AbortError";
     console.error("Simulation generation transport failed:", error);
@@ -636,20 +718,16 @@ async function generateSimulationDraftFromInput(
         : `AI 생성 요청이 실패했어요: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
+
   console.log(
-    `[generator] generation=${Date.now() - startedAt - researchMs}ms status=${response.status} stop=${String(payload.stop_reason)}`,
+    `[generator] generation=${Date.now() - startedAt - researchMs}ms stop=${String(generated.stopReason)}`,
   );
 
-  if (!response.ok) {
-    const message = getAnthropicErrorMessage(payload);
-    console.error("Simulation generation request failed:", response.status, message);
-    throw new Error(`AI 생성에 실패했어요 (HTTP ${response.status}): ${message}`);
-  }
-  if (payload.stop_reason === "max_tokens") {
+  if (generated.stopReason === "max_tokens") {
     throw new Error("생성 결과가 너무 길어요. JD를 줄이거나 다시 시도해주세요.");
   }
 
-  const raw = toolOutputSchema.parse(getToolInput(payload));
+  const raw = toolOutputSchema.parse(generated.toolInput);
 
   const steps: AdminSimulationStep[] = raw.simulation.steps.map((step, index) => {
     const stepId = `gen-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 7)}`;
