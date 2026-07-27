@@ -188,7 +188,9 @@ const WEB_SEARCH_TOOL = {
   max_uses: 1,
 } as const;
 const MAX_WEB_SEARCH_CONTINUATIONS = 2;
-const ANTHROPIC_REQUEST_TIMEOUT_MS = 180_000;
+// Worker 응답이 Cloudflare의 프록시 제한을 넘지 않도록 검색과 생성에 각각 제한을 둡니다.
+const ANTHROPIC_RESEARCH_TIMEOUT_MS = 45_000;
+const ANTHROPIC_GENERATION_TIMEOUT_MS = 75_000;
 
 const GENERATE_TOOL = {
   name: GENERATE_TOOL_NAME,
@@ -456,6 +458,7 @@ function getContentBlocks(payload: AnthropicPayload): AnthropicContentBlock[] {
 async function requestAnthropic(
   apiKey: string,
   body: Record<string, unknown>,
+  timeoutMs: number,
 ): Promise<{ response: Response; payload: AnthropicPayload }> {
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -465,10 +468,22 @@ async function requestAnthropic(
       "Content-Type": "application/json",
     },
     body: JSON.stringify(body),
-    // 웹 검색은 서버 도구 실행과 pause_turn 재개가 있어 일반 생성보다 오래 걸릴 수 있습니다.
-    signal: AbortSignal.timeout(ANTHROPIC_REQUEST_TIMEOUT_MS),
+    signal: AbortSignal.timeout(timeoutMs),
   });
-  const payload = (await response.json()) as AnthropicPayload;
+  const responseText = await response.text();
+  let payload: AnthropicPayload;
+
+  try {
+    payload = JSON.parse(responseText) as AnthropicPayload;
+  } catch {
+    const summary = responseText.replace(/\s+/g, " ").trim().slice(0, 240);
+    const statusDescription =
+      response.status === 524 ? "응답 시간 초과(524)" : `HTTP ${response.status}`;
+    throw new Error(
+      `Anthropic API가 JSON이 아닌 응답을 반환했습니다: ${statusDescription}${summary ? ` - ${summary}` : ""}`,
+    );
+  }
+
   return { response, payload };
 }
 
@@ -480,13 +495,17 @@ async function collectWebResearchForFocus(
   const messages: AnthropicMessage[] = [{ role: "user", content: prompt }];
 
   try {
-    let result = await requestAnthropic(apiKey, {
-      model,
-      max_tokens: 3_000,
-      tools: [WEB_SEARCH_TOOL],
-      tool_choice: { type: "tool", name: "web_search" },
-      messages,
-    });
+    let result = await requestAnthropic(
+      apiKey,
+      {
+        model,
+        max_tokens: 3_000,
+        tools: [WEB_SEARCH_TOOL],
+        tool_choice: { type: "tool", name: "web_search" },
+        messages,
+      },
+      ANTHROPIC_RESEARCH_TIMEOUT_MS,
+    );
 
     for (let attempt = 0; attempt <= MAX_WEB_SEARCH_CONTINUATIONS; attempt += 1) {
       if (!result.response.ok) {
@@ -506,12 +525,16 @@ async function collectWebResearchForFocus(
         return null;
       }
 
-      result = await requestAnthropic(apiKey, {
-        model,
-        max_tokens: 3_000,
-        tools: [WEB_SEARCH_TOOL],
-        messages,
-      });
+      result = await requestAnthropic(
+        apiKey,
+        {
+          model,
+          max_tokens: 3_000,
+          tools: [WEB_SEARCH_TOOL],
+          messages,
+        },
+        ANTHROPIC_RESEARCH_TIMEOUT_MS,
+      );
     }
   } catch (error) {
     // 검색은 보조 정보입니다. 장애가 있어도 JD 기반 초안 생성은 계속합니다.
@@ -526,12 +549,13 @@ async function collectWebResearch(
   model: string,
   input: GenerateSimulationInput,
 ): Promise<AnthropicMessage[] | null> {
-  const allResearchMessages: AnthropicMessage[] = [];
-
-  for (const prompt of buildWebResearchPrompts(input)) {
-    const messages = await collectWebResearchForFocus(apiKey, model, prompt);
-    if (messages) allResearchMessages.push(...messages);
-  }
+  // 세 검색 초점은 서로 의존하지 않습니다. 병렬 실행해 전체 생성 대기 시간을 줄입니다.
+  const results = await Promise.all(
+    buildWebResearchPrompts(input).map((prompt) =>
+      collectWebResearchForFocus(apiKey, model, prompt),
+    ),
+  );
+  const allResearchMessages = results.flatMap((messages) => messages ?? []);
 
   return allResearchMessages.length > 0 ? allResearchMessages : null;
 }
@@ -570,14 +594,26 @@ export const generateSimulationDraft = createServerFn({ method: "POST" })
         ]
       : [{ role: "user", content: buildPrompt(data, instruction) }];
 
-    const { response, payload } = await requestAnthropic(apiKey, {
-      model,
-      max_tokens: 16_000,
-      // 검색 결과 블록을 이어 쓰는 경우에도 동일한 서버 도구 정의를 유지해야 합니다.
-      tools: researchMessages ? [WEB_SEARCH_TOOL, GENERATE_TOOL] : [GENERATE_TOOL],
-      tool_choice: { type: "tool", name: GENERATE_TOOL_NAME },
-      messages: generationMessages,
-    });
+    let response: Response;
+    let payload: AnthropicPayload;
+
+    try {
+      ({ response, payload } = await requestAnthropic(
+        apiKey,
+        {
+          model,
+          max_tokens: 10_000,
+          // 검색 결과 블록을 이어 쓰는 경우에도 동일한 서버 도구 정의를 유지해야 합니다.
+          tools: researchMessages ? [WEB_SEARCH_TOOL, GENERATE_TOOL] : [GENERATE_TOOL],
+          tool_choice: { type: "tool", name: GENERATE_TOOL_NAME },
+          messages: generationMessages,
+        },
+        ANTHROPIC_GENERATION_TIMEOUT_MS,
+      ));
+    } catch (error) {
+      console.error("Simulation generation transport failed:", error);
+      throw new Error("AI 생성 응답 시간이 초과됐어요. 잠시 후 다시 시도해주세요.");
+    }
     if (!response.ok) {
       const message = getAnthropicErrorMessage(payload);
       console.error("Simulation generation request failed:", message);
