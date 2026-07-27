@@ -144,7 +144,7 @@ const toolOutputSchema = z.object({
           .array(
             z.object({
               step: z.string().max(200).optional().default(""),
-              description: z.string().max(500).optional().default(""),
+              description: z.string().max(2000).optional().default(""),
               purpose: z.string().max(500).optional().default(""),
             }),
           )
@@ -310,7 +310,8 @@ const GENERATE_TOOL = {
                     step: { type: "string", description: "사진이 들어갈 단계 제목" },
                     description: {
                       type: "string",
-                      description: "어떤 사진이 필요한지 (예: 매장 진열대를 정면에서 찍은 사진)",
+                      description:
+                        "이 사진을 새로 만들 수 있을 만큼 구체적인 묘사. 보는 사람이 그대로 제작할 수 있어야 한다. 다음을 모두 담을 것: (1) 화면에 담기는 주요 피사체와 그 배치, (2) 배경과 주변 요소, (3) 사진 안에 들어갈 텍스트·숫자·라벨이 있다면 그 실제 내용, (4) 정보량과 복잡도(단순한지, 요소가 빽빽한지), (5) 색감과 분위기, (6) 촬영·작화 각도와 화면 비율. '매장 사진', '그래프 이미지' 같은 한 줄 요약은 금지.",
                     },
                     purpose: {
                       type: "string",

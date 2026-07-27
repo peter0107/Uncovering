@@ -560,7 +560,9 @@ function AdminSimulationGenerator() {
                             {item.step && (
                               <p className="text-[11px] font-semibold text-blue-700">{item.step}</p>
                             )}
-                            <p className="text-xs text-neutral-700">{item.description}</p>
+                            <p className="whitespace-pre-wrap text-xs leading-5 text-neutral-700">
+                              {item.description}
+                            </p>
                             {item.purpose && (
                               <p className="mt-0.5 text-[11px] text-neutral-500">
                                 → {item.purpose}
