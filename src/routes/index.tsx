@@ -159,7 +159,7 @@ function Header({
         <nav className="reference-desktop-nav" aria-label="주요 메뉴">
           <a href="#service">서비스 소개</a>
           <Link to="/simulations">기업 시뮬레이션</Link>
-          <Link to="/expert-simulations">현직자 제시</Link>
+          <Link to="/expert-simulations">현직자 시뮬레이션</Link>
           <Link to="/biz">기업용</Link>
         </nav>
 
@@ -200,7 +200,7 @@ function Header({
             기업 시뮬레이션
           </Link>
           <Link to="/expert-simulations" onClick={onMenuClose}>
-            현직자 제시
+            현직자 시뮬레이션
           </Link>
           <Link to="/biz" onClick={onMenuClose}>
             기업용
