@@ -189,8 +189,8 @@ const WEB_SEARCH_TOOL = {
 } as const;
 const MAX_WEB_SEARCH_CONTINUATIONS = 2;
 // Worker 응답이 Cloudflare의 프록시 제한을 넘지 않도록 검색과 생성에 각각 제한을 둡니다.
-const ANTHROPIC_RESEARCH_TIMEOUT_MS = 45_000;
-const ANTHROPIC_GENERATION_TIMEOUT_MS = 75_000;
+const ANTHROPIC_RESEARCH_TIMEOUT_MS = 30_000;
+const ANTHROPIC_GENERATION_TIMEOUT_MS = 60_000;
 
 const GENERATE_TOOL = {
   name: GENERATE_TOOL_NAME,
@@ -455,6 +455,20 @@ function getContentBlocks(payload: AnthropicPayload): AnthropicContentBlock[] {
   );
 }
 
+function getResearchSummary(payload: AnthropicPayload): string | null {
+  const summary = getContentBlocks(payload)
+    .filter(
+      (part): part is AnthropicContentBlock & { type: "text"; text: string } =>
+        part.type === "text" && typeof part.text === "string",
+    )
+    .map((part) => part.text.trim())
+    .filter(Boolean)
+    .join("\n")
+    .slice(0, 3_000);
+
+  return summary || null;
+}
+
 async function requestAnthropic(
   apiKey: string,
   body: Record<string, unknown>,
@@ -491,7 +505,7 @@ async function collectWebResearchForFocus(
   apiKey: string,
   model: string,
   prompt: string,
-): Promise<AnthropicMessage[] | null> {
+): Promise<string | null> {
   const messages: AnthropicMessage[] = [{ role: "user", content: prompt }];
 
   try {
@@ -499,7 +513,7 @@ async function collectWebResearchForFocus(
       apiKey,
       {
         model,
-        max_tokens: 3_000,
+        max_tokens: 1_200,
         tools: [WEB_SEARCH_TOOL],
         tool_choice: { type: "tool", name: "web_search" },
         messages,
@@ -517,7 +531,9 @@ async function collectWebResearchForFocus(
       messages.push({ role: "assistant", content });
 
       if (result.payload.stop_reason !== "pause_turn") {
-        return result.payload.stop_reason === "max_tokens" ? null : messages;
+        return result.payload.stop_reason === "max_tokens"
+          ? null
+          : getResearchSummary(result.payload);
       }
 
       if (attempt === MAX_WEB_SEARCH_CONTINUATIONS) {
@@ -529,7 +545,7 @@ async function collectWebResearchForFocus(
         apiKey,
         {
           model,
-          max_tokens: 3_000,
+          max_tokens: 1_200,
           tools: [WEB_SEARCH_TOOL],
           messages,
         },
@@ -548,16 +564,15 @@ async function collectWebResearch(
   apiKey: string,
   model: string,
   input: GenerateSimulationInput,
-): Promise<AnthropicMessage[] | null> {
+): Promise<string | null> {
   // 세 검색 초점은 서로 의존하지 않습니다. 병렬 실행해 전체 생성 대기 시간을 줄입니다.
   const results = await Promise.all(
     buildWebResearchPrompts(input).map((prompt) =>
       collectWebResearchForFocus(apiKey, model, prompt),
     ),
   );
-  const allResearchMessages = results.flatMap((messages) => messages ?? []);
-
-  return allResearchMessages.length > 0 ? allResearchMessages : null;
+  const summaries = results.filter((summary): summary is string => Boolean(summary));
+  return summaries.length > 0 ? summaries.join("\n\n").slice(0, 7_000) : null;
 }
 
 // ============================================================
@@ -583,16 +598,17 @@ export const generateSimulationDraft = createServerFn({ method: "POST" })
     const instruction =
       savedPrompt?.prompt?.trim() || COMPANY_AI_PROMPT_DEFAULTS[GENERATOR_PROMPT_KEY].prompt;
     const model = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5";
-    const researchMessages = await collectWebResearch(apiKey, model, data);
-    const generationMessages: AnthropicMessage[] = researchMessages
-      ? [
-          ...researchMessages,
-          {
-            role: "user",
-            content: `${buildPrompt(data, instruction)}\n\n위의 웹 검색으로 확인된 사실만 기업·브랜드 맥락에 사용하고, 이제 구조화된 초안을 생성하세요.`,
-          },
-        ]
-      : [{ role: "user", content: buildPrompt(data, instruction) }];
+    const researchSummary = await collectWebResearch(apiKey, model, data);
+    const generationMessages: AnthropicMessage[] = [
+      {
+        role: "user",
+        content: `${buildPrompt(data, instruction)}${
+          researchSummary
+            ? `\n\n## 웹 검색 요약\n${researchSummary}\n\n위 요약에서 확인된 사실만 기업·브랜드 맥락에 사용하고, 이제 구조화된 초안을 생성하세요.`
+            : ""
+        }`,
+      },
+    ];
 
     let response: Response;
     let payload: AnthropicPayload;
@@ -602,9 +618,8 @@ export const generateSimulationDraft = createServerFn({ method: "POST" })
         apiKey,
         {
           model,
-          max_tokens: 10_000,
-          // 검색 결과 블록을 이어 쓰는 경우에도 동일한 서버 도구 정의를 유지해야 합니다.
-          tools: researchMessages ? [WEB_SEARCH_TOOL, GENERATE_TOOL] : [GENERATE_TOOL],
+          max_tokens: 6_000,
+          tools: [GENERATE_TOOL],
           tool_choice: { type: "tool", name: GENERATE_TOOL_NAME },
           messages: generationMessages,
         },
