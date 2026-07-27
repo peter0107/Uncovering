@@ -16,6 +16,7 @@ import type {
 } from "@/lib/simulations.functions";
 
 export const EXPERT_SIMULATION_COMPANY_CODE = "EXPERT-SIMULATIONS-2026";
+const DEFAULT_ADMIN_EMAILS = ["u.ncovering2026@gmail.com"];
 
 export const EXPERT_COMPANY_TYPES = [
   "대기업",
@@ -222,16 +223,16 @@ async function getCurrentUserId() {
 
 async function assertAdmin() {
   const token = getBearerToken();
-  const emails = (process.env.ADMIN_EMAILS ?? "")
+  const configuredEmails = (process.env.ADMIN_EMAILS ?? "")
     .split(",")
     .map((email) => email.trim().toLowerCase())
     .filter(Boolean);
-  if (emails.length === 0) throw new Error("ADMIN_EMAILS 환경변수가 필요합니다.");
+  const emails = new Set([...DEFAULT_ADMIN_EMAILS, ...configuredEmails]);
 
   const client = createPublicServerClient();
   const { data, error } = await client.auth.getUser(token);
   const email = data.user?.email?.toLowerCase();
-  if (error || !email || !emails.includes(email)) throw new Error("관리자 권한이 없습니다.");
+  if (error || !email || !emails.has(email)) throw new Error("관리자 권한이 없습니다.");
 }
 
 function formatDateTime(iso: string) {

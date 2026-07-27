@@ -5,6 +5,8 @@ import { z } from "zod";
 
 import type { Database } from "@/integrations/supabase/types";
 
+const DEFAULT_ADMIN_EMAILS = ["u.ncovering2026@gmail.com"];
+
 // ── 커피챗 고정 슬롯 (평일 10:00~16:30 시작, 30분 단위 14개) ──────────
 // 상수/타입은 클라이언트 번들에 포함돼도 안전. supabaseAdmin만 핸들러 내부 동적 import.
 export const COFFEE_CHAT_SLOT_TIMES = [
@@ -43,17 +45,15 @@ function createPublicServerClient() {
 
 async function assertAdmin() {
   const token = getBearerToken();
-  const adminEmails = (process.env.ADMIN_EMAILS ?? "")
+  const configuredEmails = (process.env.ADMIN_EMAILS ?? "")
     .split(",")
     .map((email) => email.trim().toLowerCase())
     .filter(Boolean);
-  if (adminEmails.length === 0) {
-    throw new Error("ADMIN_EMAILS 환경변수가 필요합니다.");
-  }
+  const adminEmails = new Set([...DEFAULT_ADMIN_EMAILS, ...configuredEmails]);
   const supabase = createPublicServerClient();
   const { data, error } = await supabase.auth.getUser(token);
   const email = data.user?.email?.toLowerCase();
-  if (error || !email || !adminEmails.includes(email)) {
+  if (error || !email || !adminEmails.has(email)) {
     throw new Error("관리자 권한이 없습니다.");
   }
 }
