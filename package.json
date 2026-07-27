@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "deploy": "npm run build && wrangler deploy",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "sync:ai-prompts": "node scripts/sync-ai-prompt-defaults.mjs"
   },
   "dependencies": {
     "@cloudflare/vite-plugin": "^1.25.5",
