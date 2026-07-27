@@ -1237,7 +1237,7 @@
   }
 
   .rich-text-content blockquote {
-    border-left: 3px solid var(--color-brand);
+    border-left: 3px solid #18181b;
     padding-left: 1rem;
     color: var(--color-muted-foreground);
   }
