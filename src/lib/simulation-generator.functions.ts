@@ -1,5 +1,3 @@
-import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
@@ -23,17 +21,14 @@ function createPublicServerClient() {
   });
 }
 
-function getBearerToken(): string {
-  const request = getRequest();
-  const authHeader = request?.headers.get("authorization") ?? "";
+function readBearerToken(authHeader: string): string {
   if (!authHeader.startsWith("Bearer ")) throw new Error("로그인이 필요합니다.");
   const token = authHeader.replace("Bearer ", "").trim();
   if (!token) throw new Error("로그인이 필요합니다.");
   return token;
 }
 
-async function assertAdmin(): Promise<string> {
-  const token = getBearerToken();
+async function assertAdminToken(token: string): Promise<string> {
   const configuredEmails = (process.env.ADMIN_EMAILS ?? "")
     .split(",")
     .map((email) => email.trim().toLowerCase())
@@ -189,9 +184,10 @@ const WEB_SEARCH_TOOL = {
   max_uses: 1,
 } as const;
 const MAX_WEB_SEARCH_CONTINUATIONS = 2;
-// Worker 응답이 Cloudflare의 프록시 제한을 넘지 않도록 검색과 생성에 각각 제한을 둡니다.
-const ANTHROPIC_RESEARCH_TIMEOUT_MS = 30_000;
-const ANTHROPIC_GENERATION_TIMEOUT_MS = 60_000;
+// 응답을 스트리밍해 Cloudflare 524를 회피하므로, 프록시 제한이 아니라 실제 소요 시간에
+// 맞춰 여유를 둡니다. 짧은 타임아웃은 정상 생성을 중간에 끊어버립니다.
+const ANTHROPIC_RESEARCH_TIMEOUT_MS = 60_000;
+const ANTHROPIC_GENERATION_TIMEOUT_MS = 180_000;
 
 const GENERATE_TOOL = {
   name: GENERATE_TOOL_NAME,
@@ -579,85 +575,84 @@ async function collectWebResearch(
 async function generateSimulationDraftFromInput(
   data: GenerateSimulationInput,
 ): Promise<GeneratedSimulationDraft> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new Error("ANTHROPIC_API_KEY 환경변수를 서버 환경에 설정해주세요.");
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) throw new Error("ANTHROPIC_API_KEY 환경변수를 서버 환경에 설정해주세요.");
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: savedPrompt, error: promptError } = await supabaseAdmin
+    .from("ai_prompt_settings")
+    .select("prompt")
+    .eq("key", GENERATOR_PROMPT_KEY)
+    .maybeSingle();
+  if (promptError) {
+    console.error("Failed to load generator prompt setting:", promptError);
+  }
+  const instruction =
+    savedPrompt?.prompt?.trim() || COMPANY_AI_PROMPT_DEFAULTS[GENERATOR_PROMPT_KEY].prompt;
+  const model = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5";
+  const researchSummary = await collectWebResearch(apiKey, model, data);
+  const generationMessages: AnthropicMessage[] = [
+    {
+      role: "user",
+      content: `${buildPrompt(data, instruction)}${
+        researchSummary
+          ? `\n\n## 웹 검색 요약\n${researchSummary}\n\n위 요약에서 확인된 사실만 기업·브랜드 맥락에 사용하고, 이제 구조화된 초안을 생성하세요.`
+          : ""
+      }`,
+    },
+  ];
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: savedPrompt, error: promptError } = await supabaseAdmin
-      .from("ai_prompt_settings")
-      .select("prompt")
-      .eq("key", GENERATOR_PROMPT_KEY)
-      .maybeSingle();
-    if (promptError) {
-      console.error("Failed to load generator prompt setting:", promptError);
-    }
-    const instruction =
-      savedPrompt?.prompt?.trim() || COMPANY_AI_PROMPT_DEFAULTS[GENERATOR_PROMPT_KEY].prompt;
-    const model = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5";
-    const researchSummary = await collectWebResearch(apiKey, model, data);
-    const generationMessages: AnthropicMessage[] = [
+  let response: Response;
+  let payload: AnthropicPayload;
+
+  try {
+    ({ response, payload } = await requestAnthropic(
+      apiKey,
       {
-        role: "user",
-        content: `${buildPrompt(data, instruction)}${
-          researchSummary
-            ? `\n\n## 웹 검색 요약\n${researchSummary}\n\n위 요약에서 확인된 사실만 기업·브랜드 맥락에 사용하고, 이제 구조화된 초안을 생성하세요.`
-            : ""
-        }`,
+        model,
+        max_tokens: 12_000,
+        tools: [GENERATE_TOOL],
+        tool_choice: { type: "tool", name: GENERATE_TOOL_NAME },
+        messages: generationMessages,
       },
-    ];
+      ANTHROPIC_GENERATION_TIMEOUT_MS,
+    ));
+  } catch (error) {
+    console.error("Simulation generation transport failed:", error);
+    throw new Error("AI 생성 응답 시간이 초과됐어요. 잠시 후 다시 시도해주세요.");
+  }
+  if (!response.ok) {
+    const message = getAnthropicErrorMessage(payload);
+    console.error("Simulation generation request failed:", message);
+    throw new Error("AI 생성에 실패했어요. 잠시 후 다시 시도해주세요.");
+  }
+  if (payload.stop_reason === "max_tokens") {
+    throw new Error("생성 결과가 너무 길어요. JD를 줄이거나 다시 시도해주세요.");
+  }
 
-    let response: Response;
-    let payload: AnthropicPayload;
+  const raw = toolOutputSchema.parse(getToolInput(payload));
 
-    try {
-      ({ response, payload } = await requestAnthropic(
-        apiKey,
+  const steps: AdminSimulationStep[] = raw.simulation.steps.map((step, index) => {
+    const stepId = `gen-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 7)}`;
+    return {
+      id: stepId,
+      title: step.title.trim(),
+      ...(step.durationMin ? { durationMin: step.durationMin } : {}),
+      ...(step.difficulty ? { difficulty: step.difficulty } : {}),
+      tags: [],
+      situation: step.situation.trim(),
+      materials: step.materials.trim(),
+      hint: step.hint.trim(),
+      completionMessage: step.completionMessage.trim(),
+      prompts: [
         {
-          model,
-          max_tokens: 6_000,
-          tools: [GENERATE_TOOL],
-          tool_choice: { type: "tool", name: GENERATE_TOOL_NAME },
-          messages: generationMessages,
+          id: `${stepId}-p1`,
+          label: step.title.trim(),
+          body: step.question.trim(),
         },
-        ANTHROPIC_GENERATION_TIMEOUT_MS,
-      ));
-    } catch (error) {
-      console.error("Simulation generation transport failed:", error);
-      throw new Error("AI 생성 응답 시간이 초과됐어요. 잠시 후 다시 시도해주세요.");
-    }
-    if (!response.ok) {
-      const message = getAnthropicErrorMessage(payload);
-      console.error("Simulation generation request failed:", message);
-      throw new Error("AI 생성에 실패했어요. 잠시 후 다시 시도해주세요.");
-    }
-    if (payload.stop_reason === "max_tokens") {
-      throw new Error("생성 결과가 너무 길어요. JD를 줄이거나 다시 시도해주세요.");
-    }
-
-    const raw = toolOutputSchema.parse(getToolInput(payload));
-
-    const steps: AdminSimulationStep[] = raw.simulation.steps.map((step, index) => {
-      const stepId = `gen-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 7)}`;
-      return {
-        id: stepId,
-        title: step.title.trim(),
-        ...(step.durationMin ? { durationMin: step.durationMin } : {}),
-        ...(step.difficulty ? { difficulty: step.difficulty } : {}),
-        tags: [],
-        situation: step.situation.trim(),
-        materials: step.materials.trim(),
-        hint: step.hint.trim(),
-        completionMessage: step.completionMessage.trim(),
-        prompts: [
-          {
-            id: `${stepId}-p1`,
-            label: step.title.trim(),
-            body: step.question.trim(),
-          },
-        ],
-      };
-    });
+      ],
+    };
+  });
 
   return {
     companyName: data.companyName,
@@ -691,106 +686,65 @@ async function generateSimulationDraftFromInput(
   };
 }
 
-export type SimulationGenerationJob = {
-  id: string;
-  status: "queued" | "processing" | "completed" | "failed";
-  draft: GeneratedSimulationDraft | null;
-  errorMessage: string | null;
-};
+// ============================================================
+// 스트리밍 생성 엔드포인트 (src/server.ts에서 /api/generate-simulation로 연결)
+// Cloudflare는 첫 바이트가 나가면 524를 내지 않습니다. 헤더를 즉시 흘려보내고
+// 하트비트를 찍는 사이에 생성이 끝나므로, 큐·Cron·폴링 없이 한 요청으로 처리합니다.
+// ============================================================
+const HEARTBEAT_INTERVAL_MS = 10_000;
 
-const jobIdInputSchema = z.object({ jobId: z.string().uuid() });
+export type GenerateSimulationStreamPayload =
+  | { ok: true; draft: GeneratedSimulationDraft }
+  | { ok: false; message: string };
 
-function mapGenerationJob(row: {
-  id: string;
-  status: string;
-  result: unknown;
-  error_message: string | null;
-}): SimulationGenerationJob {
-  const status = ["queued", "processing", "completed", "failed"].includes(row.status)
-    ? (row.status as SimulationGenerationJob["status"])
-    : "failed";
+export function handleGenerateSimulationRequest(request: Request): Response {
+  const encoder = new TextEncoder();
 
-  return {
-    id: row.id,
-    status,
-    draft: row.result as GeneratedSimulationDraft | null,
-    errorMessage: row.error_message,
-  };
-}
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      // 이 첫 바이트가 연결을 확립시켜 524를 막습니다. 반드시 생성 전에 보냅니다.
+      controller.enqueue(encoder.encode(": open\n\n"));
 
-// 버튼 요청은 AI를 직접 호출하지 않고 작업만 기록합니다. Worker Cron이 이 작업을 처리합니다.
-export const enqueueSimulationGeneration = createServerFn({ method: "POST" })
-  .inputValidator(generateInputSchema)
-  .handler(async ({ data }): Promise<SimulationGenerationJob> => {
-    const userId = await assertAdmin();
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: job, error } = await supabaseAdmin
-      .from("simulation_generation_jobs")
-      .insert({ created_by: userId, payload: data })
-      .select("id, status, result, error_message")
-      .single();
-    if (error || !job) {
-      console.error("Failed to enqueue simulation generation:", error);
-      throw new Error("생성 작업을 시작하지 못했습니다.");
-    }
-    return mapGenerationJob(job);
+      const heartbeat = setInterval(() => {
+        try {
+          controller.enqueue(encoder.encode(": ping\n\n"));
+        } catch {
+          // 클라이언트가 이미 연결을 끊은 경우
+        }
+      }, HEARTBEAT_INTERVAL_MS);
+
+      const send = (payload: GenerateSimulationStreamPayload) => {
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+      };
+
+      try {
+        await assertAdminToken(readBearerToken(request.headers.get("authorization") ?? ""));
+        const input = generateInputSchema.parse(await request.json());
+        const draft = await generateSimulationDraftFromInput(input);
+        send({ ok: true, draft });
+      } catch (error) {
+        // 첫 바이트가 이미 나갔으므로 상태 코드를 바꿀 수 없습니다. 오류도 본문으로 보냅니다.
+        console.error("Simulation generation failed:", error);
+        send({
+          ok: false,
+          message:
+            error instanceof z.ZodError
+              ? "입력값이 올바르지 않습니다."
+              : error instanceof Error
+                ? error.message
+                : "AI 생성에 실패했어요.",
+        });
+      } finally {
+        clearInterval(heartbeat);
+        controller.close();
+      }
+    },
   });
 
-export const getSimulationGenerationJob = createServerFn({ method: "GET" })
-  .inputValidator(jobIdInputSchema)
-  .handler(async ({ data }): Promise<SimulationGenerationJob> => {
-    await assertAdmin();
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: job, error } = await supabaseAdmin
-      .from("simulation_generation_jobs")
-      .select("id, status, result, error_message")
-      .eq("id", data.jobId)
-      .maybeSingle();
-    if (error || !job) {
-      throw new Error("생성 작업을 찾을 수 없습니다.");
-    }
-    return mapGenerationJob(job);
+  return new Response(stream, {
+    headers: {
+      "content-type": "text/event-stream; charset=utf-8",
+      "cache-control": "no-cache, no-transform",
+    },
   });
-
-// Cloudflare Worker Cron에서 호출합니다. HTTP 요청과 분리돼 524가 발생하지 않습니다.
-export async function processNextSimulationGenerationJob(): Promise<boolean> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data: jobs, error: claimError } = await supabaseAdmin.rpc("claim_simulation_generation_job");
-  if (claimError) {
-    console.error("Failed to claim simulation generation job:", claimError);
-    return false;
-  }
-
-  const job = jobs?.[0];
-  if (!job) return false;
-
-  try {
-    const input = generateInputSchema.parse(job.payload);
-    const draft = await generateSimulationDraftFromInput(input);
-    const { error } = await supabaseAdmin
-      .from("simulation_generation_jobs")
-      .update({
-        status: "completed",
-        result: draft,
-        completed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", job.id);
-    if (error) throw error;
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "AI 생성에 실패했습니다.";
-    console.error("Simulation generation job failed:", job.id, error);
-    const { error: updateError } = await supabaseAdmin
-      .from("simulation_generation_jobs")
-      .update({
-        status: "failed",
-        error_message: message.slice(0, 500),
-        completed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", job.id);
-    if (updateError) console.error("Failed to record simulation generation failure:", updateError);
-  }
-
-  return true;
 }

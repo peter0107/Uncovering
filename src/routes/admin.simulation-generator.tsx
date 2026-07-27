@@ -6,13 +6,12 @@ import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { BrandLogo } from "@/components/BrandLogo";
 import { RichTextContent } from "@/components/RichTextEditor";
+import { supabase } from "@/integrations/supabase/client";
 import { DOMAIN_CATEGORIES } from "@/lib/domain-categories";
-import {
-  enqueueSimulationGeneration,
-  getSimulationGenerationJob,
-  type GeneratedSimulationDraft,
-  type SimulationGenerationJob,
-  type WebResearchCategory,
+import type {
+  GenerateSimulationStreamPayload,
+  GeneratedSimulationDraft,
+  WebResearchCategory,
 } from "@/lib/simulation-generator.functions";
 import {
   createCompanySimulation,
@@ -56,6 +55,73 @@ function createSource(platform: string = PLATFORMS[0]): SourceInput {
   return { platform, jd: "" };
 }
 
+type GenerateRequestBody = {
+  companyName: string;
+  roleName: string;
+  domain: string;
+  sources: SourceInput[];
+  note: string;
+};
+
+async function getAccessToken(): Promise<string> {
+  const { data } = await supabase.auth.getSession();
+  let session = data.session;
+  // 생성이 수 분 걸릴 수 있어, 만료 직전이면 먼저 갱신합니다.
+  if (session?.expires_at && session.expires_at <= Math.floor(Date.now() / 1000) + 120) {
+    const { data: refreshed, error } = await supabase.auth.refreshSession();
+    if (!error && refreshed.session) session = refreshed.session;
+  }
+  const token = session?.access_token;
+  if (!token) throw new Error("로그인이 필요합니다.");
+  return token;
+}
+
+// 서버가 하트비트(": ping")를 흘리는 동안 연결을 유지하다가, 완료 시 단 한 번
+// "data: {...}" 프레임을 받습니다. 폴링도 작업 큐도 없습니다.
+async function requestGeneration(body: GenerateRequestBody): Promise<GeneratedSimulationDraft> {
+  const response = await fetch("/api/generate-simulation", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${await getAccessToken()}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok || !response.body) {
+    throw new Error("생성 요청을 시작하지 못했어요. 잠시 후 다시 시도해주세요.");
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let payload: GenerateSimulationStreamPayload | null = null;
+
+  try {
+    while (!payload) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      let boundary = buffer.indexOf("\n\n");
+      while (boundary !== -1) {
+        const frame = buffer.slice(0, boundary);
+        buffer = buffer.slice(boundary + 2);
+        if (frame.startsWith("data: ")) {
+          payload = JSON.parse(frame.slice(6)) as GenerateSimulationStreamPayload;
+        }
+        boundary = buffer.indexOf("\n\n");
+      }
+    }
+  } finally {
+    await reader.cancel().catch(() => {});
+  }
+
+  if (!payload) throw new Error("생성 응답이 중간에 끊겼어요. 다시 시도해주세요.");
+  if (!payload.ok) throw new Error(payload.message || "AI 생성에 실패했어요.");
+  return payload.draft;
+}
+
 function buildRationaleMarkdown(draft: GeneratedSimulationDraft): string {
   const lines: string[] = [];
   lines.push(`# ${draft.simulation.title} — 생성 근거`);
@@ -96,7 +162,7 @@ function AdminSimulationGenerator() {
   const [note, setNote] = useState("");
 
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generationJob, setGenerationJob] = useState<SimulationGenerationJob | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [draft, setDraft] = useState<GeneratedSimulationDraft | null>(null);
   const [saveCompanyCode, setSaveCompanyCode] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -121,42 +187,13 @@ function AdminSimulationGenerator() {
     void loadCompanies();
   }, [authLoading, userId, navigate, loadCompanies]);
 
+  // 생성이 1~2분 걸리므로 경과 시간을 보여줍니다. 멈춘 화면처럼 보이지 않게.
   useEffect(() => {
-    if (!generationJob || generationJob.status === "completed" || generationJob.status === "failed") {
-      return;
-    }
-
-    let cancelled = false;
-    const poll = async () => {
-      try {
-        const latest = await getSimulationGenerationJob({ data: { jobId: generationJob.id } });
-        if (cancelled) return;
-        setGenerationJob(latest);
-        if (latest.status === "completed" && latest.draft) {
-          setDraft(latest.draft);
-          const matched = companies.find((c) => c.name.trim() === latest.draft?.companyName.trim());
-          setSaveCompanyCode(matched?.code ?? "");
-          setIsGenerating(false);
-          toast.success("시뮬레이션 초안을 생성했어요.");
-        } else if (latest.status === "failed") {
-          setIsGenerating(false);
-          toast.error(latest.errorMessage || "AI 생성에 실패했어요.");
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setIsGenerating(false);
-          toast.error(error instanceof Error ? error.message : "생성 상태를 확인하지 못했습니다.");
-        }
-      }
-    };
-
-    void poll();
-    const timer = window.setInterval(() => void poll(), 3_000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(timer);
-    };
-  }, [generationJob?.id, generationJob?.status, companies]);
+    if (!isGenerating) return;
+    setElapsedSeconds(0);
+    const timer = window.setInterval(() => setElapsedSeconds((s) => s + 1), 1_000);
+    return () => window.clearInterval(timer);
+  }, [isGenerating]);
 
   const canGenerate =
     companyName.trim().length > 0 &&
@@ -192,19 +229,20 @@ function AdminSimulationGenerator() {
     setIsGenerating(true);
     setDraft(null);
     try {
-      const job = await enqueueSimulationGeneration({
-        data: {
-          companyName: companyName.trim(),
-          roleName: roleName.trim(),
-          domain: domain as (typeof DOMAIN_CATEGORIES)[number],
-          sources: cleanedSources,
-          note: note.trim(),
-        },
+      const generated = await requestGeneration({
+        companyName: companyName.trim(),
+        roleName: roleName.trim(),
+        domain,
+        sources: cleanedSources,
+        note: note.trim(),
       });
-      setGenerationJob(job);
-      toast.success("생성 작업을 시작했어요.");
+      setDraft(generated);
+      const matched = companies.find((c) => c.name.trim() === generated.companyName.trim());
+      setSaveCompanyCode(matched?.code ?? "");
+      toast.success("시뮬레이션 초안을 생성했어요.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "생성에 실패했어요.");
+    } finally {
       setIsGenerating(false);
     }
   }
@@ -398,11 +436,21 @@ function AdminSimulationGenerator() {
 
       {/* 로딩 */}
       {isGenerating && (
-        <div className="mt-8 animate-pulse rounded-md border border-neutral-200 p-6">
-          <div className="h-4 w-1/3 rounded bg-neutral-200" />
-          <div className="mt-4 h-3 w-full rounded bg-neutral-100" />
-          <div className="mt-2 h-3 w-5/6 rounded bg-neutral-100" />
-          <div className="mt-2 h-3 w-2/3 rounded bg-neutral-100" />
+        <div className="mt-8 rounded-md border border-neutral-200 p-6">
+          <p className="text-sm font-medium text-neutral-700">
+            {elapsedSeconds < 30
+              ? "기업 정보를 검색하고 있어요"
+              : "시뮬레이션 초안을 작성하고 있어요"}
+            <span className="ml-2 text-xs font-normal text-neutral-400">{elapsedSeconds}초</span>
+          </p>
+          <p className="mt-1 text-xs text-neutral-400">
+            보통 1~2분 걸려요. 이 페이지를 벗어나면 생성이 취소됩니다.
+          </p>
+          <div className="mt-4 animate-pulse">
+            <div className="h-3 w-full rounded bg-neutral-100" />
+            <div className="mt-2 h-3 w-5/6 rounded bg-neutral-100" />
+            <div className="mt-2 h-3 w-2/3 rounded bg-neutral-100" />
+          </div>
         </div>
       )}
 

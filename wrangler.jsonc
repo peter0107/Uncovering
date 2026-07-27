@@ -4,7 +4,6 @@
   "compatibility_date": "2025-09-24",
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/server.ts",
-  "triggers": { "crons": ["* * * * *"] },
   // 컷오버(Phase 5) 때 주석 해제 — beginner.today를 이 Worker의 커스텀 도메인으로 연결
   // "routes": [{ "pattern": "beginner.today", "custom_domain": true }],
 }

@@ -2,7 +2,7 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
-import { processNextSimulationGenerationJob } from "./lib/simulation-generator.functions";
+import { handleGenerateSimulationRequest } from "./lib/simulation-generator.functions";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -70,19 +70,22 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      // JD 시뮬레이션 생성은 응답이 길어 SSR 핸들러를 거치지 않고 직접 스트리밍합니다.
+      // (첫 바이트를 즉시 내보내 Cloudflare 524를 회피)
+      const { pathname } = new URL(request.url);
+      if (pathname === "/api/generate-simulation") {
+        if (request.method !== "POST") {
+          return new Response("Method Not Allowed", { status: 405 });
+        }
+        return handleGenerateSimulationRequest(request);
+      }
+
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
     } catch (error) {
       console.error(error);
       return brandedErrorResponse();
-    }
-  },
-  async scheduled() {
-    try {
-      await processNextSimulationGenerationJob();
-    } catch (error) {
-      console.error("Simulation generation cron failed:", error);
     }
   },
 };
