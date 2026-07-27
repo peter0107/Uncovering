@@ -133,6 +133,11 @@ function buildRationaleMarkdown(draft: GeneratedSimulationDraft): string {
     });
     lines.push("");
   }
+  lines.push("## 사진 자료 판단");
+  lines.push(
+    `- ${draft.rationale.photoPlan.needed ? "필요" : "불필요"} — ${draft.rationale.photoPlan.reason || "근거 없음"}`,
+  );
+  lines.push("");
   lines.push("## 평가 기준");
   draft.rationale.criteria.forEach((c, i) => {
     lines.push(`${i + 1}. **${c.title}**`);
@@ -526,8 +531,26 @@ function AdminSimulationGenerator() {
                     </ul>
                   </div>
                 )}
+                <div className="border-b border-neutral-100 pb-4">
+                  <p className="text-sm font-semibold text-neutral-900">사진 자료 판단</p>
+                  <div className="mt-2">
+                    <span
+                      className={`inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                        draft.rationale.photoPlan.needed
+                          ? "bg-blue-100 text-blue-700"
+                          : "bg-neutral-100 text-neutral-600"
+                      }`}
+                    >
+                      {draft.rationale.photoPlan.needed ? "사진 필요" : "사진 불필요"}
+                    </span>
+                    <p className="mt-1.5 text-xs leading-5 text-neutral-700">
+                      {draft.rationale.photoPlan.reason || "판단 근거가 기록되지 않았어요."}
+                    </p>
+                  </div>
+                </div>
+
                 {draft.rationale.criteria.length === 0 && (
-                  <p className="text-sm text-neutral-400">추출된 평가 기준이 없어요.</p>
+                  <p className="pt-4 text-sm text-neutral-400">추출된 평가 기준이 없어요.</p>
                 )}
                 <div className="flex flex-col gap-4 pt-4">
                   {draft.rationale.criteria.map((c, i) => (

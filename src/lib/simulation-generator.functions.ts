@@ -96,10 +96,16 @@ export type GeneratedSimulationDraft = {
     steps: AdminSimulationStep[];
   };
   rationale: {
+    photoPlan: GeneratedPhotoPlan;
     webResearchFacts: GeneratedWebResearchFact[];
     criteria: GeneratedCriterion[];
     unreflected: GeneratedUnreflected[];
   };
+};
+
+export type GeneratedPhotoPlan = {
+  needed: boolean;
+  reason: string;
 };
 
 // 도구가 반환한 원본 형태 검증용 스키마
@@ -123,6 +129,13 @@ const toolOutputSchema = z.object({
     steps: z.array(toolStepSchema).min(2).max(6),
   }),
   rationale: z.object({
+    photoPlan: z
+      .object({
+        needed: z.boolean().optional().default(false),
+        reason: z.string().max(800).optional().default(""),
+      })
+      .optional()
+      .default({ needed: false, reason: "" }),
     webResearchFacts: z
       .array(
         z.object({
@@ -249,8 +262,26 @@ const GENERATE_TOOL = {
       rationale: {
         type: "object",
         additionalProperties: false,
-        required: ["criteria", "unreflected"],
+        required: ["criteria", "unreflected", "photoPlan"],
         properties: {
+          photoPlan: {
+            type: "object",
+            additionalProperties: false,
+            required: ["needed", "reason"],
+            description:
+              "이 시뮬레이션에 사진 자료가 필요한지에 대한 판단과 그 근거. 필요 없다고 판단한 경우에도 반드시 이유를 기록.",
+            properties: {
+              needed: {
+                type: "boolean",
+                description: "사진 자료가 있어야 미션을 이해하기 쉬운지 여부",
+              },
+              reason: {
+                type: "string",
+                description:
+                  "필요하다/필요 없다고 판단한 근거. 필요한 경우 어느 단계에 어떤 사진이 왜 필요한지 함께 쓴다.",
+              },
+            },
+          },
           webResearchFacts: {
             type: "array",
             maxItems: 4,
@@ -763,6 +794,10 @@ async function generateSimulationDraftFromInput(
       steps,
     },
     rationale: {
+      photoPlan: {
+        needed: raw.rationale.photoPlan.needed,
+        reason: raw.rationale.photoPlan.reason.trim(),
+      },
       webResearchFacts: raw.rationale.webResearchFacts
         .map((fact) => ({
           category: fact.category,
