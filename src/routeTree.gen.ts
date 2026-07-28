@@ -13,6 +13,7 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as StartRouteImport } from './routes/start'
 import { Route as SimulationsRouteImport } from './routes/simulations'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as PasswordResetRouteImport } from './routes/password-reset'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as MyRouteImport } from './routes/my'
 import { Route as LoginRouteImport } from './routes/login'
@@ -55,6 +56,11 @@ const SimulationsRoute = SimulationsRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PasswordResetRoute = PasswordResetRouteImport.update({
+  id: '/password-reset',
+  path: '/password-reset',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -185,6 +191,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/my': typeof MyRoute
   '/onboarding': typeof OnboardingRoute
+  '/password-reset': typeof PasswordResetRoute
   '/privacy': typeof PrivacyRoute
   '/simulations': typeof SimulationsRoute
   '/start': typeof StartRoute
@@ -214,6 +221,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/my': typeof MyRoute
   '/onboarding': typeof OnboardingRoute
+  '/password-reset': typeof PasswordResetRoute
   '/privacy': typeof PrivacyRoute
   '/simulations': typeof SimulationsRoute
   '/start': typeof StartRoute
@@ -244,6 +252,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/my': typeof MyRoute
   '/onboarding': typeof OnboardingRoute
+  '/password-reset': typeof PasswordResetRoute
   '/privacy': typeof PrivacyRoute
   '/simulations': typeof SimulationsRoute
   '/start': typeof StartRoute
@@ -275,6 +284,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/my'
     | '/onboarding'
+    | '/password-reset'
     | '/privacy'
     | '/simulations'
     | '/start'
@@ -304,6 +314,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/my'
     | '/onboarding'
+    | '/password-reset'
     | '/privacy'
     | '/simulations'
     | '/start'
@@ -333,6 +344,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/my'
     | '/onboarding'
+    | '/password-reset'
     | '/privacy'
     | '/simulations'
     | '/start'
@@ -363,6 +375,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   MyRoute: typeof MyRoute
   OnboardingRoute: typeof OnboardingRoute
+  PasswordResetRoute: typeof PasswordResetRoute
   PrivacyRoute: typeof PrivacyRoute
   SimulationsRoute: typeof SimulationsRoute
   StartRoute: typeof StartRoute
@@ -405,6 +418,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/password-reset': {
+      id: '/password-reset'
+      path: '/password-reset'
+      fullPath: '/password-reset'
+      preLoaderRoute: typeof PasswordResetRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/onboarding': {
@@ -612,6 +632,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   MyRoute: MyRoute,
   OnboardingRoute: OnboardingRoute,
+  PasswordResetRoute: PasswordResetRoute,
   PrivacyRoute: PrivacyRoute,
   SimulationsRoute: SimulationsRoute,
   StartRoute: StartRoute,
