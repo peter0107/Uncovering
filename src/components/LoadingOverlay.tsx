@@ -5,7 +5,7 @@ export function LoadingOverlay({ message = "처리 중..." }: { message?: string
     <div
       role="status"
       aria-live="polite"
-      className="fixed inset-0 z-[100] grid place-items-center bg-background/90"
+      className="fixed inset-0 z-[100] grid place-items-center bg-background"
     >
       <div className="flex flex-col items-center gap-3 rounded-md border bg-background px-8 py-6">
         <Loader2 className="h-8 w-8 animate-spin text-brand" />

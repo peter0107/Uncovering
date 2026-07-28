@@ -101,13 +101,11 @@ export function GoogleSignInButton({ onSuccess }: Props) {
 
   if (status === "loading") {
     return (
-      <button
-        type="button"
-        disabled
-        className="flex h-10 w-full cursor-wait items-center justify-center rounded-md border border-input bg-background px-4 text-sm font-medium text-muted-foreground opacity-60"
-      >
-        Google 로그인 불러오는 중...
-      </button>
+      <div
+        aria-label="Google 로그인 준비 중"
+        aria-busy="true"
+        className="h-10 w-full rounded-[4px] border border-[#dadce0] bg-white"
+      />
     );
   }
 
