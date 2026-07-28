@@ -341,7 +341,7 @@ function LoginPage() {
 
         {view === "email" && (
           <section>
-            <BackButton onClick={() => (isSignup ? openEmail("login") : setView("choice"))} />
+            <BackButton onClick={() => ((isSignup || isReset) ? openEmail("login") : setView("choice"))} />
             {isSignup && (
               <h1 className="mt-5 text-xl font-semibold text-foreground">회원가입</h1>
             )}
@@ -552,7 +552,7 @@ function LoginPage() {
                       ? "가입하기"
                       : isReset
                         ? resetStep === "email"
-                          ? "재설정 메일 보내기"
+                          ? "비밀번호 재설정 메일 보내기"
                           : "비밀번호 재설정"
                         : "로그인"}
                 </Button>
@@ -564,7 +564,7 @@ function LoginPage() {
                 <button
                   type="button"
                   onClick={() => openEmail("signup")}
-                  className="font-medium text-foreground underline underline-offset-4"
+                  className="cursor-pointer font-medium text-foreground underline underline-offset-4"
                 >
                   계정이 없으신가요?
                 </button>
@@ -572,7 +572,7 @@ function LoginPage() {
                 <button
                   type="button"
                   onClick={() => openEmail("reset")}
-                  className="font-medium text-foreground underline underline-offset-4"
+                  className="cursor-pointer font-medium text-foreground underline underline-offset-4"
                 >
                   비밀번호를 잊으셨나요?
                 </button>
