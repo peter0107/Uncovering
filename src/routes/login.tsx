@@ -214,7 +214,7 @@ function LoginPage() {
                 onClick={() => openEmail("login")}
               >
                 <Mail className="absolute left-3.5 h-[18px] w-[18px]" />
-                <span>이메일로 시작하기</span>
+                <span className="translate-x-1 tracking-[0.02em]">이메일로 시작하기</span>
               </Button>
             </div>
 
