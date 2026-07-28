@@ -530,22 +530,20 @@ function LoginPage() {
 
             {!isSignup && !isReset && (
               <p className="mt-6 text-center text-sm text-muted-foreground">
-                계정이 없으신가요?{" "}
                 <button
                   type="button"
                   onClick={() => openEmail("signup")}
                   className="font-medium text-foreground underline underline-offset-4"
                 >
-                  회원가입
+                  계정이 없으신가요?
                 </button>
                 <span className="mx-2 text-border">·</span>
-                <span>비밀번호를 잊으셨나요? </span>
                 <button
                   type="button"
                   onClick={() => openEmail("reset")}
                   className="font-medium text-foreground underline underline-offset-4"
                 >
-                  비밀번호 재설정
+                  비밀번호를 잊으셨나요?
                 </button>
               </p>
             )}
