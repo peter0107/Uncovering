@@ -15,7 +15,7 @@ import { SimulationCardPreview } from "@/components/SimulationCardPreview";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
-import { markSimulationEntry } from "@/lib/posthog";
+import { trackSimulationCardClick } from "@/lib/posthog";
 import { isDomainCategory } from "@/lib/domain-categories";
 import { INITIAL_PROFILE_FORM, JobInterestFields } from "@/lib/profile-fields";
 import { toast } from "sonner";
@@ -145,7 +145,7 @@ export function SimCard({ sim }: { sim: Simulation }) {
       to="/simulation/$id"
       params={{ id: sim.id }}
       className="block h-full"
-      onClick={() => markSimulationEntry(sim.id, "simulations")}
+      onClick={() => trackSimulationCardClick(sim.id, sim.title, "simulations")}
     >
       <SimulationCardPreview
         companyName={sim.company_name}

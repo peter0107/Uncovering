@@ -502,7 +502,7 @@ function SimulationDetailPage() {
       toast.error("제출 확인 중 오류가 발생했어요. 다시 시도해 주세요.");
       return;
     }
-    void capturePostHogEvent("simulation_complete", { simulation_id: sim.id });
+    void capturePostHogEvent("simulation_submit", { simulation_id: String(sim.id) });
     if (typeof window !== "undefined") {
       try {
         window.localStorage.removeItem(draftKey);
@@ -513,6 +513,7 @@ function SimulationDetailPage() {
     setSubmittedId(submission.id);
     setApplicationSent(consent === true);
     setSubmittedAt(now);
+    void capturePostHogEvent("simulation_complete", { simulation_id: String(sim.id) });
   };
 
   const handleApply = async () => {

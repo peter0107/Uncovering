@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
-import { markSimulationEntry } from "@/lib/posthog";
+import { trackSimulationCardClick } from "@/lib/posthog";
 import { supabase } from "@/integrations/supabase/client";
 import { DOMAIN_CATEGORIES, isDomainCategory } from "@/lib/domain-categories";
 import { INITIAL_PROFILE_FORM, JobInterestFields } from "@/lib/profile-fields";
@@ -316,7 +316,13 @@ function ExpertSimulationsPage() {
                   to="/simulation/$id"
                   params={{ id: simulation.id }}
                   className="block h-full"
-                  onClick={() => markSimulationEntry(simulation.id, "expert_simulations")}
+                  onClick={() =>
+                    trackSimulationCardClick(
+                      simulation.id,
+                      simulation.title,
+                      "expert_simulations",
+                    )
+                  }
                 >
                   <ExpertSimulationCard
                     nickname={simulation.nickname}

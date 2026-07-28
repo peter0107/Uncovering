@@ -4,15 +4,15 @@ let posthogPromise: Promise<PostHogClient | null> | null = null;
 
 function getPostHogConfig() {
   const apiKey = import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN?.trim();
-  if (!apiKey || typeof window === "undefined") return null;
-  // 프로덕션 도메인에서만 수집한다 (스테이징·localhost 제외)
-  if (window.location.hostname !== "beginner.today") return null;
+  const apiHost = import.meta.env.VITE_PUBLIC_POSTHOG_HOST?.trim();
+  const uiHost = import.meta.env.VITE_PUBLIC_POSTHOG_UI_HOST?.trim();
+  if (!apiKey || !apiHost || typeof window === "undefined") return null;
 
   return {
     apiKey,
     options: {
-      api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com",
-      ui_host: import.meta.env.VITE_PUBLIC_POSTHOG_UI_HOST || "https://us.posthog.com",
+      api_host: apiHost,
+      ...(uiHost ? { ui_host: uiHost } : {}),
       defaults: "2025-05-24" as const,
       capture_exceptions: true,
       capture_pageview: false,
@@ -32,21 +32,17 @@ export function getPostHogClient() {
       return posthog;
     });
   }
-
   return posthogPromise;
 }
 
 const GOOGLE_LOGIN_PENDING_KEY = "ph_google_login_pending";
-// OAuth 복귀가 이 시간을 넘기면 중도 이탈로 보고 플래그를 무시한다
 const GOOGLE_LOGIN_PENDING_TTL_MS = 10 * 60 * 1000;
 
-// Google OAuth는 전면 리다이렉트라 클릭 시점 캡처가 유실된다.
-// 클릭 시 플래그만 남기고, 복귀 후 PostHogTracker가 소비해 user_logged_in을 보낸다.
 export function markGoogleLoginPending() {
   try {
     window.localStorage.setItem(GOOGLE_LOGIN_PENDING_KEY, String(Date.now()));
   } catch {
-    // localStorage 불가 환경에서는 로그인 이벤트만 포기한다
+    // Login still works when storage is unavailable; only analytics are skipped.
   }
 }
 
@@ -63,13 +59,10 @@ export function consumeGoogleLoginPending(): boolean {
 }
 
 const SIMULATION_ENTRY_KEY = "ph_simulation_entry";
-// 로그인·온보딩 경유 시간을 감안한 유효기간. 넘기면 direct로 집계한다
 const SIMULATION_ENTRY_TTL_MS = 30 * 60 * 1000;
 
 export type SimulationEntrySource = "home" | "simulations" | "expert_simulations";
 
-// simulation_start는 상세 화면 진입 시점에 찍는다. 카드 클릭은 출발지만 남겨서
-// 로그인·온보딩 리다이렉트를 거쳐 도착해도 entry 속성으로 이어지게 한다.
 export function markSimulationEntry(simulationId: string, source: SimulationEntrySource) {
   try {
     window.localStorage.setItem(
@@ -77,8 +70,20 @@ export function markSimulationEntry(simulationId: string, source: SimulationEntr
       JSON.stringify({ simulationId, source, markedAt: Date.now() }),
     );
   } catch {
-    // localStorage 불가 환경에서는 출발지 구분만 포기한다 (direct로 집계)
+    // Entry attribution falls back to direct when storage is unavailable.
   }
+}
+
+export function trackSimulationCardClick(
+  simulationId: string,
+  simulationName: string,
+  source: SimulationEntrySource,
+) {
+  markSimulationEntry(simulationId, source);
+  void capturePostHogEvent("simulation_card_click", {
+    simulation_id: String(simulationId),
+    simulation_name: String(simulationName),
+  });
 }
 
 export function consumeSimulationEntry(simulationId: string): SimulationEntrySource | null {
@@ -111,11 +116,38 @@ export function consumeSimulationEntry(simulationId: string): SimulationEntrySou
 export async function capturePostHogEvent(
   event: string,
   properties?: Record<string, unknown>,
-  email?: string,
 ) {
   const posthog = await getPostHogClient();
   if (!posthog) return;
-
-  if (email) posthog.identify(email, { email });
   posthog.capture(event, properties);
+}
+
+const SIGNUP_CAPTURED_PREFIX = "ph_signup_captured_";
+
+export async function captureSignup(userId: string): Promise<boolean> {
+  const key = `${SIGNUP_CAPTURED_PREFIX}${userId}`;
+  try {
+    if (window.localStorage.getItem(key)) return false;
+  } catch {
+    // Continue without local deduplication when storage is unavailable.
+  }
+
+  const posthog = await getPostHogClient();
+  if (!posthog) return false;
+
+  posthog.identify(userId);
+  posthog.capture("signup");
+  try {
+    window.localStorage.setItem(key, "1");
+  } catch {
+    // The event is already queued.
+  }
+  return true;
+}
+
+export async function captureLogin(userId: string) {
+  const posthog = await getPostHogClient();
+  if (!posthog) return;
+  posthog.identify(userId);
+  posthog.capture("login");
 }

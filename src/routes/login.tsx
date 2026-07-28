@@ -10,7 +10,7 @@ import { GoogleSignInButton } from "@/components/GoogleSignInButton";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { getPostLoginPath } from "@/lib/admin";
-import { capturePostHogEvent } from "@/lib/posthog";
+import { captureLogin, captureSignup } from "@/lib/posthog";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
@@ -50,7 +50,7 @@ function LoginPage() {
     setSubmitting(true);
     try {
       if (isSignup) {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -61,7 +61,7 @@ function LoginPage() {
           toast.error(error.message);
           return;
         }
-        void capturePostHogEvent("user_signed_up", { email, method: "email" }, email);
+        if (data.user) await captureSignup(data.user.id);
         toast.success("회원가입이 완료되었습니다. 메일함에서 인증을 완료해주세요.");
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -70,11 +70,7 @@ function LoginPage() {
           return;
         }
         const signedInEmail = data.user?.email ?? email;
-        void capturePostHogEvent(
-          "user_logged_in",
-          { email: signedInEmail, method: "email" },
-          signedInEmail,
-        );
+        if (data.user) await captureLogin(data.user.id);
         navigate({ to: getPostLoginPath(signedInEmail, redirect), replace: true });
       }
     } finally {
@@ -170,7 +166,7 @@ function LoginPage() {
           </div>
         </div>
 
-        <GoogleSignInButton postLoginPath={redirect} />
+        <GoogleSignInButton />
 
         <div className="mt-4 text-center text-sm text-muted-foreground">
           {isSignup ? "이미 계정이 있으신가요?" : "아직 계정이 없으신가요?"}{" "}

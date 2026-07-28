@@ -151,6 +151,12 @@
 }
 
 @layer components {
+  /* Google GIS 버튼(renderButton)이 자체 스타일시트로 'Google Sans', arial을 강제해
+     사이트 폰트(Pretendard)와 어긋난다. 컨테이너 스코프로 사이트 폰트를 강제. */
+  .google-signin-host * {
+    font-family: var(--font-sans) !important;
+  }
+
   .home-page {
     min-width: 0;
     background: var(--home-paper);

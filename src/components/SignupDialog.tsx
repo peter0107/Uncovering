@@ -16,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { GoogleSignInButton } from "@/components/GoogleSignInButton";
-import { capturePostHogEvent } from "@/lib/posthog";
+import { captureLogin, captureSignup } from "@/lib/posthog";
 
 type Props = {
   trigger: React.ReactNode;
@@ -46,7 +46,7 @@ export function SignupDialog({ trigger, redirectTo = "/experiences", defaultMode
     setSubmitting(true);
     try {
       if (isSignup) {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: { emailRedirectTo: `${window.location.origin}/` },
@@ -55,16 +55,16 @@ export function SignupDialog({ trigger, redirectTo = "/experiences", defaultMode
           toast.error(error.message);
           return;
         }
-        void capturePostHogEvent("user_signed_up", { email, method: "email" }, email);
+        if (data.user) await captureSignup(data.user.id);
         toast.success("회원가입이 완료되었습니다. 메일함에서 인증을 완료해주세요.");
         setOpen(false);
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
           toast.error(error.message);
           return;
         }
-        void capturePostHogEvent("user_logged_in", { email, method: "email" }, email);
+        if (data.user) await captureLogin(data.user.id);
         toast.success("로그인되었습니다.");
         setOpen(false);
         navigate({ to: redirectTo });
@@ -179,7 +179,6 @@ export function SignupDialog({ trigger, redirectTo = "/experiences", defaultMode
         </div>
 
         <GoogleSignInButton
-          postLoginPath={redirectTo}
           onSuccess={() => {
             setOpen(false);
             navigate({ to: redirectTo });

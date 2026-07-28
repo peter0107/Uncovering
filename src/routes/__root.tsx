@@ -16,6 +16,7 @@ import { NavigationOverlay } from "@/components/LoadingOverlay";
 import { ClarityTracker } from "@/components/ClarityTracker";
 import { GoogleAnalyticsTracker } from "@/components/GoogleAnalyticsTracker";
 import { PostHogTracker } from "@/components/PostHogTracker";
+import { GoogleAuthProvider } from "@/components/GoogleAuthProvider";
 import { useRouterState } from "@tanstack/react-router";
 
 function GlobalNavigationOverlay() {
@@ -179,14 +180,16 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ClarityTracker />
-      <GoogleAnalyticsTracker />
-      <PostHogTracker />
-      <SiteLayout>
-        <Outlet />
-      </SiteLayout>
-      <GlobalNavigationOverlay />
-      <Toaster />
+      <GoogleAuthProvider>
+        <ClarityTracker />
+        <GoogleAnalyticsTracker />
+        <PostHogTracker />
+        <SiteLayout>
+          <Outlet />
+        </SiteLayout>
+        <GlobalNavigationOverlay />
+        <Toaster />
+      </GoogleAuthProvider>
     </QueryClientProvider>
   );
 }

@@ -9,7 +9,7 @@ import { SimulationCardPreview } from "@/components/SimulationCardPreview";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
-import { markSimulationEntry } from "@/lib/posthog";
+import { trackSimulationCardClick } from "@/lib/posthog";
 import { SHOW_EXPERT_SIMULATIONS } from "@/lib/feature-flags";
 
 export const Route = createFileRoute("/")({
@@ -320,7 +320,9 @@ function FeaturedExpertSimulations() {
                 to="/simulation/$id"
                 params={{ id: simulation.id }}
                 className="reference-featured-card"
-                onClick={() => markSimulationEntry(simulation.id, "home")}
+                onClick={() =>
+                  trackSimulationCardClick(simulation.id, simulation.title, "home")
+                }
               >
                 <ExpertSimulationCard
                   nickname={simulation.nickname}
@@ -434,7 +436,9 @@ function FeaturedCompanySimulations() {
                 to="/simulation/$id"
                 params={{ id: simulation.id }}
                 className="reference-featured-card"
-                onClick={() => markSimulationEntry(simulation.id, "home")}
+                onClick={() =>
+                  trackSimulationCardClick(simulation.id, simulation.title, "home")
+                }
               >
                 <SimulationCardPreview
                   companyName={simulation.companyName}

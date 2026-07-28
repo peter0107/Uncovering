@@ -1,5 +1,6 @@
 type GoogleCredentialResponse = {
   credential: string;
+  state?: string;
 };
 
 type GooglePromptMomentNotification = {
@@ -31,6 +32,8 @@ export type GoogleIdentity = {
           text?: "signin_with" | "signup_with" | "continue_with";
           width?: number;
           logo_alignment?: "left" | "center";
+          state?: string;
+          click_listener?: () => void;
         },
       ): void;
     };
@@ -56,13 +59,32 @@ export function loadGoogleIdentity(): Promise<GoogleIdentity> {
   }
 
   googleIdentityPromise = new Promise((resolve, reject) => {
-    const finish = () => {
+    let settled = false;
+    const timeoutId = window.setTimeout(() => {
+      fail(new Error("Google 로그인 스크립트 응답 시간이 초과되었습니다."));
+    }, 10_000);
+
+    const succeed = () => {
+      if (settled) return;
       if (window.google?.accounts?.id) {
+        settled = true;
+        window.clearTimeout(timeoutId);
         resolve(window.google);
       } else {
-        googleIdentityPromise = null;
-        reject(new Error("Google Identity Services를 초기화하지 못했습니다."));
+        fail(new Error("Google Identity Services를 초기화하지 못했습니다."));
       }
+    };
+
+    const fail = (error: Error) => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeoutId);
+      googleIdentityPromise = null;
+      reject(error);
+    };
+
+    const finish = () => {
+      succeed();
     };
 
     const existing = document.querySelector<HTMLScriptElement>(
@@ -74,8 +96,7 @@ export function loadGoogleIdentity(): Promise<GoogleIdentity> {
       existing.addEventListener(
         "error",
         () => {
-          googleIdentityPromise = null;
-          reject(new Error("Google 로그인 스크립트를 불러오지 못했습니다."));
+          fail(new Error("Google 로그인 스크립트를 불러오지 못했습니다."));
         },
         { once: true },
       );
@@ -87,8 +108,7 @@ export function loadGoogleIdentity(): Promise<GoogleIdentity> {
     script.async = true;
     script.onload = finish;
     script.onerror = () => {
-      googleIdentityPromise = null;
-      reject(new Error("Google 로그인 스크립트를 불러오지 못했습니다."));
+      fail(new Error("Google 로그인 스크립트를 불러오지 못했습니다."));
     };
     document.head.appendChild(script);
   });
