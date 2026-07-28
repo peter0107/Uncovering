@@ -16,8 +16,10 @@ type Props = {
 
 export function GoogleSignInButton({ onSuccess, postLoginPath = "/" }: Props) {
   const googleRef = useRef<GoogleIdentity | null>(null);
+  const googleButtonRef = useRef<HTMLDivElement | null>(null);
   const onSuccessRef = useRef(onSuccess);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleIdentityReady, setIsGoogleIdentityReady] = useState(false);
   onSuccessRef.current = onSuccess;
 
   useEffect(() => {
@@ -65,6 +67,7 @@ export function GoogleSignInButton({ onSuccess, postLoginPath = "/" }: Props) {
         });
 
         googleRef.current = google;
+        setIsGoogleIdentityReady(true);
       } catch (error) {
         console.error("[Google Sign-In]", error);
       }
@@ -77,6 +80,30 @@ export function GoogleSignInButton({ onSuccess, postLoginPath = "/" }: Props) {
       googleRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    const google = googleRef.current;
+    const container = googleButtonRef.current;
+    if (!google || !container || !isGoogleIdentityReady || isLoading) return;
+
+    const render = () => {
+      container.replaceChildren();
+      google.accounts.id.renderButton(container, {
+        type: "standard",
+        theme: "outline",
+        size: "large",
+        shape: "rectangular",
+        text: "continue_with",
+        width: Math.min(Math.max(container.clientWidth, 200), 400),
+        logo_alignment: "left",
+      });
+    };
+
+    render();
+    const observer = new ResizeObserver(render);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [isGoogleIdentityReady, isLoading]);
 
   async function startOAuthRedirect() {
     setIsLoading(true);
@@ -96,28 +123,14 @@ export function GoogleSignInButton({ onSuccess, postLoginPath = "/" }: Props) {
     }
   }
 
-  function handleGoogleSignIn() {
-    const google = googleRef.current;
-    if (isLoading) return;
-
-    if (!google) {
-      void startOAuthRedirect();
-      return;
-    }
-
-    setIsLoading(true);
-    google.accounts.id.disableAutoSelect();
-    google.accounts.id.prompt((notification) => {
-      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-        void startOAuthRedirect();
-      }
-    });
+  if (isGoogleIdentityReady) {
+    return <div ref={googleButtonRef} className="flex min-h-10 w-full justify-center" />;
   }
 
   return (
     <button
       type="button"
-      onClick={handleGoogleSignIn}
+      onClick={() => void startOAuthRedirect()}
       disabled={isLoading}
       className="flex h-10 w-full items-center justify-center gap-2 rounded-md border border-input bg-background px-4 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
     >
