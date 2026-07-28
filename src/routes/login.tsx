@@ -168,11 +168,11 @@ function LoginPage() {
         {view === "email" && (
           <section>
             <BackButton onClick={() => setView("choice")} />
-            <h1 className="mt-5 text-2xl font-semibold text-foreground">
-              {isSignup ? "이메일로 시작하기" : "로그인"}
-            </h1>
+            {isSignup && (
+              <h1 className="mt-5 text-2xl font-semibold text-foreground">이메일로 시작하기</h1>
+            )}
 
-            <form onSubmit={submitEmail} className="mt-7 space-y-4">
+            <form onSubmit={submitEmail} className={`${isSignup ? "mt-7" : "mt-8"} space-y-4`}>
               <div className="space-y-1.5">
                 <Label htmlFor="email">이메일</Label>
                 <div className="relative">
