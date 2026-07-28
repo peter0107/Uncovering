@@ -52,6 +52,8 @@ function LoginPage() {
   const [sendingVerification, setSendingVerification] = useState(false);
   const [verifyingVerification, setVerifyingVerification] = useState(false);
   const [emailVerified, setEmailVerified] = useState(false);
+  const [verificationExpiresAt, setVerificationExpiresAt] = useState<number | null>(null);
+  const [verificationRemainingSeconds, setVerificationRemainingSeconds] = useState(0);
   const [signupStep, setSignupStep] = useState<SignupStep>("email");
   const [resetStep, setResetStep] = useState<ResetStep>("email");
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -83,6 +85,23 @@ function LoginPage() {
     setEmail(user.email ?? "");
   }, [isPasswordRecoveryLink, user]);
 
+  useEffect(() => {
+    if (!verificationExpiresAt || emailVerified) return;
+
+    const updateRemainingSeconds = () => {
+      setVerificationRemainingSeconds(Math.max(0, Math.ceil((verificationExpiresAt - Date.now()) / 1000)));
+    };
+    updateRemainingSeconds();
+
+    const interval = window.setInterval(updateRemainingSeconds, 1_000);
+    return () => window.clearInterval(interval);
+  }, [emailVerified, verificationExpiresAt]);
+
+  function startVerificationCountdown() {
+    setVerificationExpiresAt(Date.now() + 2 * 60 * 1_000);
+    setVerificationRemainingSeconds(2 * 60);
+  }
+
   function openEmail(mode: LoginMode) {
     setMode(mode);
     setView("email");
@@ -91,6 +110,8 @@ function LoginPage() {
     setVerificationCode("");
     setVerificationEmail("");
     setEmailVerified(false);
+    setVerificationExpiresAt(null);
+    setVerificationRemainingSeconds(0);
     setPassword("");
     setPasswordConfirm("");
     setAgree(false);
@@ -130,6 +151,7 @@ function LoginPage() {
           toast.error(getAuthErrorMessage(error, "인증번호를 다시 보내지 못했습니다. 잠시 후 다시 시도해주세요."));
           return;
         }
+        startVerificationCountdown();
         toast.success("인증번호를 다시 보냈습니다.");
         return;
       }
@@ -172,6 +194,7 @@ function LoginPage() {
 
       setVerificationCode("");
       setSignupStep("verify");
+      startVerificationCountdown();
       toast.success("인증번호를 보냈습니다.");
     } finally {
       setSendingVerification(false);
@@ -270,6 +293,8 @@ function LoginPage() {
 
       if (data.user) {
         setEmailVerified(true);
+        setVerificationExpiresAt(null);
+        setVerificationRemainingSeconds(0);
         setSignupStep("password");
       }
     } finally {
@@ -329,6 +354,8 @@ function LoginPage() {
                         setSignupStep("email");
                         setVerificationCode("");
                         setVerificationEmail("");
+                        setVerificationExpiresAt(null);
+                        setVerificationRemainingSeconds(0);
                       }
                     }}
                     placeholder="name@example.com"
@@ -387,6 +414,7 @@ function LoginPage() {
                       disabled={
                         emailVerified ||
                         verificationCode.length !== 6 ||
+                        verificationRemainingSeconds === 0 ||
                         verifyingVerification ||
                         sendingVerification
                       }
@@ -394,6 +422,13 @@ function LoginPage() {
                       {emailVerified ? "인증 완료" : verifyingVerification ? "인증 중..." : "인증"}
                     </Button>
                   </div>
+                  {!emailVerified && (
+                    <p className="text-xs text-muted-foreground">
+                      {verificationRemainingSeconds > 0
+                        ? `인증번호를 ${String(Math.floor(verificationRemainingSeconds / 60)).padStart(2, "0")}:${String(verificationRemainingSeconds % 60).padStart(2, "0")} 안에 입력해주세요.`
+                        : "인증번호 입력 시간이 만료되었습니다. 재전송해주세요."}
+                    </p>
+                  )}
                 </div>
               )}
 
