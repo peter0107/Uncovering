@@ -3,6 +3,13 @@ type PostHogClient = (typeof import("posthog-js"))["default"];
 let posthogPromise: Promise<PostHogClient | null> | null = null;
 
 type PostHogConsentDirective = "opt-out" | "opt-in" | null;
+const UTM_PARAMETERS = [
+  "utm_source",
+  "utm_medium",
+  "utm_campaign",
+  "utm_content",
+  "utm_term",
+] as const;
 
 function getPostHogConsentDirective(): PostHogConsentDirective {
   if (typeof window === "undefined") return null;
@@ -13,16 +20,33 @@ function getPostHogConsentDirective(): PostHogConsentDirective {
   return null;
 }
 
+function getSessionUtmProperties() {
+  if (typeof window === "undefined") return null;
+
+  const searchParams = new URLSearchParams(window.location.search);
+  const hasUtmParameter = UTM_PARAMETERS.some((parameter) => searchParams.has(parameter));
+  if (!hasUtmParameter) return null;
+
+  return Object.fromEntries(
+    UTM_PARAMETERS.flatMap((parameter) => {
+      const value = searchParams.get(parameter)?.trim();
+      return value ? [[`$${parameter}`, value]] : [];
+    }),
+  );
+}
+
 function getPostHogConfig() {
   const apiKey = import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN?.trim();
   const apiHost = import.meta.env.VITE_PUBLIC_POSTHOG_HOST?.trim();
   const uiHost = import.meta.env.VITE_PUBLIC_POSTHOG_UI_HOST?.trim();
   if (!apiKey || !apiHost || typeof window === "undefined") return null;
   const consentDirective = getPostHogConsentDirective();
+  const sessionUtmProperties = getSessionUtmProperties();
 
   return {
     apiKey,
     consentDirective,
+    sessionUtmProperties,
     options: {
       api_host: apiHost,
       ...(uiHost ? { ui_host: uiHost } : {}),
@@ -48,6 +72,15 @@ export function getPostHogClient() {
         posthog.opt_out_capturing();
       } else if (config.consentDirective === "opt-in") {
         posthog.opt_in_capturing();
+      }
+      if (config.sessionUtmProperties && !posthog.has_opted_out_capturing()) {
+        for (const parameter of UTM_PARAMETERS) {
+          const property = `$${parameter}`;
+          if (!(property in config.sessionUtmProperties)) {
+            posthog.unregister_for_session(property);
+          }
+        }
+        posthog.register_for_session(config.sessionUtmProperties);
       }
       return posthog;
     });
