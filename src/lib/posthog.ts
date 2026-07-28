@@ -2,20 +2,35 @@ type PostHogClient = (typeof import("posthog-js"))["default"];
 
 let posthogPromise: Promise<PostHogClient | null> | null = null;
 
+type PostHogConsentDirective = "opt-out" | "opt-in" | null;
+
+function getPostHogConsentDirective(): PostHogConsentDirective {
+  if (typeof window === "undefined") return null;
+
+  const value = new URLSearchParams(window.location.search).get("ph_optout");
+  if (value === "1") return "opt-out";
+  if (value === "0") return "opt-in";
+  return null;
+}
+
 function getPostHogConfig() {
   const apiKey = import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN?.trim();
   const apiHost = import.meta.env.VITE_PUBLIC_POSTHOG_HOST?.trim();
   const uiHost = import.meta.env.VITE_PUBLIC_POSTHOG_UI_HOST?.trim();
   if (!apiKey || !apiHost || typeof window === "undefined") return null;
+  const consentDirective = getPostHogConsentDirective();
 
   return {
     apiKey,
+    consentDirective,
     options: {
       api_host: apiHost,
       ...(uiHost ? { ui_host: uiHost } : {}),
       defaults: "2025-05-24" as const,
       capture_exceptions: true,
       capture_pageview: false,
+      opt_out_capturing_by_default: consentDirective === "opt-out",
+      opt_out_capturing_persistence_type: "localStorage" as const,
       disable_session_recording: false,
       debug: import.meta.env.DEV,
     },
@@ -29,6 +44,11 @@ export function getPostHogClient() {
   if (!posthogPromise) {
     posthogPromise = import("posthog-js").then(({ default: posthog }) => {
       posthog.init(config.apiKey, config.options);
+      if (config.consentDirective === "opt-out") {
+        posthog.opt_out_capturing();
+      } else if (config.consentDirective === "opt-in") {
+        posthog.opt_in_capturing();
+      }
       return posthog;
     });
   }

@@ -22,9 +22,7 @@ export function PostHogTracker() {
       if (isExcluded) {
         posthog.reset();
         posthog.opt_out_capturing();
-        return;
       }
-      posthog.opt_in_capturing();
     });
 
     return () => {
@@ -37,7 +35,7 @@ export function PostHogTracker() {
 
     let cancelled = false;
     void getPostHogClient().then((posthog) => {
-      if (cancelled || !posthog) return;
+      if (cancelled || !posthog || posthog.has_opted_out_capturing()) return;
       posthog.capture("$pageview", {
         $current_url: window.location.href,
         route: window.location.pathname,
@@ -54,7 +52,7 @@ export function PostHogTracker() {
 
     let cancelled = false;
     void getPostHogClient().then((posthog) => {
-      if (cancelled || !posthog) return;
+      if (cancelled || !posthog || posthog.has_opted_out_capturing()) return;
 
       if (userId) {
         posthog.identify(userId);
