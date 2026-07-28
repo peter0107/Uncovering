@@ -22,8 +22,9 @@ export const Route = createFileRoute("/login")({
 });
 
 type LoginView = "choice" | "email";
-type LoginMode = "signup" | "login";
+type LoginMode = "signup" | "login" | "reset";
 type SignupStep = "email" | "verify" | "password";
+type ResetStep = "email" | "password";
 
 function getAuthErrorMessage(error: unknown, fallback: string) {
   if (error && typeof error === "object" && "message" in error) {
@@ -48,28 +49,67 @@ function LoginPage() {
   const [agree, setAgree] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [signupStep, setSignupStep] = useState<SignupStep>("email");
+  const [resetStep, setResetStep] = useState<ResetStep>("email");
+  const [loginError, setLoginError] = useState<string | null>(null);
   const [temporaryPassword] = useState(() => `${crypto.randomUUID().replaceAll("-", "")}Aa1!`);
 
   const isSignup = mode === "signup";
+  const isReset = mode === "reset";
+  const isPasswordRecoveryLink =
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("reset") === "1";
   const isLoginFormValid = email.includes("@") && password.length >= 6;
   const isSignupFormValid =
     signupStep === "password" && password.length >= 6 && password === passwordConfirm && agree;
+  const isResetFormValid =
+    resetStep === "email"
+      ? email.includes("@")
+      : password.length >= 6 && password === passwordConfirm;
 
   useEffect(() => {
-    if (!authLoading && user && !(view === "email" && isSignup)) {
+    if (!authLoading && user && !(view === "email" && (isSignup || isReset))) {
       navigate({ to: getPostLoginPath(user.email, redirect), replace: true });
     }
-  }, [authLoading, user, redirect, navigate, view, isSignup]);
+  }, [authLoading, user, redirect, navigate, view, isSignup, isReset]);
+
+  useEffect(() => {
+    if (!isPasswordRecoveryLink || !user) return;
+    setView("email");
+    setMode("reset");
+    setResetStep("password");
+    setEmail(user.email ?? "");
+  }, [isPasswordRecoveryLink, user]);
 
   function openEmail(mode: LoginMode) {
     setMode(mode);
     setView("email");
     setSignupStep("email");
+    setResetStep("email");
     setVerificationCode("");
     setVerificationEmail("");
     setPassword("");
     setPasswordConfirm("");
     setAgree(false);
+    setLoginError(null);
+  }
+
+  async function sendPasswordReset() {
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail.includes("@") || submitting) return;
+
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+        redirectTo: `${window.location.origin}/login?reset=1`,
+      });
+      if (error) {
+        console.error("[Password reset]", error);
+        toast.error(getAuthErrorMessage(error, "재설정 메일을 보내지 못했습니다. 잠시 후 다시 시도해주세요."));
+        return;
+      }
+      toast.success("비밀번호 재설정 메일을 보냈습니다.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   async function sendSignupVerification() {
@@ -138,11 +178,16 @@ function LoginPage() {
 
     setSubmitting(true);
     try {
-      if (!isSignup) {
+      if (!isSignup && !isReset) {
         if (!isLoginFormValid) return;
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        setLoginError(null);
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: email.trim().toLowerCase(),
+          password,
+        });
         if (error) {
-          toast.error(error.message);
+          console.error("[Email login]", error);
+          setLoginError("등록되지 않은 이메일이거나 비밀번호가 다릅니다. 다른 정보로 다시 시도해주세요.");
           return;
         }
 
@@ -151,6 +196,25 @@ function LoginPage() {
           to: getPostLoginPath(data.user?.email ?? email, redirect),
           replace: true,
         });
+        return;
+      }
+
+      if (isReset) {
+        if (!isResetFormValid) return;
+        if (resetStep === "email") {
+          await sendPasswordReset();
+          return;
+        }
+
+        const { error } = await supabase.auth.updateUser({ password });
+        if (error) {
+          console.error("[Password reset update]", error);
+          toast.error(getAuthErrorMessage(error, "비밀번호를 변경하지 못했습니다. 재설정 메일을 다시 열어주세요."));
+          return;
+        }
+
+        toast.success("비밀번호를 변경했습니다.");
+        navigate({ to: getPostLoginPath(user?.email ?? email, redirect), replace: true });
         return;
       }
 
@@ -230,6 +294,7 @@ function LoginPage() {
             )}
 
             <form onSubmit={submitEmail} className={`${isSignup ? "mt-7" : "mt-8"} space-y-5`}>
+              {(!isReset || resetStep === "email") && (
               <div className="space-y-2.5">
                 <Label htmlFor="email">이메일</Label>
                 <div className="relative">
@@ -241,6 +306,7 @@ function LoginPage() {
                     value={email}
                     onChange={(e) => {
                       setEmail(e.target.value);
+                      setLoginError(null);
                       if (isSignup && signupStep !== "email") {
                         setSignupStep("email");
                         setVerificationCode("");
@@ -267,6 +333,7 @@ function LoginPage() {
                   )}
                 </div>
               </div>
+              )}
 
               {isSignup && signupStep === "verify" && (
                 <div className="space-y-2.5">
@@ -299,7 +366,7 @@ function LoginPage() {
                 </div>
               )}
 
-              {(!isSignup || signupStep === "password") && (
+              {((!isSignup && !isReset) || signupStep === "password" || (isReset && resetStep === "password")) && (
                 <div className="space-y-2.5">
                   <Label htmlFor="password">비밀번호</Label>
                   <div className="relative">
@@ -309,7 +376,10 @@ function LoginPage() {
                       type="password"
                       autoComplete={isSignup ? "new-password" : "current-password"}
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        setLoginError(null);
+                      }}
                       placeholder="6자 이상"
                       className="rounded-[4px] pl-9"
                     />
@@ -317,7 +387,7 @@ function LoginPage() {
                 </div>
               )}
 
-              {isSignup && signupStep === "password" && (
+              {((isSignup && signupStep === "password") || (isReset && resetStep === "password")) && (
                 <>
                   <div className="space-y-2.5">
                     <Label htmlFor="password-confirm">비밀번호 재입력</Label>
@@ -337,30 +407,42 @@ function LoginPage() {
                     )}
                   </div>
 
-                  <label className="flex items-start gap-2 pt-1 text-sm text-muted-foreground">
+                  {isSignup && <label className="flex items-start gap-2 pt-1 text-sm text-muted-foreground">
                     <Checkbox
                       checked={agree}
                       onCheckedChange={(value) => setAgree(Boolean(value))}
                       className="mt-0.5"
                     />
                     <span>개인정보 처리방침과 이용약관에 동의합니다.</span>
-                  </label>
+                  </label>}
                 </>
               )}
 
-              {(!isSignup || signupStep === "password") && (
+              {!isSignup && !isReset && loginError && (
+                <p role="alert" className="text-sm text-destructive">{loginError}</p>
+              )}
+
+              {((!isSignup && !isReset) || signupStep === "password" || (isReset && resetStep === "email") || (isReset && resetStep === "password")) && (
                 <Button
                   type="submit"
-                  disabled={!(isSignup ? isSignupFormValid : isLoginFormValid) || submitting}
+                  disabled={!(isSignup ? isSignupFormValid : isReset ? isResetFormValid : isLoginFormValid) || submitting}
                   size="lg"
                   className="w-full rounded-[4px]"
                 >
-                  {submitting ? "처리 중..." : isSignup ? "가입하기" : "로그인"}
+                  {submitting
+                    ? "처리 중..."
+                    : isSignup
+                      ? "가입하기"
+                      : isReset
+                        ? resetStep === "email"
+                          ? "재설정 메일 보내기"
+                          : "비밀번호 재설정"
+                        : "로그인"}
                 </Button>
               )}
             </form>
 
-            {!isSignup && (
+            {!isSignup && !isReset && (
               <p className="mt-6 text-center text-sm text-muted-foreground">
                 계정이 없으신가요?{" "}
                 <button
@@ -369,6 +451,15 @@ function LoginPage() {
                   className="font-medium text-foreground underline underline-offset-4"
                 >
                   회원가입
+                </button>
+                <span className="mx-2 text-border">·</span>
+                <span>비밀번호를 잊으셨나요? </span>
+                <button
+                  type="button"
+                  onClick={() => openEmail("reset")}
+                  className="font-medium text-foreground underline underline-offset-4"
+                >
+                  비밀번호 재설정
                 </button>
               </p>
             )}
