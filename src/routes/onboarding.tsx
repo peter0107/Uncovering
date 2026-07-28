@@ -49,22 +49,35 @@ function OnboardingPage() {
     if (!user) return;
 
     setSaving(true);
-    const { error } = await supabase.from("job_seekers").upsert(
-      {
-        id: user.id,
-        email: user.email ?? "",
-        job_interests: jobInterests,
-      },
-      { onConflict: "id" },
-    );
-    setSaving(false);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) {
+        toast.error("로그인이 필요합니다.");
+        return;
+      }
 
-    if (error) {
+      const response = await fetch("/api/complete-onboarding", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ jobInterests }),
+      });
+      const result = (await response.json().catch(() => null)) as { error?: string } | null;
+      if (!response.ok) {
+        toast.error(result?.error ?? "저장 중 오류가 발생했어요. 다시 시도해 주세요.");
+        return;
+      }
+
+      navigate({ to: redirect ?? "/simulations", replace: true });
+    } catch (error) {
+      console.error("[Onboarding]", error);
       toast.error("저장 중 오류가 발생했어요. 다시 시도해 주세요.");
-      return;
+    } finally {
+      setSaving(false);
     }
-
-    navigate({ to: redirect ?? "/simulations", replace: true });
   };
 
   if (authLoading || !user) {

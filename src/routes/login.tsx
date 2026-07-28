@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
-import { ArrowLeft, Lock, Mail } from "lucide-react";
+import { ArrowLeft, CircleCheck, Lock, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -49,6 +49,9 @@ function LoginPage() {
   const [verificationEmail, setVerificationEmail] = useState("");
   const [agree, setAgree] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [sendingVerification, setSendingVerification] = useState(false);
+  const [verifyingVerification, setVerifyingVerification] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
   const [signupStep, setSignupStep] = useState<SignupStep>("email");
   const [resetStep, setResetStep] = useState<ResetStep>("email");
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -87,6 +90,7 @@ function LoginPage() {
     setResetStep("email");
     setVerificationCode("");
     setVerificationEmail("");
+    setEmailVerified(false);
     setPassword("");
     setPasswordConfirm("");
     setAgree(false);
@@ -115,9 +119,9 @@ function LoginPage() {
 
   async function sendSignupVerification() {
     const normalizedEmail = email.trim().toLowerCase();
-    if (!normalizedEmail.includes("@") || submitting) return;
+    if (!normalizedEmail.includes("@") || sendingVerification || verifyingVerification) return;
 
-    setSubmitting(true);
+    setSendingVerification(true);
     try {
       if (signupStep === "verify") {
         const { error } = await supabase.auth.resend({ type: "signup", email: verificationEmail });
@@ -130,6 +134,7 @@ function LoginPage() {
         return;
       }
 
+      setVerificationEmail(normalizedEmail);
       const { data, error } = await supabase.auth.signUp({
         email: normalizedEmail,
         password: temporaryPassword,
@@ -141,6 +146,7 @@ function LoginPage() {
       }
 
       if (data.session) {
+        setEmailVerified(true);
         setSignupStep("password");
         return;
       }
@@ -164,12 +170,11 @@ function LoginPage() {
         }
       }
 
-      setVerificationEmail(normalizedEmail);
       setVerificationCode("");
       setSignupStep("verify");
       toast.success("인증번호를 보냈습니다.");
     } finally {
-      setSubmitting(false);
+      setSendingVerification(false);
     }
   }
 
@@ -240,9 +245,17 @@ function LoginPage() {
   }
 
   async function verifyEmailCode() {
-    if (verificationCode.length !== 6 || !verificationEmail || submitting) return;
+    if (
+      verificationCode.length !== 6 ||
+      !verificationEmail ||
+      verifyingVerification ||
+      sendingVerification ||
+      emailVerified
+    ) {
+      return;
+    }
 
-    setSubmitting(true);
+    setVerifyingVerification(true);
     try {
       const { data, error } = await supabase.auth.verifyOtp({
         email: verificationEmail,
@@ -255,9 +268,12 @@ function LoginPage() {
         return;
       }
 
-      if (data.user) setSignupStep("password");
+      if (data.user) {
+        setEmailVerified(true);
+        setSignupStep("password");
+      }
     } finally {
-      setSubmitting(false);
+      setVerifyingVerification(false);
     }
   }
 
@@ -308,35 +324,42 @@ function LoginPage() {
                     onChange={(e) => {
                       setEmail(e.target.value);
                       setLoginError(null);
-                      if (isSignup && signupStep !== "email") {
+                      if (isSignup) {
+                        setEmailVerified(false);
                         setSignupStep("email");
                         setVerificationCode("");
                         setVerificationEmail("");
                       }
                     }}
                     placeholder="name@example.com"
-                    className={`rounded-[4px] pl-9 ${isSignup ? "pr-28" : ""}`}
+                    className={`rounded-[4px] pl-9 ${isSignup ? emailVerified ? "pr-10" : "pr-28" : ""}`}
                   />
-                  {isSignup && signupStep !== "password" && email.includes("@") && (
+                  {isSignup && !emailVerified && email.includes("@") && (
                     <Button
                       type="button"
                       size="sm"
                       onClick={() => void sendSignupVerification()}
-                      disabled={submitting}
+                      disabled={sendingVerification || verifyingVerification}
                       className="absolute right-1 top-1/2 h-7 -translate-y-1/2 rounded-[3px] px-2 text-xs"
                     >
-                      {submitting
+                      {sendingVerification
                         ? "전송 중..."
                         : signupStep === "verify"
                           ? "재전송"
                           : "인증번호 보내기"}
                     </Button>
                   )}
+                  {isSignup && emailVerified && (
+                    <CircleCheck
+                      aria-label="이메일 인증 완료"
+                      className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-emerald-600"
+                    />
+                  )}
                 </div>
               </div>
               )}
 
-              {isSignup && signupStep === "verify" && (
+              {isSignup && signupStep !== "email" && (
                 <div className="space-y-2.5">
                   <Label htmlFor="verification-code">인증번호</Label>
                   <div className="flex items-center gap-2">
@@ -347,22 +370,28 @@ function LoginPage() {
                       onChange={(value) => setVerificationCode(value.replaceAll(/\D/g, ""))}
                       pattern={REGEXP_ONLY_DIGITS}
                       inputMode="numeric"
+                      disabled={emailVerified}
                       containerClassName="flex-1 justify-start"
                     >
                       <InputOTPGroup>
                         {Array.from({ length: 6 }, (_, index) => (
-                          <InputOTPSlot key={index} index={index} />
+                          <InputOTPSlot key={index} index={index} className="h-8 w-8 text-xs" />
                         ))}
                       </InputOTPGroup>
                     </InputOTP>
                     <Button
                       type="button"
                       size="sm"
-                      className="h-10 shrink-0 rounded-[4px] px-3"
+                      className="h-8 shrink-0 rounded-[4px] px-3 text-xs"
                       onClick={() => void verifyEmailCode()}
-                      disabled={verificationCode.length !== 6 || submitting}
+                      disabled={
+                        emailVerified ||
+                        verificationCode.length !== 6 ||
+                        verifyingVerification ||
+                        sendingVerification
+                      }
                     >
-                      인증
+                      {emailVerified ? "인증 완료" : verifyingVerification ? "인증 중..." : "인증"}
                     </Button>
                   </div>
                 </div>

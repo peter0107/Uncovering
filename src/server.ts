@@ -2,6 +2,7 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { handleCompleteOnboardingRequest } from "./lib/onboarding.functions";
 import { handleGenerateSimulationRequest } from "./lib/simulation-generator.functions";
 
 type ServerEntry = {
@@ -78,6 +79,13 @@ export default {
           return new Response("Method Not Allowed", { status: 405 });
         }
         return handleGenerateSimulationRequest(request);
+      }
+
+      if (pathname === "/api/complete-onboarding") {
+        if (request.method !== "POST") {
+          return new Response("Method Not Allowed", { status: 405 });
+        }
+        return handleCompleteOnboardingRequest(request);
       }
 
       const handler = await getServerEntry();
