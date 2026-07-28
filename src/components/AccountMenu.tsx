@@ -70,7 +70,7 @@ export function AccountMenu() {
       )}
       <div className="flex items-center gap-2">
         <span
-          className="max-w-28 truncate text-sm font-semibold text-neutral-800"
+          className="max-w-28 truncate text-sm font-semibold text-[#1a2340]"
           title={profileLabel}
         >
           {profileLabel}
@@ -80,7 +80,7 @@ export function AccountMenu() {
             <button
               type="button"
               aria-label="프로필 메뉴"
-              className="grid h-9 w-9 place-items-center rounded-full border border-neutral-300 bg-white text-neutral-800 transition-colors hover:bg-neutral-50"
+              className="grid h-9 w-9 place-items-center rounded-full border border-[#c8d2e3] bg-white text-[#1a2340] transition-colors hover:bg-[#e5edfb]"
             >
               <UserRound className="h-4 w-4" strokeWidth={2.2} />
             </button>
