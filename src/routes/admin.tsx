@@ -12,6 +12,7 @@ import { useEffect } from "react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { BrandLogo } from "@/components/BrandLogo";
+import { SHOW_EXPERT_SIMULATIONS } from "@/lib/feature-flags";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -90,25 +91,27 @@ function AdminHome() {
               </div>
             </Link>
 
-            <Link
-              to="/admin/expert-simulations"
-              className="group rounded-md border border-neutral-200 p-5 transition-colors hover:border-neutral-900 hover:bg-neutral-50"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="grid h-10 w-10 place-items-center rounded-md bg-neutral-900 text-white">
-                    <UserRound className="h-5 w-5" />
+            {SHOW_EXPERT_SIMULATIONS && (
+              <Link
+                to="/admin/expert-simulations"
+                className="group rounded-md border border-neutral-200 p-5 transition-colors hover:border-neutral-900 hover:bg-neutral-50"
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="grid h-10 w-10 place-items-center rounded-md bg-neutral-900 text-white">
+                      <UserRound className="h-5 w-5" />
+                    </div>
+                    <h2 className="mt-4 text-base font-semibold text-neutral-900">
+                      현직자 시뮬레이션 관리
+                    </h2>
+                    <p className="mt-2 text-sm leading-6 text-neutral-500">
+                      현직자 제시 카드와 모범답안을 관리합니다.
+                    </p>
                   </div>
-                  <h2 className="mt-4 text-base font-semibold text-neutral-900">
-                    현직자 시뮬레이션 관리
-                  </h2>
-                  <p className="mt-2 text-sm leading-6 text-neutral-500">
-                    현직자 제시 카드와 모범답안을 관리합니다.
-                  </p>
+                  <ArrowRight className="mt-1 h-4 w-4 text-neutral-400 transition-colors group-hover:text-neutral-900" />
                 </div>
-                <ArrowRight className="mt-1 h-4 w-4 text-neutral-400 transition-colors group-hover:text-neutral-900" />
-              </div>
-            </Link>
+              </Link>
+            )}
 
             <Link
               to="/admin/simulation-generator"

@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { markSimulationEntry } from "@/lib/posthog";
+import { SHOW_EXPERT_SIMULATIONS } from "@/lib/feature-flags";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -159,7 +160,7 @@ function Header({
         <nav className="reference-desktop-nav" aria-label="주요 메뉴">
           <a href="#service">서비스 소개</a>
           <Link to="/simulations">기업 시뮬레이션</Link>
-          <Link to="/expert-simulations">현직자 시뮬레이션</Link>
+          {SHOW_EXPERT_SIMULATIONS && <Link to="/expert-simulations">현직자 시뮬레이션</Link>}
           <Link to="/biz">기업용</Link>
         </nav>
 
@@ -199,9 +200,11 @@ function Header({
           <Link to="/simulations" onClick={onMenuClose}>
             기업 시뮬레이션
           </Link>
-          <Link to="/expert-simulations" onClick={onMenuClose}>
-            현직자 시뮬레이션
-          </Link>
+          {SHOW_EXPERT_SIMULATIONS && (
+            <Link to="/expert-simulations" onClick={onMenuClose}>
+              현직자 시뮬레이션
+            </Link>
+          )}
           <Link to="/biz" onClick={onMenuClose}>
             기업용
           </Link>
@@ -518,7 +521,7 @@ function Index() {
               무료로 시작하기 <ArrowRight aria-hidden="true" />
             </a>
             <p className="reference-hero-caption">
-              가입 후 3분이면 첫 과제가 도착해요 · 현직자 시뮬레이션 120+
+              가입 후 3분이면 첫 과제가 도착해요
             </p>
           </div>
         </section>
@@ -526,31 +529,33 @@ function Index() {
 
       <main>
         <FeaturedCompanySimulations />
-        <FeaturedExpertSimulations />
+        {SHOW_EXPERT_SIMULATIONS && <FeaturedExpertSimulations />}
 
-        <section id="service" className="reference-expert-section reference-reveal">
-          <div className="reference-shell">
-            <header className="reference-section-intro">
-              <span>현직자 시뮬레이션</span>
-              <h2>실무자가 제시한 과제를 해결해 보세요</h2>
-              <p>그 일을 실제로 하는 사람이 어떤 상황에서 무엇을 고민하는지 먼저 경험해볼 수 있어요.</p>
-            </header>
+        {SHOW_EXPERT_SIMULATIONS && (
+          <section id="service" className="reference-expert-section reference-reveal">
+            <div className="reference-shell">
+              <header className="reference-section-intro">
+                <span>현직자 시뮬레이션</span>
+                <h2>실무자가 제시한 과제를 해결해 보세요</h2>
+                <p>그 일을 실제로 하는 사람이 어떤 상황에서 무엇을 고민하는지 먼저 경험해볼 수 있어요.</p>
+              </header>
 
-            <div className="reference-expert-grid">
-              <ExpertCard title="원하는 직무 시뮬레이션 탐색">
-                <p>각 분야 현직자가 자기 업무에서 다루는 상황과 자료로 과제를 만들어요.</p>
-              </ExpertCard>
+              <div className="reference-expert-grid">
+                <ExpertCard title="원하는 직무 시뮬레이션 탐색">
+                  <p>각 분야 현직자가 자기 업무에서 다루는 상황과 자료로 과제를 만들어요.</p>
+                </ExpertCard>
 
-              <ExpertCard title="현직자 답안과 비교">
-                <p>과제를 마치면 그 현직자가 쓴 답안을 보며 같은 상황을 어떻게 판단했는지 비교할 수 있어요.</p>
-              </ExpertCard>
+                <ExpertCard title="현직자 답안과 비교">
+                  <p>과제를 마치면 그 현직자가 쓴 답안을 보며 같은 상황을 어떻게 판단했는지 비교할 수 있어요.</p>
+                </ExpertCard>
 
-              <ExpertCard title="AI 활용 능력도 함께 확인" dark>
-                <p>과제를 푸는 동안 AI 도구를 활용하고, 결과물에서 AI를 실무에 어떻게 녹여 쓰는지 확인할 수 있어요.</p>
-              </ExpertCard>
+                <ExpertCard title="AI 활용 능력도 함께 확인" dark>
+                  <p>과제를 푸는 동안 AI 도구를 활용하고, 결과물에서 AI를 실무에 어떻게 녹여 쓰는지 확인할 수 있어요.</p>
+                </ExpertCard>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         <section className="reference-audience reference-reveal">
           <div className="reference-shell reference-audience-layout">
