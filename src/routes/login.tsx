@@ -148,7 +148,7 @@ function LoginPage() {
               Beginner 시작하기
             </h1>
 
-            <div className="mt-10 space-y-3">
+            <div className="mx-auto mt-10 w-full max-w-[400px] space-y-3">
               <GoogleSignInButton />
               <Button
                 type="button"
@@ -194,7 +194,8 @@ function LoginPage() {
                     autoComplete="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-9"
+                    placeholder="name@example.com"
+                    className="rounded-[4px] pl-9"
                   />
                 </div>
               </div>
@@ -210,7 +211,7 @@ function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="6자 이상"
-                    className="pl-9"
+                    className="rounded-[4px] pl-9"
                   />
                 </div>
               </div>
@@ -227,7 +228,7 @@ function LoginPage() {
                         autoComplete="new-password"
                         value={passwordConfirm}
                         onChange={(e) => setPasswordConfirm(e.target.value)}
-                        className="pl-9"
+                        className="rounded-[4px] pl-9"
                       />
                     </div>
                     {passwordConfirm.length > 0 && password !== passwordConfirm && (
@@ -250,7 +251,7 @@ function LoginPage() {
                 type="submit"
                 disabled={!isEmailFormValid || submitting}
                 size="lg"
-                className="w-full"
+                className="w-full rounded-[4px]"
               >
                 {submitting ? "처리 중..." : isSignup ? "인증번호 보내기" : "로그인"}
               </Button>
@@ -296,7 +297,7 @@ function LoginPage() {
               <Button
                 type="submit"
                 size="lg"
-                className="w-full"
+                className="w-full rounded-[4px]"
                 disabled={verificationCode.length !== 6 || submitting}
               >
                 {submitting ? "처리 중..." : "인증하고 시작하기"}
