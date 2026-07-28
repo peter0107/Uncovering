@@ -35,6 +35,7 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
+  const [verificationEmail, setVerificationEmail] = useState("");
   const [agree, setAgree] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [signupStep, setSignupStep] = useState<SignupStep>("email");
@@ -56,18 +57,20 @@ function LoginPage() {
     setView("email");
     setSignupStep("email");
     setVerificationCode("");
+    setVerificationEmail("");
     setPassword("");
     setPasswordConfirm("");
     setAgree(false);
   }
 
   async function sendSignupVerification() {
-    if (!email.includes("@") || submitting) return;
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail.includes("@") || submitting) return;
 
     setSubmitting(true);
     try {
       if (signupStep === "verify") {
-        const { error } = await supabase.auth.resend({ type: "signup", email });
+        const { error } = await supabase.auth.resend({ type: "signup", email: verificationEmail });
         if (error) {
           toast.error(error.message);
           return;
@@ -77,7 +80,7 @@ function LoginPage() {
       }
 
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: normalizedEmail,
         password: temporaryPassword,
       });
       if (error) {
@@ -90,8 +93,20 @@ function LoginPage() {
         return;
       }
 
+      // 새 가입과 기존 미인증 가입 모두 마지막으로 발급한 코드만 검증합니다.
+      const { error: resendError } = await supabase.auth.resend({
+        type: "signup",
+        email: normalizedEmail,
+      });
+      if (resendError) {
+        toast.error(resendError.message);
+        return;
+      }
+
+      setVerificationEmail(normalizedEmail);
       setVerificationCode("");
       setSignupStep("verify");
+      toast.success("인증번호를 보냈습니다.");
     } finally {
       setSubmitting(false);
     }
@@ -140,17 +155,17 @@ function LoginPage() {
   }
 
   async function verifyEmailCode() {
-    if (verificationCode.length !== 6 || submitting) return;
+    if (verificationCode.length !== 6 || !verificationEmail || submitting) return;
 
     setSubmitting(true);
     try {
       const { data, error } = await supabase.auth.verifyOtp({
-        email,
+        email: verificationEmail,
         token: verificationCode,
         type: "signup",
       });
       if (error) {
-        toast.error(error.message);
+        toast.error("인증번호가 만료되었거나 일치하지 않습니다. 재전송 후 가장 최근에 받은 번호를 입력해주세요.");
         return;
       }
 
@@ -193,8 +208,8 @@ function LoginPage() {
               <h1 className="mt-5 text-2xl font-semibold text-foreground">이메일로 시작하기</h1>
             )}
 
-            <form onSubmit={submitEmail} className={`${isSignup ? "mt-7" : "mt-8"} space-y-4`}>
-              <div className="space-y-1.5">
+            <form onSubmit={submitEmail} className={`${isSignup ? "mt-7" : "mt-8"} space-y-5`}>
+              <div className="space-y-2.5">
                 <Label htmlFor="email">이메일</Label>
                 <div className="relative">
                   <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -208,6 +223,7 @@ function LoginPage() {
                       if (isSignup && signupStep !== "email") {
                         setSignupStep("email");
                         setVerificationCode("");
+                        setVerificationEmail("");
                       }
                     }}
                     placeholder="name@example.com"
@@ -232,7 +248,7 @@ function LoginPage() {
               </div>
 
               {isSignup && signupStep === "verify" && (
-                <div className="space-y-1.5">
+                <div className="space-y-2.5">
                   <Label htmlFor="verification-code">인증번호</Label>
                   <div className="flex items-center gap-2">
                     <InputOTP
@@ -263,7 +279,7 @@ function LoginPage() {
               )}
 
               {(!isSignup || signupStep === "password") && (
-                <div className="space-y-1.5">
+                <div className="space-y-2.5">
                   <Label htmlFor="password">비밀번호</Label>
                   <div className="relative">
                     <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -282,7 +298,7 @@ function LoginPage() {
 
               {isSignup && signupStep === "password" && (
                 <>
-                  <div className="space-y-1.5">
+                  <div className="space-y-2.5">
                     <Label htmlFor="password-confirm">비밀번호 재입력</Label>
                     <div className="relative">
                       <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
