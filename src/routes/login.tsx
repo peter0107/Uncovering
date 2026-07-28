@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent, type KeyboardEvent } from "react";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { ArrowLeft, CircleCheck, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -47,6 +47,8 @@ function LoginPage() {
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isPasswordConfirmVisible, setIsPasswordConfirmVisible] = useState(false);
+  const [passwordLockState, setPasswordLockState] = useState({ capsLock: false, numLock: false });
+  const [activePasswordField, setActivePasswordField] = useState<"password" | "confirm" | null>(null);
   const [verificationCode, setVerificationCode] = useState("");
   const [verificationEmail, setVerificationEmail] = useState("");
   const [agree, setAgree] = useState(false);
@@ -65,13 +67,20 @@ function LoginPage() {
   const isReset = mode === "reset";
   const isPasswordRecoveryLink =
     typeof window !== "undefined" && new URLSearchParams(window.location.search).get("reset") === "1";
-  const isLoginFormValid = email.includes("@") && password.length >= 6;
+  const isLoginFormValid = email.includes("@") && password.length >= 8;
   const isSignupFormValid =
-    signupStep === "password" && password.length >= 6 && password === passwordConfirm && agree;
+    signupStep === "password" && password.length >= 8 && password === passwordConfirm && agree;
   const isResetFormValid =
     resetStep === "email"
       ? email.includes("@")
-      : password.length >= 6 && password === passwordConfirm;
+      : password.length >= 8 && password === passwordConfirm;
+
+  function updatePasswordLockState(event: KeyboardEvent<HTMLInputElement>) {
+    setPasswordLockState({
+      capsLock: event.getModifierState("CapsLock"),
+      numLock: event.getModifierState("NumLock"),
+    });
+  }
 
   useEffect(() => {
     if (!authLoading && user && !(view === "email" && (isSignup || isReset))) {
@@ -448,7 +457,11 @@ function LoginPage() {
                         setPassword(e.target.value);
                         setLoginError(null);
                       }}
-                      placeholder="6자 이상"
+                      onFocus={() => setActivePasswordField("password")}
+                      onBlur={() => setActivePasswordField(null)}
+                      onKeyDown={updatePasswordLockState}
+                      onKeyUp={updatePasswordLockState}
+                      placeholder="8자 이상"
                       className="rounded-[4px] pl-9 pr-10"
                     />
                     <button
@@ -461,6 +474,13 @@ function LoginPage() {
                       {isPasswordVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
+                  {activePasswordField === "password" && (passwordLockState.capsLock || passwordLockState.numLock) && (
+                    <p className="text-xs text-muted-foreground">
+                      {passwordLockState.capsLock && "Caps Lock이 켜져 있습니다."}
+                      {passwordLockState.capsLock && passwordLockState.numLock && " "}
+                      {passwordLockState.numLock && "Num Lock이 켜져 있습니다."}
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -476,6 +496,10 @@ function LoginPage() {
                         autoComplete="new-password"
                         value={passwordConfirm}
                         onChange={(e) => setPasswordConfirm(e.target.value)}
+                        onFocus={() => setActivePasswordField("confirm")}
+                        onBlur={() => setActivePasswordField(null)}
+                        onKeyDown={updatePasswordLockState}
+                        onKeyUp={updatePasswordLockState}
                         className="rounded-[4px] pl-9 pr-10"
                       />
                       <button
@@ -488,6 +512,13 @@ function LoginPage() {
                         {isPasswordConfirmVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
+                    {activePasswordField === "confirm" && (passwordLockState.capsLock || passwordLockState.numLock) && (
+                      <p className="text-xs text-muted-foreground">
+                        {passwordLockState.capsLock && "Caps Lock이 켜져 있습니다."}
+                        {passwordLockState.capsLock && passwordLockState.numLock && " "}
+                        {passwordLockState.numLock && "Num Lock이 켜져 있습니다."}
+                      </p>
+                    )}
                     {passwordConfirm.length > 0 && password !== passwordConfirm && (
                       <p className="text-xs text-destructive">비밀번호가 일치하지 않습니다.</p>
                     )}
