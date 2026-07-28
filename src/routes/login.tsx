@@ -69,7 +69,7 @@ function LoginPage() {
     typeof window !== "undefined" && new URLSearchParams(window.location.search).get("reset") === "1";
   const isLoginFormValid = email.includes("@") && password.length >= 8;
   const isSignupFormValid =
-    signupStep === "password" && password.length >= 8 && password === passwordConfirm && agree;
+    emailVerified && password.length >= 8 && password === passwordConfirm && agree;
   const isResetFormValid =
     resetStep === "email"
       ? email.includes("@")
@@ -443,7 +443,7 @@ function LoginPage() {
                 </div>
               )}
 
-              {((!isSignup && !isReset) || signupStep === "password" || (isReset && resetStep === "password")) && (
+              {((!isSignup && !isReset) || isSignup || (isReset && resetStep === "password")) && (
                 <div className="space-y-2.5">
                   <Label htmlFor="password">비밀번호</Label>
                   <div className="relative">
@@ -484,7 +484,7 @@ function LoginPage() {
                 </div>
               )}
 
-              {((isSignup && signupStep === "password") || (isReset && resetStep === "password")) && (
+              {(isSignup || (isReset && resetStep === "password")) && (
                 <>
                   <div className="space-y-2.5">
                     <Label htmlFor="password-confirm">비밀번호 재입력</Label>
@@ -539,7 +539,7 @@ function LoginPage() {
                 <p role="alert" className="text-sm text-destructive">{loginError}</p>
               )}
 
-              {((!isSignup && !isReset) || signupStep === "password" || (isReset && resetStep === "email") || (isReset && resetStep === "password")) && (
+              {((!isSignup && !isReset) || isSignup || (isReset && resetStep === "email") || (isReset && resetStep === "password")) && (
                 <Button
                   type="submit"
                   disabled={!(isSignup ? isSignupFormValid : isReset ? isResetFormValid : isLoginFormValid) || submitting}
