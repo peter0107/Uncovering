@@ -32,6 +32,7 @@ function SiteLayout({ children }: { children: React.ReactNode }) {
   const isHome = pathname === "/";
   const usesOwnHeader =
     isHome ||
+    pathname.startsWith("/login") ||
     pathname.startsWith("/onboarding") ||
     pathname.startsWith("/biz") ||
     pathname.startsWith("/admin");
