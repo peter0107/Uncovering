@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { AccountMenu } from "@/components/AccountMenu";
@@ -12,6 +12,8 @@ const NAV: { to: string; label: string }[] = [];
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const { user } = useAuth();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const isLoginPage = pathname === "/login";
 
   return (
     <>
@@ -34,33 +36,35 @@ export function SiteHeader() {
             ))}
           </nav>
 
-          <div className="hidden items-center gap-2 md:flex">
-            {user ? (
-              <AccountMenu />
-            ) : (
-              <>
-                <SignupDialog
-                  defaultMode="login"
-                  redirectTo="/onboarding"
-                  trigger={
-                    <Button variant="ghost" size="sm">
-                      로그인
+          {!isLoginPage && (
+            <div className="hidden items-center gap-2 md:flex">
+              {user ? (
+                <AccountMenu />
+              ) : (
+                <>
+                  <SignupDialog
+                    defaultMode="login"
+                    redirectTo="/onboarding"
+                    trigger={
+                      <Button variant="ghost" size="sm">
+                        로그인
+                      </Button>
+                    }
+                  />
+                  <Link to="/simulations">
+                    <Button
+                      size="sm"
+                      className="bg-brand text-brand-foreground hover:bg-brand/90 hover:text-white"
+                    >
+                      시작하기
                     </Button>
-                  }
-                />
-                <Link to="/simulations">
-                  <Button
-                    size="sm"
-                    className="bg-brand text-brand-foreground hover:bg-brand/90 hover:text-white"
-                  >
-                    시작하기
-                  </Button>
-                </Link>
-              </>
-            )}
-          </div>
+                  </Link>
+                </>
+              )}
+            </div>
+          )}
 
-          <div className="flex items-center gap-1 md:hidden">
+          {!isLoginPage && <div className="flex items-center gap-1 md:hidden">
             {user && <AccountMenu />}
             <button
               aria-label="메뉴"
@@ -69,10 +73,10 @@ export function SiteHeader() {
             >
               {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
-          </div>
+          </div>}
         </div>
 
-        {open && (
+        {!isLoginPage && open && (
           <div className="border-t border-border bg-background md:hidden">
             <div className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3">
               {NAV.map((n) => (
