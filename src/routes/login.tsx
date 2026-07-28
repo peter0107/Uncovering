@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
+import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { ArrowLeft, Lock, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -343,7 +344,8 @@ function LoginPage() {
                       id="verification-code"
                       maxLength={6}
                       value={verificationCode}
-                      onChange={setVerificationCode}
+                      onChange={(value) => setVerificationCode(value.replaceAll(/\D/g, ""))}
+                      pattern={REGEXP_ONLY_DIGITS}
                       inputMode="numeric"
                       containerClassName="flex-1 justify-start"
                     >
@@ -356,7 +358,7 @@ function LoginPage() {
                     <Button
                       type="button"
                       size="sm"
-                      className="h-9 shrink-0 rounded-[4px] px-3"
+                      className="h-10 shrink-0 rounded-[4px] px-3"
                       onClick={() => void verifyEmailCode()}
                       disabled={verificationCode.length !== 6 || submitting}
                     >
