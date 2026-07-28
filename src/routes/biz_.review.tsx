@@ -425,7 +425,7 @@ function BizReview() {
   return (
     <div className="min-h-screen bg-white text-neutral-900">
       <header className="border-b border-neutral-200">
-        <div className="mx-auto grid max-w-7xl gap-3 px-6 py-3 xl:min-h-14 xl:grid-cols-[360px_1fr] xl:items-center xl:gap-6 xl:py-2">
+        <div className="mx-auto grid max-w-7xl gap-3 px-6 py-3 xl:h-16 xl:grid-cols-[360px_1fr] xl:items-center xl:gap-6 xl:py-0">
           <div className="flex min-w-0 items-center justify-between gap-3">
             <div className="flex min-w-0 flex-1 items-center gap-4">
               <div className="flex shrink-0 items-center whitespace-nowrap">
@@ -1148,7 +1148,7 @@ function DualRangeSlider({
 function BizShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col bg-white text-neutral-900">
-      <header className="flex h-14 items-center border-b border-neutral-200 px-6">
+      <header className="flex h-16 items-center border-b border-neutral-200 px-6">
         <BrandLogo className="h-5 w-auto" />
         <span className="ml-1 text-xs font-light text-neutral-500">biz</span>
       </header>

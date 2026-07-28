@@ -44,7 +44,7 @@ function AdminHome() {
 
   return (
     <div className="min-h-screen bg-white text-neutral-900">
-      <header className="flex h-14 items-center justify-between border-b border-neutral-300 bg-neutral-100 px-6">
+      <header className="flex h-16 items-center justify-between border-b border-neutral-300 bg-neutral-100 px-6">
         <div className="flex items-center gap-2">
           <BrandLogo className="h-5 w-auto" />
           <span className="text-xs text-neutral-500">Admin</span>

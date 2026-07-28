@@ -108,7 +108,7 @@ function BizApply() {
 
   return (
     <div className="flex min-h-screen flex-col bg-white text-neutral-900">
-      <header className="flex h-14 items-center border-b border-neutral-200 px-6">
+      <header className="flex h-16 items-center border-b border-neutral-200 px-6">
         <Link to="/biz" aria-label="Beginner 기업 페이지">
           <BrandLogo className="h-5 w-auto" />
         </Link>

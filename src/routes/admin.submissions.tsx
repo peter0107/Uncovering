@@ -692,7 +692,7 @@ function InterviewQuestions({
 function AdminShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-white text-neutral-900">
-      <header className="flex h-14 items-center justify-between border-b border-neutral-300 bg-neutral-100 px-6">
+      <header className="flex h-16 items-center justify-between border-b border-neutral-300 bg-neutral-100 px-6">
         <Link to="/admin" className="text-sm font-semibold tracking-tight">
           <BrandLogo className="inline-block h-5 w-auto align-middle" />
           <span className="ml-1 text-xs font-normal text-neutral-500">Admin</span>
