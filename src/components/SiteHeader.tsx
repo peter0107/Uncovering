@@ -19,9 +19,7 @@ export function SiteHeader() {
     <>
       <header className="sticky top-0 z-40 w-full border-b border-border bg-background">
         <div
-          className={`mx-auto flex max-w-6xl items-center justify-between px-4 ${
-            isLoginPage ? "h-16" : "h-14"
-          }`}
+          className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4"
         >
           <a href="/" className="flex items-center" aria-label="Beginner 홈">
             <BrandLogo className="h-6 w-auto" />
