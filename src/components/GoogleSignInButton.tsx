@@ -51,7 +51,7 @@ export function GoogleSignInButton({ onSuccess }: Props) {
         shape: "rectangular",
         text: "continue_with",
         width,
-        logo_alignment: "left",
+        logo_alignment: "center",
         state: buttonState,
         click_listener: () => {
           setPendingAction(buttonState);
