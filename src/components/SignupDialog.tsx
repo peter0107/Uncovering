@@ -179,6 +179,7 @@ export function SignupDialog({ trigger, redirectTo = "/experiences", defaultMode
         </div>
 
         <GoogleSignInButton
+          postLoginPath={redirectTo}
           onSuccess={() => {
             setOpen(false);
             navigate({ to: redirectTo });

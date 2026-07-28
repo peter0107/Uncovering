@@ -11,12 +11,12 @@ import { markGoogleLoginPending } from "@/lib/posthog";
 
 type Props = {
   onSuccess?: () => void;
+  postLoginPath?: string;
 };
 
-export function GoogleSignInButton({ onSuccess }: Props) {
+export function GoogleSignInButton({ onSuccess, postLoginPath = "/" }: Props) {
   const googleRef = useRef<GoogleIdentity | null>(null);
   const onSuccessRef = useRef(onSuccess);
-  const [isReady, setIsReady] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   onSuccessRef.current = onSuccess;
 
@@ -27,7 +27,8 @@ export function GoogleSignInButton({ onSuccess }: Props) {
       try {
         const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim();
         if (!clientId) {
-          throw new Error("VITE_GOOGLE_CLIENT_ID가 설정되지 않았습니다.");
+          // Supabase OAuth redirect remains available even when Google Identity is unavailable.
+          return;
         }
 
         const google = await loadGoogleIdentity();
@@ -40,7 +41,7 @@ export function GoogleSignInButton({ onSuccess }: Props) {
           client_id: clientId,
           nonce: hashedNonce,
           auto_select: false,
-          use_fedcm_for_prompt: true,
+          use_fedcm_for_prompt: false,
           callback: async ({ credential }) => {
             if (cancelled) return;
 
@@ -64,12 +65,8 @@ export function GoogleSignInButton({ onSuccess }: Props) {
         });
 
         googleRef.current = google;
-        setIsReady(true);
       } catch (error) {
         console.error("[Google Sign-In]", error);
-        if (!cancelled) {
-          toast.error("Google 로그인을 준비하지 못했습니다.");
-        }
       }
     }
 
@@ -81,16 +78,38 @@ export function GoogleSignInButton({ onSuccess }: Props) {
     };
   }, []);
 
+  async function startOAuthRedirect() {
+    setIsLoading(true);
+    markGoogleLoginPending();
+
+    const callbackUrl = new URL("/login", window.location.origin);
+    callbackUrl.searchParams.set("redirect", postLoginPath);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: callbackUrl.toString() },
+    });
+
+    if (error) {
+      setIsLoading(false);
+      toast.error("Google 로그인을 시작하지 못했습니다.");
+      console.error("[Google OAuth]", error);
+    }
+  }
+
   function handleGoogleSignIn() {
     const google = googleRef.current;
-    if (!google || isLoading) return;
+    if (isLoading) return;
+
+    if (!google) {
+      void startOAuthRedirect();
+      return;
+    }
 
     setIsLoading(true);
     google.accounts.id.disableAutoSelect();
     google.accounts.id.prompt((notification) => {
       if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-        setIsLoading(false);
-        toast.error("Google 로그인 창을 열지 못했습니다. 잠시 후 다시 시도해주세요.");
+        void startOAuthRedirect();
       }
     });
   }
@@ -99,7 +118,7 @@ export function GoogleSignInButton({ onSuccess }: Props) {
     <button
       type="button"
       onClick={handleGoogleSignIn}
-      disabled={!isReady || isLoading}
+      disabled={isLoading}
       className="flex h-10 w-full items-center justify-center gap-2 rounded-md border border-input bg-background px-4 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
     >
       <svg aria-hidden="true" className="h-4 w-4" viewBox="0 0 24 24">
