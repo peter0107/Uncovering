@@ -330,7 +330,7 @@ function LoginPage() {
 
         {view === "email" && (
           <section>
-            <BackButton onClick={() => setView("choice")} />
+            <BackButton onClick={() => (isSignup ? openEmail("login") : setView("choice"))} />
             {isSignup && (
               <h1 className="mt-5 text-xl font-semibold text-foreground">회원가입</h1>
             )}
