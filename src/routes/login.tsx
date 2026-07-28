@@ -25,6 +25,15 @@ type LoginView = "choice" | "email";
 type LoginMode = "signup" | "login";
 type SignupStep = "email" | "verify" | "password";
 
+function getAuthErrorMessage(error: unknown, fallback: string) {
+  if (error && typeof error === "object" && "message" in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string" && message.trim() && message !== "{}") return message;
+  }
+
+  return fallback;
+}
+
 function LoginPage() {
   const navigate = useNavigate();
   const { redirect } = useSearch({ from: "/login" });
@@ -72,7 +81,8 @@ function LoginPage() {
       if (signupStep === "verify") {
         const { error } = await supabase.auth.resend({ type: "signup", email: verificationEmail });
         if (error) {
-          toast.error(error.message);
+          console.error("[Email verification resend]", error);
+          toast.error(getAuthErrorMessage(error, "인증번호를 다시 보내지 못했습니다. 잠시 후 다시 시도해주세요."));
           return;
         }
         toast.success("인증번호를 다시 보냈습니다.");
@@ -84,7 +94,8 @@ function LoginPage() {
         password: temporaryPassword,
       });
       if (error) {
-        toast.error(error.message);
+        console.error("[Email signup]", error);
+        toast.error(getAuthErrorMessage(error, "회원가입을 시작하지 못했습니다. 잠시 후 다시 시도해주세요."));
         return;
       }
 
@@ -93,14 +104,23 @@ function LoginPage() {
         return;
       }
 
-      // 새 가입과 기존 미인증 가입 모두 마지막으로 발급한 코드만 검증합니다.
-      const { error: resendError } = await supabase.auth.resend({
-        type: "signup",
-        email: normalizedEmail,
-      });
-      if (resendError) {
-        toast.error(resendError.message);
-        return;
+      // 새 가입은 signUp이 인증번호를 이미 발송합니다. identities가 비어 있으면
+      // 이전에 생성됐지만 인증되지 않은 계정일 수 있어 그때만 새 코드를 발급합니다.
+      if ((data.user?.identities?.length ?? 0) === 0) {
+        const { error: resendError } = await supabase.auth.resend({
+          type: "signup",
+          email: normalizedEmail,
+        });
+        if (resendError) {
+          console.error("[Email verification resend]", resendError);
+          toast.error(
+            getAuthErrorMessage(
+              resendError,
+              "인증번호를 보내지 못했습니다. 잠시 후 다시 시도해주세요.",
+            ),
+          );
+          return;
+        }
       }
 
       setVerificationEmail(normalizedEmail);
@@ -165,6 +185,7 @@ function LoginPage() {
         type: "signup",
       });
       if (error) {
+        console.error("[Email verification]", error);
         toast.error("인증번호가 만료되었거나 일치하지 않습니다. 재전송 후 가장 최근에 받은 번호를 입력해주세요.");
         return;
       }
