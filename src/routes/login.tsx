@@ -154,22 +154,11 @@ function LoginPage() {
                 type="button"
                 variant="outline"
                 className="relative h-10 w-full rounded-[4px] border-[#dadce0] bg-white px-4 font-[Roboto,Arial,sans-serif] text-[14px] font-medium text-[#3c4043] hover:bg-[#f8fafd] hover:text-[#3c4043]"
-                onClick={() => openEmail("signup")}
+                onClick={() => openEmail("login")}
               >
                 <Mail className="absolute left-3.5 h-[18px] w-[18px]" />
                 <span>이메일로 시작하기</span>
               </Button>
-            </div>
-
-            <div className="mt-8 text-center text-sm text-muted-foreground">
-              기존 계정이 있으신가요?{" "}
-              <button
-                type="button"
-                onClick={() => openEmail("login")}
-                className="font-medium text-foreground underline underline-offset-4"
-              >
-                로그인
-              </button>
             </div>
 
             <AgreementText className="mt-12" />
