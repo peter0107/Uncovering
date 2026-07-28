@@ -21,8 +21,9 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-type LoginView = "choice" | "email" | "verify";
+type LoginView = "choice" | "email";
 type LoginMode = "signup" | "login";
+type SignupStep = "email" | "verify" | "password";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -36,31 +37,74 @@ function LoginPage() {
   const [verificationCode, setVerificationCode] = useState("");
   const [agree, setAgree] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [signupStep, setSignupStep] = useState<SignupStep>("email");
+  const [temporaryPassword] = useState(() => `${crypto.randomUUID().replaceAll("-", "")}Aa1!`);
 
   const isSignup = mode === "signup";
-  const isEmailFormValid =
-    email.includes("@") &&
-    password.length >= 6 &&
-    (!isSignup || (password === passwordConfirm && agree));
+  const isLoginFormValid = email.includes("@") && password.length >= 6;
+  const isSignupFormValid =
+    signupStep === "password" && password.length >= 6 && password === passwordConfirm && agree;
 
   useEffect(() => {
-    if (!authLoading && user) {
+    if (!authLoading && user && !(view === "email" && isSignup)) {
       navigate({ to: getPostLoginPath(user.email, redirect), replace: true });
     }
-  }, [authLoading, user, redirect, navigate]);
+  }, [authLoading, user, redirect, navigate, view, isSignup]);
 
   function openEmail(mode: LoginMode) {
     setMode(mode);
     setView("email");
+    setSignupStep("email");
+    setVerificationCode("");
+    setPassword("");
+    setPasswordConfirm("");
+    setAgree(false);
+  }
+
+  async function sendSignupVerification() {
+    if (!email.includes("@") || submitting) return;
+
+    setSubmitting(true);
+    try {
+      if (signupStep === "verify") {
+        const { error } = await supabase.auth.resend({ type: "signup", email });
+        if (error) {
+          toast.error(error.message);
+          return;
+        }
+        toast.success("인증번호를 다시 보냈습니다.");
+        return;
+      }
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password: temporaryPassword,
+      });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      if (data.session) {
+        setSignupStep("password");
+        return;
+      }
+
+      setVerificationCode("");
+      setSignupStep("verify");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   async function submitEmail(e: FormEvent) {
     e.preventDefault();
-    if (!isEmailFormValid || submitting) return;
+    if (submitting) return;
 
     setSubmitting(true);
     try {
       if (!isSignup) {
+        if (!isLoginFormValid) return;
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
           toast.error(error.message);
@@ -75,30 +119,27 @@ function LoginPage() {
         return;
       }
 
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (!isSignupFormValid) return;
+
+      const { data, error } = await supabase.auth.updateUser({ password });
       if (error) {
         toast.error(error.message);
         return;
       }
 
-      if (data.session && data.user) {
+      if (data.user) {
         await captureSignup(data.user.id);
         navigate({
           to: getPostLoginPath(data.user.email ?? email, redirect),
           replace: true,
         });
-        return;
       }
-
-      setVerificationCode("");
-      setView("verify");
     } finally {
       setSubmitting(false);
     }
   }
 
-  async function verifyEmailCode(e: FormEvent) {
-    e.preventDefault();
+  async function verifyEmailCode() {
     if (verificationCode.length !== 6 || submitting) return;
 
     setSubmitting(true);
@@ -106,34 +147,14 @@ function LoginPage() {
       const { data, error } = await supabase.auth.verifyOtp({
         email,
         token: verificationCode,
-        type: "email",
+        type: "signup",
       });
       if (error) {
         toast.error(error.message);
         return;
       }
 
-      if (data.user) await captureSignup(data.user.id);
-      navigate({
-        to: getPostLoginPath(data.user?.email ?? email, redirect),
-        replace: true,
-      });
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  async function resendVerificationCode() {
-    if (submitting) return;
-
-    setSubmitting(true);
-    try {
-      const { error } = await supabase.auth.resend({ type: "signup", email });
-      if (error) {
-        toast.error(error.message);
-        return;
-      }
-      toast.success("인증번호를 다시 보냈습니다.");
+      if (data.user) setSignupStep("password");
     } finally {
       setSubmitting(false);
     }
@@ -182,30 +203,84 @@ function LoginPage() {
                     type="email"
                     autoComplete="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (isSignup && signupStep !== "email") {
+                        setSignupStep("email");
+                        setVerificationCode("");
+                      }
+                    }}
                     placeholder="name@example.com"
-                    className="rounded-[4px] pl-9"
+                    className={`rounded-[4px] pl-9 ${isSignup ? "pr-28" : ""}`}
                   />
+                  {isSignup && signupStep !== "password" && email.includes("@") && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => void sendSignupVerification()}
+                      disabled={submitting}
+                      className="absolute right-1 top-1/2 h-7 -translate-y-1/2 rounded-[3px] px-2 text-xs"
+                    >
+                      {submitting
+                        ? "전송 중..."
+                        : signupStep === "verify"
+                          ? "재전송"
+                          : "인증번호 보내기"}
+                    </Button>
+                  )}
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="password">비밀번호</Label>
-                <div className="relative">
-                  <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type="password"
-                    autoComplete={isSignup ? "new-password" : "current-password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="6자 이상"
-                    className="rounded-[4px] pl-9"
-                  />
+              {isSignup && signupStep === "verify" && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="verification-code">인증번호</Label>
+                  <div className="flex items-center gap-2">
+                    <InputOTP
+                      id="verification-code"
+                      maxLength={6}
+                      value={verificationCode}
+                      onChange={setVerificationCode}
+                      inputMode="numeric"
+                      containerClassName="flex-1 justify-start"
+                    >
+                      <InputOTPGroup>
+                        {Array.from({ length: 6 }, (_, index) => (
+                          <InputOTPSlot key={index} index={index} />
+                        ))}
+                      </InputOTPGroup>
+                    </InputOTP>
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="h-9 shrink-0 rounded-[4px] px-3"
+                      onClick={() => void verifyEmailCode()}
+                      disabled={verificationCode.length !== 6 || submitting}
+                    >
+                      인증
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {isSignup && (
+              {(!isSignup || signupStep === "password") && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="password">비밀번호</Label>
+                  <div className="relative">
+                    <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id="password"
+                      type="password"
+                      autoComplete={isSignup ? "new-password" : "current-password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="6자 이상"
+                      className="rounded-[4px] pl-9"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {isSignup && signupStep === "password" && (
                 <>
                   <div className="space-y-1.5">
                     <Label htmlFor="password-confirm">비밀번호 재입력</Label>
@@ -236,71 +311,30 @@ function LoginPage() {
                 </>
               )}
 
-              <Button
-                type="submit"
-                disabled={!isEmailFormValid || submitting}
-                size="lg"
-                className="w-full rounded-[4px]"
-              >
-                {submitting ? "처리 중..." : isSignup ? "인증번호 보내기" : "로그인"}
-              </Button>
-            </form>
-
-            <p className="mt-6 text-center text-sm text-muted-foreground">
-              {isSignup ? "이미 계정이 있으신가요?" : "계정이 없으신가요?"}{" "}
-              <button
-                type="button"
-                onClick={() => setMode(isSignup ? "login" : "signup")}
-                className="font-medium text-foreground underline underline-offset-4"
-              >
-                {isSignup ? "로그인" : "회원가입"}
-              </button>
-            </p>
-          </section>
-        )}
-
-        {view === "verify" && (
-          <section>
-            <BackButton onClick={() => setView("email")} />
-            <h1 className="mt-5 text-2xl font-semibold text-foreground">이메일 인증</h1>
-
-            <form onSubmit={verifyEmailCode} className="mt-7 space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="verification-code">인증번호</Label>
-                <InputOTP
-                  id="verification-code"
-                  maxLength={6}
-                  value={verificationCode}
-                  onChange={setVerificationCode}
-                  inputMode="numeric"
-                  containerClassName="justify-center"
+              {(!isSignup || signupStep === "password") && (
+                <Button
+                  type="submit"
+                  disabled={!(isSignup ? isSignupFormValid : isLoginFormValid) || submitting}
+                  size="lg"
+                  className="w-full rounded-[4px]"
                 >
-                  <InputOTPGroup>
-                    {Array.from({ length: 6 }, (_, index) => (
-                      <InputOTPSlot key={index} index={index} />
-                    ))}
-                  </InputOTPGroup>
-                </InputOTP>
-              </div>
-
-              <Button
-                type="submit"
-                size="lg"
-                className="w-full rounded-[4px]"
-                disabled={verificationCode.length !== 6 || submitting}
-              >
-                {submitting ? "처리 중..." : "인증하고 시작하기"}
-              </Button>
+                  {submitting ? "처리 중..." : isSignup ? "가입하기" : "로그인"}
+                </Button>
+              )}
             </form>
 
-            <button
-              type="button"
-              onClick={resendVerificationCode}
-              disabled={submitting}
-              className="mt-5 w-full text-center text-sm text-muted-foreground underline underline-offset-4 disabled:opacity-50"
-            >
-              인증번호 다시 보내기
-            </button>
+            {!isSignup && (
+              <p className="mt-6 text-center text-sm text-muted-foreground">
+                계정이 없으신가요?{" "}
+                <button
+                  type="button"
+                  onClick={() => openEmail("signup")}
+                  className="font-medium text-foreground underline underline-offset-4"
+                >
+                  회원가입
+                </button>
+              </p>
+            )}
           </section>
         )}
       </div>
