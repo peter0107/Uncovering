@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
-import { ArrowLeft, CircleCheck, Lock, Mail } from "lucide-react";
+import { ArrowLeft, CircleCheck, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -45,6 +45,8 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isPasswordConfirmVisible, setIsPasswordConfirmVisible] = useState(false);
   const [verificationCode, setVerificationCode] = useState("");
   const [verificationEmail, setVerificationEmail] = useState("");
   const [agree, setAgree] = useState(false);
@@ -439,7 +441,7 @@ function LoginPage() {
                     <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       id="password"
-                      type="password"
+                      type={isPasswordVisible ? "text" : "password"}
                       autoComplete={isSignup ? "new-password" : "current-password"}
                       value={password}
                       onChange={(e) => {
@@ -447,8 +449,17 @@ function LoginPage() {
                         setLoginError(null);
                       }}
                       placeholder="6자 이상"
-                      className="rounded-[4px] pl-9"
+                      className="rounded-[4px] pl-9 pr-10"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setIsPasswordVisible((visible) => !visible)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                      aria-label={isPasswordVisible ? "비밀번호 숨기기" : "비밀번호 보기"}
+                      title={isPasswordVisible ? "비밀번호 숨기기" : "비밀번호 보기"}
+                    >
+                      {isPasswordVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
                   </div>
                 </div>
               )}
@@ -461,12 +472,21 @@ function LoginPage() {
                       <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
                         id="password-confirm"
-                        type="password"
+                        type={isPasswordConfirmVisible ? "text" : "password"}
                         autoComplete="new-password"
                         value={passwordConfirm}
                         onChange={(e) => setPasswordConfirm(e.target.value)}
-                        className="rounded-[4px] pl-9"
+                        className="rounded-[4px] pl-9 pr-10"
                       />
+                      <button
+                        type="button"
+                        onClick={() => setIsPasswordConfirmVisible((visible) => !visible)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+                        aria-label={isPasswordConfirmVisible ? "비밀번호 재입력 숨기기" : "비밀번호 재입력 보기"}
+                        title={isPasswordConfirmVisible ? "비밀번호 숨기기" : "비밀번호 보기"}
+                      >
+                        {isPasswordConfirmVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
                     </div>
                     {passwordConfirm.length > 0 && password !== passwordConfirm && (
                       <p className="text-xs text-destructive">비밀번호가 일치하지 않습니다.</p>
