@@ -517,6 +517,9 @@ function Index() {
               <br />
               <em>직접 경험</em>해보세요
             </h1>
+            <p className="reference-hero-description">
+              Beginner는 실제 직무를 미리 온라인으로 체험하도록 하는 직무 시뮬레이션 플랫폼입니다.
+            </p>
             <a
               href="#company-simulations"
               className="reference-hero-action"
