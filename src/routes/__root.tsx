@@ -109,21 +109,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Beginner - 직접 경험해보고 확인하는 직무 시뮬레이션" },
+      { title: "Beginner" },
+      { name: "application-name", content: "Beginner" },
       {
         name: "description",
-        content:
-          "내가 원하는 직무를 직접 경험해보세요. 나의 AI 활용 능력까지 평가 받아보세요.",
+        content: "Beginner는 실제 직무를 온라인으로 경험할 수 있는 직무 시뮬레이션 서비스입니다.",
       },
-      { property: "og:title", content: "Beginner - 직접 경험해보고 확인하는 직무 시뮬레이션" },
+      { property: "og:title", content: "Beginner" },
       {
         property: "og:description",
-        content:
-          "내가 원하는 직무를 직접 경험해보세요. 나의 AI 활용 능력까지 평가 받아보세요.",
+        content: "Beginner는 실제 직무를 온라인으로 경험할 수 있는 직무 시뮬레이션 서비스입니다.",
       },
       { property: "og:type", content: "website" },
-      { name: "twitter:title", content: "Beginner - 직접 경험해보고 확인하는 직무 시뮬레이션" },
-      { name: "twitter:description", content: "내가 원하는 직무를 직접 경험해보세요. 나의 AI 활용 능력까지 평가 받아보세요." },
+      { name: "twitter:title", content: "Beginner" },
+      { name: "twitter:description", content: "Beginner는 실제 직무를 온라인으로 경험할 수 있는 직무 시뮬레이션 서비스입니다." },
       { property: "og:image", content: "https://beginner.today/og-image.png" },
       { name: "twitter:image", content: "https://beginner.today/og-image.png" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -140,19 +139,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         rel: "stylesheet",
         href: "https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css",
-      },
-      {
-        rel: "preconnect",
-        href: "https://fonts.googleapis.com",
-      },
-      {
-        rel: "preconnect",
-        href: "https://fonts.gstatic.com",
-        crossOrigin: "anonymous",
-      },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Gabarito:wght@400;500;600;700;800&display=swap",
       },
     ],
   }),
