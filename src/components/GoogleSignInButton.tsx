@@ -140,8 +140,10 @@ export function GoogleSignInButton({
     if (matchedAppearance) {
       return (
         <div className="relative flex h-12 w-full items-center justify-center rounded-[14px] border border-[#dadce0] bg-white text-base font-medium text-[#202124]">
-          <GoogleMark className="absolute left-4 h-5 w-5" />
-          <span>Google 계정으로 계속하기</span>
+          <span className="flex items-center gap-3">
+            <GoogleMark className="h-5 w-5" />
+            Google 계정으로 계속하기
+          </span>
         </div>
       );
     }
@@ -162,8 +164,10 @@ export function GoogleSignInButton({
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 flex items-center justify-center"
         >
-          <GoogleMark className="absolute left-4 h-5 w-5" />
-          <span>Google 계정으로 계속하기</span>
+          <span className="flex items-center gap-3">
+            <GoogleMark className="h-5 w-5" />
+            Google 계정으로 계속하기
+          </span>
         </div>
         <div
           ref={containerRef}
