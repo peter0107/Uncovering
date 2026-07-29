@@ -50,18 +50,30 @@ function OnboardingPage() {
 
     setSaving(true);
     try {
-      const { error } = await supabase.from("job_seekers").upsert(
-        {
+      const { data: updated, error: updateError } = await supabase
+        .from("job_seekers")
+        .update({ job_interests: jobInterests })
+        .eq("id", user.id)
+        .select("id");
+
+      if (updateError) {
+        console.error("[Onboarding update]", updateError);
+        toast.error("온보딩 정보를 저장하지 못했습니다.");
+        return;
+      }
+
+      if (!updated?.length) {
+        const { error: insertError } = await supabase.from("job_seekers").insert({
           id: user.id,
           email: user.email ?? "",
           job_interests: jobInterests,
-        },
-        { onConflict: "id" },
-      );
-      if (error) {
-        console.error("[Onboarding]", error);
-        toast.error("온보딩 정보를 저장하지 못했습니다.");
-        return;
+        });
+
+        if (insertError) {
+          console.error("[Onboarding insert]", insertError);
+          toast.error("온보딩 정보를 저장하지 못했습니다.");
+          return;
+        }
       }
 
       navigate({ to: redirect ?? "/simulations", replace: true });
