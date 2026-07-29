@@ -146,11 +146,7 @@ export function GoogleSignInButton({ onSuccess, size = "default" }: Props) {
       <div
         aria-label="Google 로그인 준비 중"
         aria-busy="true"
-        className={
-          size === "large"
-            ? "h-12 w-full rounded-xl border border-[#dadce0] bg-white"
-            : "h-10 w-full rounded-[4px] border border-[#dadce0] bg-white"
-        }
+        className="h-10 w-full rounded-[4px] border border-[#dadce0] bg-white"
       />
     );
   }
@@ -158,11 +154,7 @@ export function GoogleSignInButton({ onSuccess, size = "default" }: Props) {
   return (
     <div
       ref={containerRef}
-      className={
-        size === "large"
-          ? "google-signin-host google-signin-host--large flex h-12 w-full items-center justify-center overflow-hidden rounded-xl"
-          : "google-signin-host flex min-h-10 w-full justify-center"
-      }
+      className="google-signin-host flex min-h-10 w-full justify-center"
     />
   );
 }
