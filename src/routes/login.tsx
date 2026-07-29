@@ -529,8 +529,11 @@ function LoginPage() {
                       checked={agree}
                       onCheckedChange={(value) => setAgree(Boolean(value))}
                       className="mt-0.5"
+                      aria-required="true"
                     />
-                    <span>개인정보 처리방침과 이용약관에 동의합니다.</span>
+                    <span>
+                      개인정보 처리방침과 이용약관에 동의합니다. <span className="text-destructive">(필수)</span>
+                    </span>
                   </label>}
                 </>
               )}
