@@ -322,16 +322,16 @@ function LoginPage() {
               Beginner 시작하기
             </h1>
 
-            <div className="mx-auto mt-10 w-full max-w-[400px] space-y-3">
-              <GoogleSignInButton />
+            <div className="mx-auto mt-10 w-full max-w-[400px] space-y-4">
+              <GoogleSignInButton size="large" />
               <Button
                 type="button"
                 variant="outline"
-                className="relative h-10 w-full rounded-[4px] border-[#dadce0] bg-white px-4 font-[Roboto,Arial,sans-serif] text-[14px] font-medium text-[#3c4043] hover:bg-[#f8fafd] hover:text-[#3c4043]"
+                className="h-12 w-full gap-3 rounded-xl border-[#dadce0] bg-white px-4 font-[Roboto,Arial,sans-serif] text-base font-medium text-[#202124] shadow-none hover:bg-[#f8fafd] hover:text-[#202124]"
                 onClick={() => openEmail("login")}
               >
-                <Mail className="absolute left-3.5 h-[18px] w-[18px]" />
-                <span className="translate-x-1 tracking-[0.02em]">이메일로 시작하기</span>
+                <Mail className="!h-5 !w-5 stroke-[2]" />
+                <span>이메일로 시작하기</span>
               </Button>
             </div>
 

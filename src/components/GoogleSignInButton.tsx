@@ -4,9 +4,10 @@ import { markGoogleLoginPending } from "@/lib/posthog";
 
 type Props = {
   onSuccess?: () => void;
+  size?: "default" | "large";
 };
 
-export function GoogleSignInButton({ onSuccess }: Props) {
+export function GoogleSignInButton({ onSuccess, size = "default" }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const onSuccessRef = useRef(onSuccess);
   const buttonState = `beginner-google-${useId().replaceAll(":", "")}`;
@@ -36,8 +37,9 @@ export function GoogleSignInButton({ onSuccess }: Props) {
 
     let previousWidth = 0;
     const render = () => {
+      const scale = size === "large" ? 1.2 : 1;
       const width = Math.min(
-        Math.max(Math.round(container.clientWidth), 200),
+        Math.max(Math.round(container.clientWidth / scale), 200),
         400,
       );
       if (width === previousWidth) return;
@@ -72,6 +74,7 @@ export function GoogleSignInButton({ onSuccess }: Props) {
     google,
     isAuthenticating,
     setPendingAction,
+    size,
     status,
   ]);
 
@@ -104,7 +107,11 @@ export function GoogleSignInButton({ onSuccess }: Props) {
       <div
         aria-label="Google 로그인 준비 중"
         aria-busy="true"
-        className="h-10 w-full rounded-[4px] border border-[#dadce0] bg-white"
+        className={
+          size === "large"
+            ? "h-12 w-full rounded-xl border border-[#dadce0] bg-white"
+            : "h-10 w-full rounded-[4px] border border-[#dadce0] bg-white"
+        }
       />
     );
   }
@@ -112,7 +119,11 @@ export function GoogleSignInButton({ onSuccess }: Props) {
   return (
     <div
       ref={containerRef}
-      className="google-signin-host flex min-h-10 w-full justify-center"
+      className={
+        size === "large"
+          ? "google-signin-host google-signin-host--large flex h-12 w-full items-center justify-center overflow-hidden rounded-xl"
+          : "google-signin-host flex min-h-10 w-full justify-center"
+      }
     />
   );
 }
