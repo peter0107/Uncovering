@@ -323,7 +323,7 @@ function LoginPage() {
             </h1>
 
             <div className="mt-10 w-full space-y-4">
-              <GoogleSignInButton size="large" />
+              <GoogleSignInButton size="large" appearance="matched" />
               <Button
                 type="button"
                 variant="outline"
