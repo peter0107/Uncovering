@@ -952,10 +952,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      save_onboarding_job_interests: {
-        Args: { p_job_interests: string[] }
-        Returns: undefined
-      }
     }
     Enums: {
       applicant_status: "submitted" | "in_review" | "completed"
