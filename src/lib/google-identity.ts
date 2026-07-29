@@ -17,6 +17,7 @@ export type GoogleIdentity = {
         nonce?: string;
         auto_select?: boolean;
         use_fedcm_for_prompt?: boolean;
+        use_fedcm_for_button?: boolean;
       }): void;
       prompt(
         callback?: (notification: GooglePromptMomentNotification) => void,
@@ -32,6 +33,7 @@ export type GoogleIdentity = {
           text?: "signin_with" | "signup_with" | "continue_with";
           width?: number;
           logo_alignment?: "left" | "center";
+          locale?: string;
           state?: string;
           click_listener?: () => void;
         },

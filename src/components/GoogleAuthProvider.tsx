@@ -68,6 +68,7 @@ export function GoogleAuthProvider({ children }: { children: ReactNode }) {
           nonce: hashedNonce,
           auto_select: false,
           use_fedcm_for_prompt: false,
+          use_fedcm_for_button: true,
           callback: async ({ credential, state }) => {
             if (cancelled) return;
 
