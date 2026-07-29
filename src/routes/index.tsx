@@ -158,7 +158,7 @@ function Header({
         </Link>
 
         <nav className="reference-desktop-nav" aria-label="주요 메뉴">
-          <a href="#service">서비스 소개</a>
+          <Link to="/about">서비스 소개</Link>
           <Link to="/simulations">기업 시뮬레이션</Link>
           {SHOW_EXPERT_SIMULATIONS && <Link to="/expert-simulations">현직자 시뮬레이션</Link>}
           <Link to="/biz">기업용</Link>
@@ -194,9 +194,9 @@ function Header({
 
       {isMenuOpen && (
         <nav className="reference-mobile-nav" aria-label="모바일 주요 메뉴">
-          <a href="#service" onClick={onMenuClose}>
+          <Link to="/about" onClick={onMenuClose}>
             서비스 소개
-          </a>
+          </Link>
           <Link to="/simulations" onClick={onMenuClose}>
             기업 시뮬레이션
           </Link>
@@ -594,7 +594,10 @@ function Index() {
 
       <footer className="reference-footer">
         <div className="reference-shell">
-          <span>© 2026 Beginner. All rights reserved.</span>
+          <div>
+            <span>© 2026 Beginner. All rights reserved.</span>
+            <p>Beginner는 실제 직무를 온라인으로 경험할 수 있는 직무 시뮬레이션 서비스입니다.</p>
+          </div>
           <nav aria-label="하단 메뉴">
             <Link to="/faq">자주 묻는 질문</Link>
             <Link to="/terms">이용약관</Link>
