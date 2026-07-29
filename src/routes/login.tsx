@@ -231,7 +231,7 @@ function LoginPage() {
           return;
         }
 
-        if (data.user) await captureLogin(data.user.id);
+        if (data.user) await captureLogin(data.user.id, data.user.email);
         navigate({
           to: getPostLoginPath(data.user?.email ?? email, redirect),
           replace: true,
@@ -267,7 +267,7 @@ function LoginPage() {
       }
 
       if (data.user) {
-        await captureSignup(data.user.id);
+        await captureSignup(data.user.id, data.user.email);
         navigate({
           to: getPostLoginPath(data.user.email ?? email, redirect),
           replace: true,

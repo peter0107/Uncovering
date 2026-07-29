@@ -55,7 +55,7 @@ export function PostHogTracker() {
       if (cancelled || !posthog || posthog.has_opted_out_capturing()) return;
 
       if (userId) {
-        posthog.identify(userId);
+        posthog.identify(userId, email ? { email } : undefined);
         return;
       }
       posthog.reset();

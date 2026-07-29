@@ -97,10 +97,10 @@ export function GoogleAuthProvider({ children }: { children: ReactNode }) {
                 Number.isFinite(createdAtMs) &&
                 Date.now() - createdAtMs < SIGNUP_DETECTION_WINDOW_MS;
               const signupCaptured = isNewSignup
-                ? await captureSignup(user.id)
+                ? await captureSignup(user.id, user.email)
                 : false;
               if (!signupCaptured) {
-                await captureLogin(user.id);
+                await captureLogin(user.id, user.email);
               }
             }
 
