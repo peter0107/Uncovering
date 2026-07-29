@@ -4,7 +4,10 @@ import { BrandLogo } from "@/components/BrandLogo";
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
-      { title: "Beginner 소개" },
+      { title: "Beginner" },
+      { name: "application-name", content: "Beginner" },
+      { property: "og:title", content: "Beginner" },
+      { name: "twitter:title", content: "Beginner" },
       {
         name: "description",
         content:
