@@ -189,7 +189,7 @@ export async function captureSignup(userId: string, email?: string): Promise<boo
   if (!posthog) return false;
 
   posthog.identify(userId, email ? { email: email.trim().toLowerCase() } : undefined);
-  posthog.capture("signup");
+  posthog.capture("user_signed_up");
   try {
     window.localStorage.setItem(key, "1");
   } catch {
@@ -202,5 +202,5 @@ export async function captureLogin(userId: string, email?: string) {
   const posthog = await getPostHogClient();
   if (!posthog) return;
   posthog.identify(userId, email ? { email: email.trim().toLowerCase() } : undefined);
-  posthog.capture("login");
+  posthog.capture("user_logged_in");
 }
