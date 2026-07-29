@@ -597,10 +597,7 @@ function Index() {
 
       <footer className="reference-footer">
         <div className="reference-shell">
-          <div>
-            <span>© 2026 Beginner. All rights reserved.</span>
-            <p>Beginner는 실제 직무를 온라인으로 경험할 수 있는 직무 시뮬레이션 서비스입니다.</p>
-          </div>
+          <span>© 2026 Beginner. All rights reserved.</span>
           <nav aria-label="하단 메뉴">
             <Link to="/faq">자주 묻는 질문</Link>
             <Link to="/terms">이용약관</Link>
