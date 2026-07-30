@@ -317,17 +317,17 @@ function LoginPage() {
     <main className="mx-auto flex min-h-[calc(100vh-8rem)] w-full max-w-md items-center px-5 py-12">
       <div className="w-full">
         {view === "choice" && (
-          <section>
-            <h1 className="text-center text-2xl font-semibold text-foreground">
+          <section className="mx-auto w-full max-w-[400px]">
+            <h1 className="text-center text-[24px] font-semibold leading-8 text-foreground">
               Beginner 시작하기
             </h1>
 
-            <div className="mx-auto mt-10 w-full max-w-[400px] space-y-4">
-              <GoogleSignInButton size="large" />
+            <div className="mt-10 w-full space-y-4">
+              <GoogleSignInButton size="large" appearance="matched" />
               <Button
                 type="button"
                 variant="outline"
-                className="h-12 w-full gap-3 rounded-xl border-[#dadce0] bg-white px-4 font-[Roboto,Arial,sans-serif] text-base font-medium text-[#202124] shadow-none hover:bg-[#f8fafd] hover:text-[#202124]"
+                className="h-12 w-full gap-3 rounded-[14px] border-[#dadce0] bg-white px-4 text-base font-medium text-[#202124] shadow-none hover:bg-[#f8fafd] hover:text-[#202124]"
                 onClick={() => openEmail("login")}
               >
                 <Mail className="!h-5 !w-5 stroke-[2]" />
@@ -529,8 +529,11 @@ function LoginPage() {
                       checked={agree}
                       onCheckedChange={(value) => setAgree(Boolean(value))}
                       className="mt-0.5"
+                      aria-required="true"
                     />
-                    <span>개인정보 처리방침과 이용약관에 동의합니다.</span>
+                    <span>
+                      개인정보 처리방침과 이용약관에 동의합니다. <span className="text-destructive">(필수)</span>
+                    </span>
                   </label>}
                 </>
               )}
