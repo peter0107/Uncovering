@@ -4,6 +4,25 @@ import { useAuth } from "@/hooks/use-auth";
 import { getPostHogClient } from "@/lib/posthog";
 
 const EXCLUDED_POSTHOG_EMAILS = new Set(["standard1414@g.skku.edu"]);
+const PAGEVIEW_CAPTURED_KEY = "ph_pageview_captured";
+
+let pageviewCapturePending = false;
+
+function hasCapturedPageview() {
+  try {
+    return window.localStorage.getItem(PAGEVIEW_CAPTURED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markPageviewCaptured() {
+  try {
+    window.localStorage.setItem(PAGEVIEW_CAPTURED_KEY, "1");
+  } catch {
+    // The in-memory guard still prevents duplicates during this page load.
+  }
+}
 
 export function PostHogTracker() {
   const locationHref = useRouterState({ select: (state) => state.location.href });
@@ -32,19 +51,21 @@ export function PostHogTracker() {
 
   useEffect(() => {
     if (loading || isExcluded) return;
+    if (pageviewCapturePending || hasCapturedPageview()) return;
 
-    let cancelled = false;
+    pageviewCapturePending = true;
     void getPostHogClient().then((posthog) => {
-      if (cancelled || !posthog || posthog.has_opted_out_capturing()) return;
+      if (!posthog || posthog.has_opted_out_capturing()) {
+        pageviewCapturePending = false;
+        return;
+      }
+
+      markPageviewCaptured();
       posthog.capture("$pageview", {
         $current_url: window.location.href,
         route: window.location.pathname,
       });
     });
-
-    return () => {
-      cancelled = true;
-    };
   }, [loading, isExcluded, locationHref]);
 
   useEffect(() => {
@@ -64,7 +85,7 @@ export function PostHogTracker() {
     return () => {
       cancelled = true;
     };
-  }, [loading, isExcluded, userId]);
+  }, [loading, isExcluded, userId, email]);
 
   return null;
 }
