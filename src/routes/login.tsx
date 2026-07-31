@@ -327,7 +327,7 @@ function LoginPage() {
               <Button
                 type="button"
                 variant="outline"
-                className="h-12 w-full gap-3 rounded-[14px] border-[#dadce0] bg-white px-4 text-base font-medium text-[#202124] shadow-none hover:bg-[#f8fafd] hover:text-[#202124]"
+                className="h-12 w-full gap-3 rounded-[14px] border-[#dadce0] bg-white px-4 text-base font-medium text-[#202124] shadow-none transition-colors hover:border-[#b9c7e3] hover:bg-[#f8fafd] hover:text-[#202124]"
                 onClick={() => openEmail("login")}
               >
                 <Mail className="!h-5 !w-5 stroke-[2]" />

@@ -159,7 +159,7 @@ export function GoogleSignInButton({
 
   if (matchedAppearance) {
     return (
-      <div className="relative h-12 w-full overflow-hidden rounded-[14px] border border-[#dadce0] bg-white text-base font-medium text-[#202124]">
+      <div className="group relative h-12 w-full overflow-hidden rounded-[14px] border border-[#dadce0] bg-white text-base font-medium text-[#202124] transition-colors hover:border-[#b9c7e3] hover:bg-[#f8fafd]">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 flex items-center justify-center"
