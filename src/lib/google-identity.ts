@@ -94,6 +94,10 @@ export function loadGoogleIdentity(): Promise<GoogleIdentity> {
     );
 
     if (existing) {
+      if (window.google?.accounts?.id) {
+        succeed();
+        return;
+      }
       existing.addEventListener("load", finish, { once: true });
       existing.addEventListener(
         "error",
@@ -108,6 +112,7 @@ export function loadGoogleIdentity(): Promise<GoogleIdentity> {
     const script = document.createElement("script");
     script.src = GOOGLE_IDENTITY_SCRIPT;
     script.async = true;
+    script.crossOrigin = "anonymous";
     script.onload = finish;
     script.onerror = () => {
       fail(new Error("Google 로그인 스크립트를 불러오지 못했습니다."));

@@ -9,6 +9,8 @@ type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
 };
 
+type WorkerBindings = Record<string, unknown>;
+
 let serverEntryPromise: Promise<ServerEntry> | undefined;
 
 async function getServerEntry(): Promise<ServerEntry> {
@@ -25,6 +27,27 @@ function brandedErrorResponse(): Response {
     status: 500,
     headers: { "content-type": "text/html; charset=utf-8" },
   });
+}
+
+function readWorkerString(env: unknown, key: string): string {
+  if (!env || typeof env !== "object") return "";
+  const value = (env as WorkerBindings)[key];
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function googleClientIdResponse(env: unknown): Response {
+  const clientId =
+    readWorkerString(env, "GOOGLE_CLIENT_ID") ||
+    readWorkerString(env, "VITE_GOOGLE_CLIENT_ID");
+
+  return Response.json(
+    { clientId },
+    {
+      headers: {
+        "cache-control": "no-store",
+      },
+    },
+  );
 }
 
 function isCatastrophicSsrErrorBody(body: string, responseStatus: number): boolean {
@@ -74,6 +97,13 @@ export default {
       // JD 시뮬레이션 생성은 응답이 길어 SSR 핸들러를 거치지 않고 직접 스트리밍합니다.
       // (첫 바이트를 즉시 내보내 Cloudflare 524를 회피)
       const { pathname } = new URL(request.url);
+      if (pathname === "/api/google-client-id") {
+        if (request.method !== "GET") {
+          return new Response("Method Not Allowed", { status: 405 });
+        }
+        return googleClientIdResponse(env);
+      }
+
       if (pathname === "/api/generate-simulation") {
         if (request.method !== "POST") {
           return new Response("Method Not Allowed", { status: 405 });
