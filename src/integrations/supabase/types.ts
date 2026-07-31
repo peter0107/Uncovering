@@ -193,6 +193,36 @@ export type Database = {
         }
         Relationships: []
       }
+      company_role_requests: {
+        Row: {
+          company_name: string
+          created_at: string
+          id: string
+          requester_email: string | null
+          requester_id: string | null
+          role_name: string
+          status: string
+        }
+        Insert: {
+          company_name: string
+          created_at?: string
+          id?: string
+          requester_email?: string | null
+          requester_id?: string | null
+          role_name: string
+          status?: string
+        }
+        Update: {
+          company_name?: string
+          created_at?: string
+          id?: string
+          requester_email?: string | null
+          requester_id?: string | null
+          role_name?: string
+          status?: string
+        }
+        Relationships: []
+      }
       companies: {
         Row: {
           code: string | null

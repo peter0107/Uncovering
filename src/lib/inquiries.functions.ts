@@ -159,6 +159,11 @@ const coffeeChatBookingSchema = z.object({
   turnstileToken: z.string().min(1),
 });
 
+const companyRoleRequestSchema = z.object({
+  companyName: z.string().trim().min(1).max(120),
+  roleName: z.string().trim().min(1).max(120),
+});
+
 // ── 반환 타입 ─────────────────────────────────────────────────
 export type BookedSlot = { slotDate: string; slotTime: string };
 
@@ -189,13 +194,24 @@ export type CoffeeChatBooking = {
   createdAt: string;
 };
 
+export type CompanyRoleRequest = {
+  id: string;
+  companyName: string;
+  roleName: string;
+  requesterEmail: string;
+  status: string;
+  createdAt: string;
+};
+
 export type AdminInquiries = {
   applications: ServiceApplication[];
   bookings: CoffeeChatBooking[];
+  companyRoleRequests: CompanyRoleRequest[];
 };
 
 type ServiceApplicationRow = Database["public"]["Tables"]["service_applications"]["Row"];
 type CoffeeChatBookingRow = Database["public"]["Tables"]["coffee_chat_bookings"]["Row"];
+type CompanyRoleRequestRow = Database["public"]["Tables"]["company_role_requests"]["Row"];
 
 function mapServiceApplication(row: ServiceApplicationRow): ServiceApplication {
   return {
@@ -224,6 +240,17 @@ function mapCoffeeChatBooking(row: CoffeeChatBookingRow): CoffeeChatBooking {
     phone: row.phone,
     companyName: row.company_name,
     hiringConcern: row.hiring_concern ?? "",
+    createdAt: formatDateTime(row.created_at),
+  };
+}
+
+function mapCompanyRoleRequest(row: CompanyRoleRequestRow): CompanyRoleRequest {
+  return {
+    id: row.id,
+    companyName: row.company_name,
+    roleName: row.role_name,
+    requesterEmail: row.requester_email ?? "",
+    status: row.status,
     createdAt: formatDateTime(row.created_at),
   };
 }
@@ -318,18 +345,56 @@ export const submitCoffeeChatBooking = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+export const submitCompanyRoleRequest = createServerFn({ method: "POST" })
+  .inputValidator(companyRoleRequestSchema)
+  .handler(async ({ data }) => {
+    const request = getRequest();
+    const authHeader = request?.headers.get("authorization") ?? "";
+    let requesterId: string | null = null;
+    let requesterEmail: string | null = null;
+
+    if (authHeader.startsWith("Bearer ")) {
+      const token = authHeader.slice("Bearer ".length).trim();
+      if (token) {
+        const supabase = createPublicServerClient();
+        const { data: userData } = await supabase.auth.getUser(token);
+        requesterId = userData.user?.id ?? null;
+        requesterEmail = userData.user?.email ?? null;
+      }
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("company_role_requests").insert({
+      company_name: data.companyName,
+      role_name: data.roleName,
+      requester_id: requesterId,
+      requester_email: requesterEmail,
+    });
+
+    if (error) {
+      console.error("Failed to submit company role request:", error);
+      throw new Error("요청을 보내지 못했습니다. 잠시 후 다시 시도해주세요.");
+    }
+
+    return { ok: true as const };
+  });
+
 // 관리자 전용: 두 신청 목록 일괄 조회.
 export const getAdminInquiries = createServerFn({ method: "GET" }).handler(
   async (): Promise<AdminInquiries> => {
     await assertAdmin();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const [appsRes, bookingsRes] = await Promise.all([
+    const [appsRes, bookingsRes, companyRoleRequestsRes] = await Promise.all([
       supabaseAdmin
         .from("service_applications")
         .select("*")
         .order("created_at", { ascending: false }),
       supabaseAdmin
         .from("coffee_chat_bookings")
+        .select("*")
+        .order("created_at", { ascending: false }),
+      supabaseAdmin
+        .from("company_role_requests")
         .select("*")
         .order("created_at", { ascending: false }),
     ]);
@@ -341,9 +406,14 @@ export const getAdminInquiries = createServerFn({ method: "GET" }).handler(
       console.error("Failed to load coffee chat bookings:", bookingsRes.error);
       throw new Error("커피챗 예약 목록을 불러오지 못했습니다.");
     }
+    if (companyRoleRequestsRes.error) {
+      console.error("Failed to load company role requests:", companyRoleRequestsRes.error);
+      throw new Error("희망 기업·직무 요청을 불러오지 못했습니다.");
+    }
     return {
       applications: (appsRes.data ?? []).map(mapServiceApplication),
       bookings: (bookingsRes.data ?? []).map(mapCoffeeChatBooking),
+      companyRoleRequests: (companyRoleRequestsRes.data ?? []).map(mapCompanyRoleRequest),
     };
   },
 );

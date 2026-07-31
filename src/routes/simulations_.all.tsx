@@ -2,9 +2,18 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, LayoutGrid, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { CardSkeleton, SimCard, fetchAll, type Simulation } from "./simulations";
 import { DOMAIN_CATEGORIES } from "@/lib/domain-categories";
+import { submitCompanyRoleRequest } from "@/lib/inquiries.functions";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/simulations_/all")({
   head: () => ({ meta: [{ title: "전체 직무 — Beginner" }] }),
@@ -17,6 +26,10 @@ function AllSimulationsPage() {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [selectedDomain, setSelectedDomain] = useState<string | null>(null);
+  const [requestDialogOpen, setRequestDialogOpen] = useState(false);
+  const [requestedCompanyName, setRequestedCompanyName] = useState("");
+  const [requestedRoleName, setRequestedRoleName] = useState("");
+  const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -51,6 +64,28 @@ function AllSimulationsPage() {
       );
     });
   }, [sims, query, selectedDomain]);
+
+  async function submitRequest() {
+    const companyName = requestedCompanyName.trim();
+    const roleName = requestedRoleName.trim();
+    if (!companyName || !roleName) {
+      toast.error("희망 기업과 희망 직무를 입력해주세요.");
+      return;
+    }
+
+    setIsSubmittingRequest(true);
+    try {
+      await submitCompanyRoleRequest({ data: { companyName, roleName } });
+      setRequestDialogOpen(false);
+      setRequestedCompanyName("");
+      setRequestedRoleName("");
+      toast.success("요청을 보냈습니다.");
+    } catch (requestError) {
+      toast.error(requestError instanceof Error ? requestError.message : "요청을 보내지 못했습니다.");
+    } finally {
+      setIsSubmittingRequest(false);
+    }
+  }
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12">
@@ -188,6 +223,68 @@ function AllSimulationsPage() {
           </div>
         )}
       </div>
+
+      {!loading && (
+        <div className="mt-10 text-center text-sm text-zinc-500">
+          <span>원하는 기업과 원하는 직무가 없나요? </span>
+          <button
+            type="button"
+            onClick={() => setRequestDialogOpen(true)}
+            className="font-medium text-zinc-900 underline underline-offset-4 hover:text-zinc-600"
+          >
+            요청하기
+          </button>
+        </div>
+      )}
+
+      <Dialog open={requestDialogOpen} onOpenChange={setRequestDialogOpen}>
+        <DialogContent className="max-w-md rounded-md p-6 shadow-none data-[state=closed]:!animate-none data-[state=open]:!animate-none">
+          <DialogHeader>
+            <DialogTitle>희망 기업·직무 요청</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <label className="grid gap-2 text-sm font-medium text-zinc-800" htmlFor="request-company-name">
+              희망 기업
+              <input
+                id="request-company-name"
+                value={requestedCompanyName}
+                onChange={(event) => setRequestedCompanyName(event.target.value)}
+                maxLength={120}
+                className="h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm outline-none focus:border-zinc-500"
+              />
+            </label>
+            <label className="grid gap-2 text-sm font-medium text-zinc-800" htmlFor="request-role-name">
+              희망 직무
+              <input
+                id="request-role-name"
+                value={requestedRoleName}
+                onChange={(event) => setRequestedRoleName(event.target.value)}
+                maxLength={120}
+                className="h-10 rounded-md border border-zinc-200 bg-white px-3 text-sm outline-none focus:border-zinc-500"
+              />
+            </label>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setRequestDialogOpen(false)}
+              disabled={isSubmittingRequest}
+              className="rounded-md"
+            >
+              취소
+            </Button>
+            <Button
+              type="button"
+              onClick={submitRequest}
+              disabled={isSubmittingRequest}
+              className="rounded-md bg-zinc-900 text-white hover:bg-zinc-700"
+            >
+              {isSubmittingRequest ? "보내는 중..." : "보내기"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
