@@ -176,7 +176,7 @@ function AdsPage() {
                 있습니다.
               </p>
               <Link
-                to="/"
+                to="/simulations"
                 className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[#d9dee8] bg-white px-4 text-sm font-bold text-[#1a2340] transition-colors hover:border-[#1659e3] hover:text-[#1659e3]"
               >
                 베타 직무 보러가기
