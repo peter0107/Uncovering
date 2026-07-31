@@ -3,7 +3,6 @@ import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { AccountMenu } from "@/components/AccountMenu";
 import { BrandLogo } from "@/components/BrandLogo";
-import { useLoadingOverlay } from "@/components/LoadingOverlay";
 import { useAuth } from "@/hooks/use-auth";
 
 const NAV: { to: string; label: string }[] = [];
@@ -11,7 +10,6 @@ const NAV: { to: string; label: string }[] = [];
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const { user } = useAuth();
-  const { showBriefLoading } = useLoadingOverlay();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const isLoginPage = pathname === "/login";
 
@@ -21,7 +19,6 @@ export function SiteHeader() {
         <div className="mx-auto flex h-16 w-full max-w-[72.5rem] items-center justify-between px-12 max-[42rem]:px-5">
           <Link
             to="/"
-            onClick={() => showBriefLoading()}
             className="flex items-center"
             aria-label="Beginner 홈"
           >

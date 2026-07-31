@@ -7,6 +7,7 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 
 import appCss from "../styles.css?url";
 import { Toaster } from "@/components/ui/sonner";
@@ -19,14 +20,31 @@ import { PostHogTracker } from "@/components/PostHogTracker";
 import { GoogleAuthProvider } from "@/components/GoogleAuthProvider";
 import { useRouterState } from "@tanstack/react-router";
 
+function useDelayedLoading(active: boolean, delay = 450) {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    if (!active) {
+      setIsVisible(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => setIsVisible(true), delay);
+    return () => window.clearTimeout(timer);
+  }, [active, delay]);
+
+  return isVisible;
+}
+
 function GlobalNavigationOverlay() {
   const isNavigating = useRouterState({
     select: (s) => s.isLoading || s.isTransitioning,
   });
   const { isRequestLoading } = useLoadingOverlay();
+  const showNavigationLoading = useDelayedLoading(isNavigating);
 
-  if (!isNavigating && !isRequestLoading) return null;
-  return <LoadingOverlay message={isNavigating ? "페이지 이동 중..." : "불러오는 중..."} />;
+  if (!showNavigationLoading && !isRequestLoading) return null;
+  return <LoadingOverlay message={showNavigationLoading ? "페이지 이동 중..." : "불러오는 중..."} />;
 }
 
 function SiteLayout({ children }: { children: React.ReactNode }) {

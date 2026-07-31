@@ -22,9 +22,13 @@ function getRequestUrl(input: RequestInfo | URL): string | null {
   return input.url;
 }
 
-function shouldTrackRequest(input: RequestInfo | URL): boolean {
+function shouldTrackRequest(input: RequestInfo | URL, init?: RequestInit): boolean {
   const rawUrl = getRequestUrl(input);
   if (!rawUrl) return false;
+
+  const method = (init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();
+  // Read requests already have their own page-level loading states. Do not block the entire app for them.
+  if (method === "GET" || method === "HEAD") return false;
 
   try {
     const url = new URL(rawUrl, window.location.href);
@@ -61,7 +65,7 @@ export function LoadingOverlayProvider({ children }: { children: ReactNode }) {
     const nativeFetch = originalFetch.bind(window);
 
     window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
-      if (!shouldTrackRequest(input)) {
+      if (!shouldTrackRequest(input, init)) {
         return nativeFetch(input, init);
       }
 
@@ -69,7 +73,7 @@ export function LoadingOverlayProvider({ children }: { children: ReactNode }) {
       const timer = window.setTimeout(() => {
         isVisible = true;
         setRequestCount((count) => count + 1);
-      }, 180);
+      }, 650);
 
       try {
         return await nativeFetch(input, init);

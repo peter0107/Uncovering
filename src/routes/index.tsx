@@ -4,7 +4,6 @@ import { useEffect, useRef, useState, type MouseEvent, type PointerEvent, type R
 
 import { AccountMenu } from "@/components/AccountMenu";
 import { BrandLogo } from "@/components/BrandLogo";
-import { useLoadingOverlay } from "@/components/LoadingOverlay";
 import { ExpertSimulationCard } from "@/components/ExpertSimulationCard";
 import { SimulationCardPreview } from "@/components/SimulationCardPreview";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -150,7 +149,6 @@ function Header({
   onMenuClose: () => void;
 }) {
   const { user } = useAuth();
-  const { showBriefLoading } = useLoadingOverlay();
 
   return (
     <header className="reference-header">
@@ -159,7 +157,6 @@ function Header({
           to="/"
           onClick={() => {
             onMenuClose();
-            showBriefLoading();
           }}
         >
           <Brand />
