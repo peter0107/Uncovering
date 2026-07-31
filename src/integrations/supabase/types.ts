@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      ads_requests: {
+        Row: {
+          company_name: string | null
+          created_at: string
+          email: string
+          id: string
+          job_role: string
+        }
+        Insert: {
+          company_name?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          job_role: string
+        }
+        Update: {
+          company_name?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          job_role?: string
+        }
+        Relationships: []
+      }
       ai_prompt_settings: {
         Row: {
           key: string
