@@ -73,9 +73,12 @@ function AdsPage() {
               <h1 className="text-[2rem] font-extrabold leading-[1.2] tracking-[-0.045em] text-[#1a2340] sm:text-[2.5rem]">
                 관심 직무를 직접 해보세요
               </h1>
-              <p className="mt-4 text-[0.9375rem] leading-7 text-[#667085]">
-                알고 싶은 직무를 적어주세요. 채용 공고를 바탕으로 해당 직무 시뮬레이션을
-                만들어드립니다. 완성되면 이메일로 해당 링크 보내드립니다.
+              <p className="mt-4 text-[0.9375rem] leading-7 text-[#667085] [word-break:keep-all]">
+                <span className="block">알고 싶은 직무를 적어주세요.</span>
+                <span className="block">
+                  채용 공고를 바탕으로 해당 직무 시뮬레이션을 만들어드립니다.
+                </span>
+                <span className="block">완성되면 이메일로 해당 링크 보내드립니다.</span>
               </p>
             </div>
 
