@@ -19,9 +19,7 @@ export type GoogleIdentity = {
         use_fedcm_for_prompt?: boolean;
         use_fedcm_for_button?: boolean;
       }): void;
-      prompt(
-        callback?: (notification: GooglePromptMomentNotification) => void,
-      ): void;
+      prompt(callback?: (notification: GooglePromptMomentNotification) => void): void;
       disableAutoSelect(): void;
       renderButton(
         parent: HTMLElement,
@@ -112,7 +110,8 @@ export function loadGoogleIdentity(): Promise<GoogleIdentity> {
     const script = document.createElement("script");
     script.src = GOOGLE_IDENTITY_SCRIPT;
     script.async = true;
-    script.crossOrigin = "anonymous";
+    // crossOrigin을 지정하면 브라우저가 CORS 모드로 요청하는데, accounts.google.com은
+    // Access-Control-Allow-Origin을 주지 않아 차단된다. GSI는 일반 스크립트로 불러온다.
     script.onload = finish;
     script.onerror = () => {
       fail(new Error("Google 로그인 스크립트를 불러오지 못했습니다."));
