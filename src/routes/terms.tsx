@@ -89,7 +89,26 @@ function TermsPage() {
         </p>
       </FooterPageSection>
 
-      <FooterPageSection title="제8조 이용 제한 및 서비스 변경">
+      <FooterPageSection title="제8조 회원 탈퇴">
+        <p>
+          회원은 언제든지 마이페이지 하단의 회원 탈퇴 기능을 통해 직접 탈퇴할 수 있으며, 별도의 승인
+          절차는 필요하지 않습니다.
+        </p>
+        <p>
+          탈퇴 시 계정 정보, 프로필, 이력서, 시뮬레이션 답변과 제출 기록, 업로드한 파일이
+          삭제됩니다. 기업에 공유된 결과물도 함께 삭제되어 기업 화면에서 더 이상 열람할 수 없습니다.
+          다만 탈퇴 이전에 기업이 이미 열람하거나 내려받은 내용에 대해서는 운영팀이 삭제를 보장할 수
+          없습니다.
+        </p>
+        <p>
+          삭제된 정보는 복구할 수 없으므로 탈퇴 전에 필요한 자료를 미리 보관하시기 바랍니다. 관계
+          법령에 따라 보관이 필요한 정보는 해당 법령에서 정한 기간 동안 보관하며, 자세한 내용은
+          개인정보처리방침을 따릅니다.
+        </p>
+        <p>탈퇴 후 동일한 이메일로 다시 가입할 수 있으나, 이전 이용 기록은 복원되지 않습니다.</p>
+      </FooterPageSection>
+
+      <FooterPageSection title="제9조 이용 제한 및 서비스 변경">
         <p>
           운영팀은 법령 또는 이 약관을 위반한 경우 회원의 이용을 제한하거나 계정을 삭제할 수
           있습니다. 안정적인 운영, 기능 개선 또는 법령 변경을 위해 서비스의 일부 또는 전부를
@@ -97,7 +116,7 @@ function TermsPage() {
         </p>
       </FooterPageSection>
 
-      <FooterPageSection title="제9조 약관의 변경">
+      <FooterPageSection title="제10조 약관의 변경">
         <p>
           운영팀은 관련 법령을 위반하지 않는 범위에서 이 약관을 변경할 수 있습니다. 변경 사항은
           적용일과 변경 사유를 명시해 서비스 내 공지 또는 이메일로 안내하며, 회원에게 불리한 변경은
@@ -105,14 +124,14 @@ function TermsPage() {
         </p>
       </FooterPageSection>
 
-      <FooterPageSection title="제10조 준거법 및 분쟁 해결">
+      <FooterPageSection title="제11조 준거법 및 분쟁 해결">
         <p>
           이 약관은 대한민국 법령에 따라 해석되며, 서비스 이용과 관련해 발생한 분쟁은 민사소송법에
           따른 관할 법원에서 다룹니다.
         </p>
       </FooterPageSection>
 
-      <FooterPageSection title="제11조 문의처">
+      <FooterPageSection title="제12조 문의처">
         <p>서비스 이용 문의: u.ncovering2026@gmail.com</p>
       </FooterPageSection>
     </FooterPageLayout>
