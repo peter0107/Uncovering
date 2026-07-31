@@ -12,7 +12,7 @@ import appCss from "../styles.css?url";
 import { Toaster } from "@/components/ui/sonner";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
-import { NavigationOverlay } from "@/components/LoadingOverlay";
+import { LoadingOverlay, LoadingOverlayProvider, useLoadingOverlay } from "@/components/LoadingOverlay";
 import { ClarityTracker } from "@/components/ClarityTracker";
 import { GoogleAnalyticsTracker } from "@/components/GoogleAnalyticsTracker";
 import { PostHogTracker } from "@/components/PostHogTracker";
@@ -23,8 +23,10 @@ function GlobalNavigationOverlay() {
   const isNavigating = useRouterState({
     select: (s) => s.isLoading || s.isTransitioning,
   });
-  if (!isNavigating) return null;
-  return <NavigationOverlay />;
+  const { isRequestLoading } = useLoadingOverlay();
+
+  if (!isNavigating && !isRequestLoading) return null;
+  return <LoadingOverlay message={isNavigating ? "페이지 이동 중..." : "불러오는 중..."} />;
 }
 
 function SiteLayout({ children }: { children: React.ReactNode }) {
@@ -167,16 +169,18 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <GoogleAuthProvider>
-        <ClarityTracker />
-        <GoogleAnalyticsTracker />
-        <PostHogTracker />
-        <SiteLayout>
-          <Outlet />
-        </SiteLayout>
-        <GlobalNavigationOverlay />
-        <Toaster />
-      </GoogleAuthProvider>
+      <LoadingOverlayProvider>
+        <GoogleAuthProvider>
+          <ClarityTracker />
+          <GoogleAnalyticsTracker />
+          <PostHogTracker />
+          <SiteLayout>
+            <Outlet />
+          </SiteLayout>
+          <GlobalNavigationOverlay />
+          <Toaster />
+        </GoogleAuthProvider>
+      </LoadingOverlayProvider>
     </QueryClientProvider>
   );
 }

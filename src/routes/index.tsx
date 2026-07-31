@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type MouseEvent, type PointerEvent, type R
 
 import { AccountMenu } from "@/components/AccountMenu";
 import { BrandLogo } from "@/components/BrandLogo";
+import { useLoadingOverlay } from "@/components/LoadingOverlay";
 import { ExpertSimulationCard } from "@/components/ExpertSimulationCard";
 import { SimulationCardPreview } from "@/components/SimulationCardPreview";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -149,11 +150,18 @@ function Header({
   onMenuClose: () => void;
 }) {
   const { user } = useAuth();
+  const { showBriefLoading } = useLoadingOverlay();
 
   return (
     <header className="reference-header">
       <div className="reference-shell reference-header-inner">
-        <Link to="/" onClick={onMenuClose}>
+        <Link
+          to="/"
+          onClick={() => {
+            onMenuClose();
+            showBriefLoading();
+          }}
+        >
           <Brand />
         </Link>
 
