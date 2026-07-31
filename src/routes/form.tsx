@@ -7,10 +7,10 @@ import { submitAdsRequest } from "@/lib/ads.functions";
 export const Route = createFileRoute("/form")({
   head: () => ({
     meta: [
-      { title: "관심 직무를 직접 해보세요 | Beginner" },
+      { title: "관심 직무를 신청해보세요 | Beginner" },
       {
         name: "description",
-        content: "관심 있는 직무를 알려주시면 채용 공고를 바탕으로 직무 시뮬레이션을 만들어드립니다.",
+        content: "궁금한 직무를 신청하면 실제 기업에서 맡게 될 업무를 바탕으로 시뮬레이션을 만들어드립니다.",
       },
     ],
   }),
@@ -78,14 +78,14 @@ function AdsPage() {
           <>
             <div className="border-b border-[#e5e9f0] pb-8">
               <h1 className="text-[2rem] font-extrabold leading-[1.2] tracking-[-0.045em] text-[#1a2340] sm:text-[2.5rem]">
-                관심 직무를 직접 해보세요
+                관심 직무를 신청해보세요
               </h1>
               <p className="mt-4 text-[0.9375rem] leading-7 text-[#667085] [word-break:keep-all]">
-                <span className="block">알고 싶은 직무를 적어주세요.</span>
+                <span className="block">아래 폼에 궁금한 직무를 적어주세요.</span>
                 <span className="block">
-                  채용 공고를 바탕으로 해당 직무 시뮬레이션을 만들어드립니다.
+                  실제 기업에 입사하면 맡게 될 업무를 제공해드립니다.
                 </span>
-                <span className="block">완성되면 이메일로 해당 링크 보내드립니다.</span>
+                <span className="block">완성되면 이메일로 안내드리겠습니다.</span>
               </p>
             </div>
 
