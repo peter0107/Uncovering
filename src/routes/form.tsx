@@ -66,6 +66,13 @@ function AdsPage() {
             <p className="mt-3 text-sm leading-6 text-[#667085]">
               시뮬레이션이 완성되면 입력하신 이메일로 링크를 보내드릴게요.
             </p>
+            <Link
+              to="/simulations"
+              className="mt-7 inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#1659e3] px-5 text-sm font-bold text-white transition-colors hover:bg-[#0f49c5] hover:text-white"
+            >
+              시뮬레이션 보기
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
           </div>
         ) : (
           <>
