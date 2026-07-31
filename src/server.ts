@@ -16,7 +16,7 @@ let serverEntryPromise: Promise<ServerEntry> | undefined;
 async function getServerEntry(): Promise<ServerEntry> {
   if (!serverEntryPromise) {
     serverEntryPromise = import("@tanstack/react-start/server-entry").then(
-      (m) => ((m as { default?: ServerEntry }).default ?? (m as unknown as ServerEntry)),
+      (m) => (m as { default?: ServerEntry }).default ?? (m as unknown as ServerEntry),
     );
   }
   return serverEntryPromise;
@@ -29,16 +29,29 @@ function brandedErrorResponse(): Response {
   });
 }
 
+// nitro가 Worker 진입점을 감싸면서 env를 내부 핸들러까지 넘기지 않는다
+// (.output/server/index.mjs는 globalThis.__env__에만 넣고 request만 전달).
+// 그래서 인자로 받은 env가 비어 있을 수 있어 process.env까지 확인한다.
+// 이 저장소의 다른 시크릿도 모두 process.env로 읽고 있다.
 function readWorkerString(env: unknown, key: string): string {
-  if (!env || typeof env !== "object") return "";
-  const value = (env as WorkerBindings)[key];
-  return typeof value === "string" ? value.trim() : "";
+  if (env && typeof env === "object") {
+    const value = (env as WorkerBindings)[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+
+  const globalEnv = (globalThis as { __env__?: WorkerBindings }).__env__;
+  if (globalEnv && typeof globalEnv === "object") {
+    const value = globalEnv[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+
+  const fromProcess = process.env?.[key];
+  return typeof fromProcess === "string" ? fromProcess.trim() : "";
 }
 
 function googleClientIdResponse(env: unknown): Response {
   const clientId =
-    readWorkerString(env, "GOOGLE_CLIENT_ID") ||
-    readWorkerString(env, "VITE_GOOGLE_CLIENT_ID");
+    readWorkerString(env, "GOOGLE_CLIENT_ID") || readWorkerString(env, "VITE_GOOGLE_CLIENT_ID");
 
   return Response.json(
     { clientId },
