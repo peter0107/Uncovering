@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { AUTHENTICATION_ENABLED } from "@/lib/auth-features";
 
 let cachedSession: Session | null = null;
 let cachedUser: User | null = null;
@@ -9,10 +10,17 @@ let authInitialized = false;
 export function useAuth() {
   const [session, setSession] = useState<Session | null>(cachedSession);
   const [user, setUser] = useState<User | null>(cachedUser);
-  const [loading, setLoading] = useState(!authInitialized);
+  const [loading, setLoading] = useState(AUTHENTICATION_ENABLED ? !authInitialized : false);
   const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
+    if (!AUTHENTICATION_ENABLED) {
+      setSession(null);
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
       cachedSession = s;
       cachedUser = s?.user ?? null;

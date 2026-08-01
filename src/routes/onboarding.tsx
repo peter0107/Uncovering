@@ -9,6 +9,7 @@ import {
   clearPendingProfileNickname,
   getPendingProfileNickname,
 } from "@/lib/pending-simulation-nickname";
+import { AUTHENTICATION_ENABLED } from "@/lib/auth-features";
 
 export const Route = createFileRoute("/onboarding")({
   validateSearch: (search: Record<string, unknown>) => {
@@ -31,7 +32,12 @@ function OnboardingPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (authLoading || user) return;
+    if (authLoading) return;
+    if (!AUTHENTICATION_ENABLED) {
+      navigate({ to: redirect ?? "/simulations", replace: true });
+      return;
+    }
+    if (user) return;
     const loginRedirect = redirect
       ? `/onboarding?redirect=${encodeURIComponent(redirect)}`
       : "/onboarding";

@@ -1,3 +1,3 @@
-// Google sign-in is intentionally paused. Switch this back on when the
-// credential and OAuth configuration are ready to be exposed again.
-export const GOOGLE_SIGN_IN_ENABLED = false;
+// Switch this back on to restore the existing email and Google sign-in flow.
+export const AUTHENTICATION_ENABLED = false;
+export const GOOGLE_SIGN_IN_ENABLED = AUTHENTICATION_ENABLED;

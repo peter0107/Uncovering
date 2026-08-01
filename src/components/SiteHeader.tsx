@@ -4,6 +4,7 @@ import { Menu, X } from "lucide-react";
 import { AccountMenu } from "@/components/AccountMenu";
 import { BrandLogo } from "@/components/BrandLogo";
 import { useAuth } from "@/hooks/use-auth";
+import { AUTHENTICATION_ENABLED } from "@/lib/auth-features";
 
 const NAV: { to: string; label: string }[] = [];
 
@@ -38,7 +39,7 @@ export function SiteHeader() {
             ))}
           </nav>
 
-          {!isLoginPage && (
+          {!isLoginPage && AUTHENTICATION_ENABLED && (
             <div className="hidden items-center gap-4 min-[42rem]:flex">
               {user ? (
                 <AccountMenu />
@@ -62,7 +63,7 @@ export function SiteHeader() {
             </div>
           )}
 
-          {!isLoginPage && <div className="flex items-center gap-1 min-[42rem]:hidden">
+          {!isLoginPage && (user || AUTHENTICATION_ENABLED || NAV.length > 0) && <div className="flex items-center gap-1 min-[42rem]:hidden">
             {user && <AccountMenu />}
             <button
               aria-label="메뉴"
@@ -74,7 +75,7 @@ export function SiteHeader() {
           </div>}
         </div>
 
-        {!isLoginPage && open && (
+        {!isLoginPage && open && (user || AUTHENTICATION_ENABLED || NAV.length > 0) && (
           <div className="border-t border-border bg-background min-[42rem]:hidden">
             <div className="mx-auto flex max-w-[72.5rem] flex-col gap-1 px-5 py-3">
               {NAV.map((n) => (
@@ -87,7 +88,7 @@ export function SiteHeader() {
                   {n.label}
                 </Link>
               ))}
-              {!user && (
+              {AUTHENTICATION_ENABLED && !user && (
                 <>
                   <Link
                     to="/login"

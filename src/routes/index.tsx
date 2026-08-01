@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useSimulationStart } from "@/components/SimulationStartProvider";
 import { SHOW_EXPERT_SIMULATIONS } from "@/lib/feature-flags";
+import { AUTHENTICATION_ENABLED } from "@/lib/auth-features";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -169,20 +170,22 @@ function Header({
           <Link to="/biz">기업용</Link>
         </nav>
 
-        <div className="reference-desktop-actions">
-          {user ? (
-            <AccountMenu />
-          ) : (
-            <>
-              <Link to="/login" search={{ redirect: "/" }}>
-                로그인
-              </Link>
-              <Link to="/start" className="reference-start-link">
-                시작하기
-              </Link>
-            </>
-          )}
-        </div>
+        {AUTHENTICATION_ENABLED && (
+          <div className="reference-desktop-actions">
+            {user ? (
+              <AccountMenu />
+            ) : (
+              <>
+                <Link to="/login" search={{ redirect: "/" }}>
+                  로그인
+                </Link>
+                <Link to="/start" className="reference-start-link">
+                  시작하기
+                </Link>
+              </>
+            )}
+          </div>
+        )}
 
         <div className="reference-mobile-actions">
           {user && <AccountMenu />}
@@ -213,7 +216,7 @@ function Header({
           <Link to="/biz" onClick={onMenuClose}>
             기업용
           </Link>
-          {!user && (
+          {AUTHENTICATION_ENABLED && !user && (
             <div className="reference-mobile-auth">
               <Link to="/login" search={{ redirect: "/" }} onClick={onMenuClose}>
                 로그인
