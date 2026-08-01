@@ -56,6 +56,11 @@ function getPostHogConfig() {
       opt_out_capturing_by_default: consentDirective === "opt-out",
       opt_out_capturing_persistence_type: "localStorage" as const,
       disable_session_recording: false,
+      session_recording: {
+        // Service forms should be visible in Session Replay. Credentials and
+        // verification codes retain the `ph-mask` class at the field level.
+        maskAllInputs: false,
+      },
       debug: import.meta.env.DEV,
     },
   };

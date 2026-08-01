@@ -91,7 +91,7 @@ function PasswordResetPage() {
                 onKeyDown={updatePasswordLockState}
                 onKeyUp={updatePasswordLockState}
                 placeholder="8자 이상"
-                className="rounded-[4px] pl-9 pr-10"
+                className="ph-mask rounded-[4px] pl-9 pr-10"
               />
               <button
                 type="button"
@@ -125,7 +125,7 @@ function PasswordResetPage() {
                 onBlur={() => setActivePasswordField(null)}
                 onKeyDown={updatePasswordLockState}
                 onKeyUp={updatePasswordLockState}
-                className="rounded-[4px] pl-9 pr-10"
+                className="ph-mask rounded-[4px] pl-9 pr-10"
               />
               <button
                 type="button"

@@ -119,7 +119,7 @@ export function SignupDialog({ trigger, redirectTo = "/experiences", defaultMode
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="6자 이상"
-                className="pl-9"
+                className="ph-mask pl-9"
               />
             </div>
           </div>
@@ -135,7 +135,7 @@ export function SignupDialog({ trigger, redirectTo = "/experiences", defaultMode
                   value={passwordConfirm}
                   onChange={(e) => setPasswordConfirm(e.target.value)}
                   placeholder="비밀번호를 다시 입력해주세요"
-                  className="pl-9"
+                  className="ph-mask pl-9"
                 />
               </div>
               {passwordConfirm.length > 0 && password !== passwordConfirm && (
