@@ -3,6 +3,7 @@ import { ArrowRight, Check, Menu, X } from "lucide-react";
 import { useEffect, useRef, useState, type MouseEvent, type PointerEvent, type ReactNode } from "react";
 
 import { AccountMenu } from "@/components/AccountMenu";
+import { GuestProfileMenu } from "@/components/GuestProfileMenu";
 import { BrandLogo } from "@/components/BrandLogo";
 import { ExpertSimulationCard } from "@/components/ExpertSimulationCard";
 import { SimulationCardPreview } from "@/components/SimulationCardPreview";
@@ -170,25 +171,25 @@ function Header({
           <Link to="/biz">기업용</Link>
         </nav>
 
-        {AUTHENTICATION_ENABLED && (
-          <div className="reference-desktop-actions">
-            {user ? (
-              <AccountMenu />
-            ) : (
-              <>
-                <Link to="/login" search={{ redirect: "/" }}>
-                  로그인
-                </Link>
-                <Link to="/start" className="reference-start-link">
-                  시작하기
-                </Link>
-              </>
-            )}
-          </div>
-        )}
+        <div className="reference-desktop-actions">
+          {user ? (
+            <AccountMenu />
+          ) : AUTHENTICATION_ENABLED ? (
+            <>
+              <Link to="/login" search={{ redirect: "/" }}>
+                로그인
+              </Link>
+              <Link to="/start" className="reference-start-link">
+                시작하기
+              </Link>
+            </>
+          ) : (
+            <GuestProfileMenu />
+          )}
+        </div>
 
         <div className="reference-mobile-actions">
-          {user && <AccountMenu />}
+          {user ? <AccountMenu /> : !AUTHENTICATION_ENABLED ? <GuestProfileMenu /> : null}
           <button
             type="button"
             onClick={onMenuToggle}

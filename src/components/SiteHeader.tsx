@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { AccountMenu } from "@/components/AccountMenu";
 import { BrandLogo } from "@/components/BrandLogo";
+import { GuestProfileMenu } from "@/components/GuestProfileMenu";
 import { useAuth } from "@/hooks/use-auth";
 import { AUTHENTICATION_ENABLED } from "@/lib/auth-features";
 
@@ -39,11 +40,11 @@ export function SiteHeader() {
             ))}
           </nav>
 
-          {!isLoginPage && AUTHENTICATION_ENABLED && (
+          {!isLoginPage && (
             <div className="hidden items-center gap-4 min-[42rem]:flex">
               {user ? (
                 <AccountMenu />
-              ) : (
+              ) : AUTHENTICATION_ENABLED ? (
                 <>
                   <Link
                     to="/login"
@@ -59,20 +60,26 @@ export function SiteHeader() {
                     시작하기
                   </Link>
                 </>
+              ) : (
+                <GuestProfileMenu />
               )}
             </div>
           )}
 
-          {!isLoginPage && (user || AUTHENTICATION_ENABLED || NAV.length > 0) && <div className="flex items-center gap-1 min-[42rem]:hidden">
-            {user && <AccountMenu />}
-            <button
-              aria-label="메뉴"
-              onClick={() => setOpen((v) => !v)}
-              className="grid h-9 w-9 place-items-center rounded-[8px] bg-white text-[#1a2340] transition-colors hover:bg-[#e5edfb]"
-            >
-              {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
-          </div>}
+          {!isLoginPage && (
+            <div className="flex items-center gap-1 min-[42rem]:hidden">
+              {user ? <AccountMenu /> : !AUTHENTICATION_ENABLED ? <GuestProfileMenu /> : null}
+              {(user || AUTHENTICATION_ENABLED || NAV.length > 0) && (
+                <button
+                  aria-label="메뉴"
+                  onClick={() => setOpen((v) => !v)}
+                  className="grid h-9 w-9 place-items-center rounded-[8px] bg-white text-[#1a2340] transition-colors hover:bg-[#e5edfb]"
+                >
+                  {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {!isLoginPage && open && (user || AUTHENTICATION_ENABLED || NAV.length > 0) && (

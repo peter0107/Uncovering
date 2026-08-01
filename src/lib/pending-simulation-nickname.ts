@@ -21,6 +21,7 @@ export function saveSimulationNickname(value: string) {
 
   window.localStorage.setItem(SAVED_NICKNAME_KEY, nickname);
   window.localStorage.setItem(PENDING_NICKNAME_KEY, nickname);
+  window.dispatchEvent(new CustomEvent<string>("beginner:guest-nickname-updated", { detail: nickname }));
   return nickname;
 }
 
