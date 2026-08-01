@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Label } from "@/components/ui/label";
 import { GoogleSignInButton } from "@/components/GoogleSignInButton";
+import { GOOGLE_SIGN_IN_ENABLED } from "@/lib/auth-features";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { getPostLoginPath } from "@/lib/admin";
@@ -323,7 +324,7 @@ function LoginPage() {
             </h1>
 
             <div className="mt-10 w-full space-y-4">
-              <GoogleSignInButton size="large" appearance="matched" />
+              {GOOGLE_SIGN_IN_ENABLED && <GoogleSignInButton size="large" appearance="matched" />}
               <Button
                 type="button"
                 variant="outline"

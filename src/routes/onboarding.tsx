@@ -5,6 +5,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { INITIAL_PROFILE_FORM, JobInterestFields } from "@/lib/profile-fields";
+import {
+  clearPendingProfileNickname,
+  getPendingProfileNickname,
+} from "@/lib/pending-simulation-nickname";
 
 export const Route = createFileRoute("/onboarding")({
   validateSearch: (search: Record<string, unknown>) => {
@@ -50,9 +54,14 @@ function OnboardingPage() {
 
     setSaving(true);
     try {
+      const pendingNickname = getPendingProfileNickname();
+      const profileUpdate = {
+        job_interests: jobInterests,
+        ...(pendingNickname ? { display_name: pendingNickname } : {}),
+      };
       const { data: updated, error: updateError } = await supabase
         .from("job_seekers")
-        .update({ job_interests: jobInterests })
+        .update(profileUpdate)
         .eq("id", user.id)
         .select("id");
 
@@ -66,7 +75,7 @@ function OnboardingPage() {
         const { error: insertError } = await supabase.from("job_seekers").insert({
           id: user.id,
           email: user.email ?? "",
-          job_interests: jobInterests,
+          ...profileUpdate,
         });
 
         if (insertError) {
@@ -76,6 +85,7 @@ function OnboardingPage() {
         }
       }
 
+      if (pendingNickname) clearPendingProfileNickname();
       navigate({ to: redirect ?? "/simulations", replace: true });
     } catch (error) {
       console.error("[Onboarding]", error);

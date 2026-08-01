@@ -18,6 +18,7 @@ import { ClarityTracker } from "@/components/ClarityTracker";
 import { GoogleAnalyticsTracker } from "@/components/GoogleAnalyticsTracker";
 import { PostHogTracker } from "@/components/PostHogTracker";
 import { GoogleAuthProvider } from "@/components/GoogleAuthProvider";
+import { SimulationStartProvider } from "@/components/SimulationStartProvider";
 import { useRouterState } from "@tanstack/react-router";
 
 function useDelayedLoading(active: boolean, delay = 450) {
@@ -189,14 +190,16 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <LoadingOverlayProvider>
         <GoogleAuthProvider>
-          <ClarityTracker />
-          <GoogleAnalyticsTracker />
-          <PostHogTracker />
-          <SiteLayout>
-            <Outlet />
-          </SiteLayout>
-          <GlobalNavigationOverlay />
-          <Toaster />
+          <SimulationStartProvider>
+            <ClarityTracker />
+            <GoogleAnalyticsTracker />
+            <PostHogTracker />
+            <SiteLayout>
+              <Outlet />
+            </SiteLayout>
+            <GlobalNavigationOverlay />
+            <Toaster />
+          </SimulationStartProvider>
         </GoogleAuthProvider>
       </LoadingOverlayProvider>
     </QueryClientProvider>

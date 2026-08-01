@@ -16,10 +16,11 @@ import {
   type GoogleIdentity,
 } from "@/lib/google-identity";
 import { captureLogin, captureSignup, consumeGoogleLoginPending } from "@/lib/posthog";
+import { GOOGLE_SIGN_IN_ENABLED } from "@/lib/auth-features";
 
 const SIGNUP_DETECTION_WINDOW_MS = 2 * 60 * 1000;
 
-type GoogleAuthStatus = "loading" | "ready" | "error";
+type GoogleAuthStatus = "disabled" | "loading" | "ready" | "error";
 
 type GoogleButtonAction = {
   onSuccess?: () => void;
@@ -59,12 +60,22 @@ export function GoogleAuthProvider({ children }: { children: ReactNode }) {
   const pendingActionRef = useRef<string | null>(null);
   const initializedRef = useRef(false);
   const [google, setGoogle] = useState<GoogleIdentity | null>(null);
-  const [status, setStatus] = useState<GoogleAuthStatus>("loading");
+  const [status, setStatus] = useState<GoogleAuthStatus>(
+    GOOGLE_SIGN_IN_ENABLED ? "loading" : "disabled",
+  );
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
+
+    if (!GOOGLE_SIGN_IN_ENABLED) {
+      setGoogle(null);
+      setStatus("disabled");
+      return () => {
+        cancelled = true;
+      };
+    }
 
     async function initializeGoogleIdentity() {
       if (initializedRef.current) return;
