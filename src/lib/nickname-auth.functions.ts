@@ -43,7 +43,7 @@ export async function handleNicknameLoginRequest(request: Request) {
     if (profileError) return json({ error: "닉네임을 저장하지 못했습니다." }, 500);
   }
 
-  const { data: link, error: linkError } = await supabaseAdmin.auth.admin.generateLink({ type: "magiclink", email });
+  let { data: link, error: linkError } = await supabaseAdmin.auth.admin.generateLink({ type: "magiclink", email });
   if (linkError || !link.properties?.hashed_token) return json({ error: "닉네임 로그인을 시작하지 못했습니다." }, 500);
   const userId = link.user.id;
   if (isAdmin) {
@@ -51,6 +51,14 @@ export async function handleNicknameLoginRequest(request: Request) {
       app_metadata: { role: "admin" },
     });
     if (roleError) return json({ error: "관리자 권한을 발급하지 못했습니다." }, 500);
+
+    // generateLink에서 만들어진 토큰에는 발급 당시의 app_metadata가 담긴다.
+    // 관리자 권한을 반영한 새 토큰을 발급해야 클라이언트가 즉시 admin으로 인식한다.
+    const refreshedLink = await supabaseAdmin.auth.admin.generateLink({ type: "magiclink", email });
+    if (refreshedLink.error || !refreshedLink.data.properties?.hashed_token) {
+      return json({ error: "관리자 로그인을 시작하지 못했습니다." }, 500);
+    }
+    link = refreshedLink.data;
   }
   return json({ tokenHash: link.properties.hashed_token, admin: isAdmin });
 }
