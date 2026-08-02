@@ -1,44 +1,39 @@
 import { useEffect, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { isAdminUser } from "@/lib/admin";
 import { AUTHENTICATION_ENABLED } from "@/lib/auth-features";
 
 let cachedSession: Session | null = null;
 let cachedUser: User | null = null;
 let authInitialized = false;
 
+// 로그인 UI를 감춘 MVP 동안 닉네임 방문자는 비로그인으로 취급하지만,
+// /admin은 세션의 admin 권한으로 접근을 판별하므로 관리자 세션은 그대로 노출한다.
+const visibleSession = (s: Session | null) =>
+  AUTHENTICATION_ENABLED || isAdminUser(s?.user) ? s : null;
+
 export function useAuth() {
   const [session, setSession] = useState<Session | null>(cachedSession);
   const [user, setUser] = useState<User | null>(cachedUser);
-  const [loading, setLoading] = useState(AUTHENTICATION_ENABLED ? !authInitialized : false);
+  const [loading, setLoading] = useState(!authInitialized);
   const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
-    if (!AUTHENTICATION_ENABLED) {
-      setSession(null);
-      setUser(null);
-      setLoading(false);
-      return;
-    }
-
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
-      cachedSession = s;
-      cachedUser = s?.user ?? null;
+    const apply = (raw: Session | null) => {
+      const next = visibleSession(raw);
+      cachedSession = next;
+      cachedUser = next?.user ?? null;
       authInitialized = true;
-      setSession(s);
-      setUser(s?.user ?? null);
+      setSession(next);
+      setUser(next?.user ?? null);
       setLoading(false);
-    });
+    };
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => apply(s));
 
     if (!authInitialized) {
-      supabase.auth.getSession().then(({ data }) => {
-        cachedSession = data.session;
-        cachedUser = data.session?.user ?? null;
-        authInitialized = true;
-        setSession(data.session);
-        setUser(data.session?.user ?? null);
-        setLoading(false);
-      });
+      supabase.auth.getSession().then(({ data }) => apply(data.session));
     } else {
       setLoading(false);
     }

@@ -586,6 +586,7 @@ export type Database = {
           id: string
           job_interests: string[] | null
           majors: string[] | null
+          nickname: string | null
           one_line_intro: string | null
           university_name: string | null
           willing_to_relocate: boolean | null
@@ -605,6 +606,7 @@ export type Database = {
           id?: string
           job_interests?: string[] | null
           majors?: string[] | null
+          nickname?: string | null
           one_line_intro?: string | null
           university_name?: string | null
           willing_to_relocate?: boolean | null
@@ -624,6 +626,7 @@ export type Database = {
           id?: string
           job_interests?: string[] | null
           majors?: string[] | null
+          nickname?: string | null
           one_line_intro?: string | null
           university_name?: string | null
           willing_to_relocate?: boolean | null
