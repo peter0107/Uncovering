@@ -15,8 +15,6 @@ import {
 } from "@/lib/ai-evaluation";
 import { DOMAIN_CATEGORIES } from "@/lib/domain-categories";
 
-const DEFAULT_ADMIN_EMAILS = ["u.ncovering2026@gmail.com"];
-
 export type AdminCompany = {
   id: string;
   code: string;
@@ -336,17 +334,9 @@ async function getCurrentUserId() {
 
 async function assertAdmin() {
   const token = getBearerToken();
-  const configuredEmails = (process.env.ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
-  const adminEmails = new Set([...DEFAULT_ADMIN_EMAILS, ...configuredEmails]);
-
-  const supabase = createPublicServerClient();
-  const { data, error } = await supabase.auth.getUser(token);
-  const email = data.user?.email?.toLowerCase();
-
-  if (error || !email || !adminEmails.has(email)) {
+  const client = createPublicServerClient();
+  const { data, error } = await client.auth.getUser(token);
+  if (error || data.user?.app_metadata?.role !== "admin") {
     throw new Error("관리자 권한이 없습니다.");
   }
 }

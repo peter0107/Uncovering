@@ -2,7 +2,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { isAdminEmail } from "@/lib/admin";
 import { AUTHENTICATION_ENABLED } from "@/lib/auth-features";
 
 export const Route = createFileRoute("/start")({
@@ -24,11 +23,6 @@ function StartDispatcher() {
 
     if (!user) {
       navigate({ to: "/login", search: { redirect: "/start" }, replace: true });
-      return;
-    }
-
-    if (isAdminEmail(user.email)) {
-      navigate({ to: "/admin", replace: true });
       return;
     }
 

@@ -4,7 +4,6 @@ import { z } from "zod";
 import { DOMAIN_CATEGORIES } from "@/lib/domain-categories";
 import { COMPANY_AI_PROMPT_DEFAULTS, type CompanyAiPromptKey } from "@/lib/ai-prompt.defaults";
 
-const DEFAULT_ADMIN_EMAILS = ["u.ncovering2026@gmail.com"];
 import type { AdminSimulationStep } from "@/lib/simulations.functions";
 
 // ============================================================
@@ -29,16 +28,9 @@ function readBearerToken(authHeader: string): string {
 }
 
 async function assertAdminToken(token: string): Promise<string> {
-  const configuredEmails = (process.env.ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
-  const adminEmails = new Set([...DEFAULT_ADMIN_EMAILS, ...configuredEmails]);
-
-  const supabase = createPublicServerClient();
-  const { data, error } = await supabase.auth.getUser(token);
-  const email = data.user?.email?.toLowerCase();
-  if (error || !email || !adminEmails.has(email)) {
+  const client = createPublicServerClient();
+  const { data, error } = await client.auth.getUser(token);
+  if (error || data.user?.app_metadata?.role !== "admin") {
     throw new Error("관리자 권한이 없습니다.");
   }
   return data.user.id;

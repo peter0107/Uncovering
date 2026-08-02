@@ -1,17 +1,23 @@
-import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import {
   ArrowRight,
   BriefcaseBusiness,
   FileText,
   Inbox,
+  Lock,
   SlidersHorizontal,
   UserRound,
   Wand2,
 } from "lucide-react";
-import { useEffect } from "react";
+import { useState, type FormEvent } from "react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { BrandLogo } from "@/components/BrandLogo";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { isAdminUser } from "@/lib/admin";
+import { ADMIN_NICKNAME, signInWithNickname } from "@/lib/nickname-auth";
 import { SHOW_EXPERT_SIMULATIONS } from "@/lib/feature-flags";
 
 export const Route = createFileRoute("/admin")({
@@ -25,18 +31,70 @@ export const Route = createFileRoute("/admin")({
 });
 
 function AdminHome() {
-  const navigate = useNavigate();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const { user, loading: authLoading } = useAuth();
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const isAdminHome = pathname.replace(/\/+$/, "") === "/admin";
+  const hasAdminAccess = isAdminUser(user);
 
-  useEffect(() => {
-    if (!isAdminHome) return;
-    if (authLoading) return;
-    if (!user) {
-      navigate({ to: "/login", search: { redirect: "/admin" } });
+  async function handleAdminLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!password || submitting) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const result = await signInWithNickname(ADMIN_NICKNAME, password);
+      if (!result.admin || !isAdminUser(result.user)) {
+        throw new Error("관리자 권한을 확인하지 못했습니다.");
+      }
+      setPassword("");
+    } catch (loginError) {
+      setError(loginError instanceof Error ? loginError.message : "관리자 로그인에 실패했습니다.");
+    } finally {
+      setSubmitting(false);
     }
-  }, [authLoading, user, navigate, isAdminHome]);
+  }
+
+  if (authLoading) {
+    return <div className="flex min-h-screen items-center justify-center bg-white text-sm text-neutral-500">관리자 정보를 확인하는 중입니다...</div>;
+  }
+
+  if (!hasAdminAccess) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-neutral-50 px-5">
+        <section className="w-full max-w-sm rounded-lg border border-neutral-200 bg-white p-6 shadow-sm">
+          <div className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-neutral-900 text-white">
+            <Lock className="h-5 w-5" />
+          </div>
+          <h1 className="mt-5 text-center text-xl font-semibold text-neutral-900">관리자 접속</h1>
+          <p className="mt-2 text-center text-sm text-neutral-500">관리자 비밀번호를 입력해주세요.</p>
+          <form onSubmit={handleAdminLogin} className="mt-6 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="admin-password">비밀번호</Label>
+              <Input
+                id="admin-password"
+                type="password"
+                autoComplete="current-password"
+                autoFocus
+                value={password}
+                onChange={(event) => {
+                  setPassword(event.target.value);
+                  setError(null);
+                }}
+                placeholder="관리자 비밀번호"
+              />
+            </div>
+            {error && <p className="text-sm text-red-600">{error}</p>}
+            <Button type="submit" className="h-11 w-full" disabled={!password || submitting}>
+              {submitting ? "확인 중..." : "접속하기"}
+            </Button>
+          </form>
+        </section>
+      </main>
+    );
+  }
 
   if (!isAdminHome) {
     return <Outlet />;
@@ -63,13 +121,7 @@ function AdminHome() {
           </p>
         </div>
 
-        {authLoading && (
-          <div className="py-16 text-center text-sm text-neutral-500">
-            관리자 정보를 확인 중입니다...
-          </div>
-        )}
-
-        {!authLoading && user && (
+        {hasAdminAccess && (
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             <Link
               to="/admin/simulations"
