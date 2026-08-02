@@ -15,7 +15,7 @@ import { SimulationCardPreview } from "@/components/SimulationCardPreview";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
-import { trackSimulationCardClick } from "@/lib/posthog";
+import { useSimulationStart } from "@/components/SimulationStartProvider";
 import { isDomainCategory } from "@/lib/domain-categories";
 import { INITIAL_PROFILE_FORM, JobInterestFields } from "@/lib/profile-fields";
 import { toast } from "sonner";
@@ -139,13 +139,13 @@ export async function fetchAll(): Promise<Simulation[]> {
 
 export function SimCard({ sim }: { sim: Simulation }) {
   const roleLine = sim.role_label || sim.job_family || sim.title;
+  const { startSimulation } = useSimulationStart();
 
   return (
-    <Link
-      to="/simulation/$id"
-      params={{ id: sim.id }}
-      className="block h-full"
-      onClick={() => trackSimulationCardClick(sim.id, sim.title, "simulations")}
+    <button
+      type="button"
+      className="block h-full w-full text-left"
+      onClick={() => startSimulation({ id: sim.id, title: sim.title, source: "simulations" })}
     >
       <SimulationCardPreview
         companyName={sim.company_name}
@@ -160,7 +160,7 @@ export function SimCard({ sim }: { sim: Simulation }) {
         isPartner={sim.company_is_partner}
         className="h-full"
       />
-    </Link>
+    </button>
   );
 }
 

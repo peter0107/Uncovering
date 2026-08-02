@@ -3,14 +3,16 @@ import { ArrowRight, Check, Menu, X } from "lucide-react";
 import { useEffect, useRef, useState, type MouseEvent, type PointerEvent, type ReactNode } from "react";
 
 import { AccountMenu } from "@/components/AccountMenu";
+import { GuestProfileMenu } from "@/components/GuestProfileMenu";
 import { BrandLogo } from "@/components/BrandLogo";
 import { ExpertSimulationCard } from "@/components/ExpertSimulationCard";
 import { SimulationCardPreview } from "@/components/SimulationCardPreview";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
-import { trackSimulationCardClick } from "@/lib/posthog";
+import { useSimulationStart } from "@/components/SimulationStartProvider";
 import { SHOW_EXPERT_SIMULATIONS } from "@/lib/feature-flags";
+import { AUTHENTICATION_ENABLED } from "@/lib/auth-features";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -172,7 +174,7 @@ function Header({
         <div className="reference-desktop-actions">
           {user ? (
             <AccountMenu />
-          ) : (
+          ) : AUTHENTICATION_ENABLED ? (
             <>
               <Link to="/login" search={{ redirect: "/" }}>
                 로그인
@@ -181,11 +183,13 @@ function Header({
                 시작하기
               </Link>
             </>
+          ) : (
+            <GuestProfileMenu />
           )}
         </div>
 
         <div className="reference-mobile-actions">
-          {user && <AccountMenu />}
+          {user ? <AccountMenu /> : !AUTHENTICATION_ENABLED ? <GuestProfileMenu /> : null}
           <button
             type="button"
             onClick={onMenuToggle}
@@ -213,7 +217,7 @@ function Header({
           <Link to="/biz" onClick={onMenuClose}>
             기업용
           </Link>
-          {!user && (
+          {AUTHENTICATION_ENABLED && !user && (
             <div className="reference-mobile-auth">
               <Link to="/login" search={{ redirect: "/" }} onClick={onMenuClose}>
                 로그인
@@ -250,6 +254,7 @@ function FeaturedExpertSimulations() {
   const [simulations, setSimulations] = useState<FeaturedExpertSimulation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const dragScroll = useHorizontalDragScroll();
+  const { startSimulation } = useSimulationStart();
 
   useEffect(() => {
     async function loadFeaturedSimulations() {
@@ -320,13 +325,12 @@ function FeaturedExpertSimulations() {
 
           {!isLoading &&
             simulations.map((simulation) => (
-              <Link
+              <button
                 key={simulation.id}
-                to="/simulation/$id"
-                params={{ id: simulation.id }}
-                className="reference-featured-card"
+                type="button"
+                className="reference-featured-card text-left"
                 onClick={() =>
-                  trackSimulationCardClick(simulation.id, simulation.title, "home")
+                  startSimulation({ id: simulation.id, title: simulation.title, source: "home" })
                 }
               >
                 <ExpertSimulationCard
@@ -344,7 +348,7 @@ function FeaturedExpertSimulations() {
                   compact
                   className="h-full"
                 />
-              </Link>
+              </button>
             ))}
         </div>
       </div>
@@ -356,6 +360,7 @@ function FeaturedCompanySimulations() {
   const [simulations, setSimulations] = useState<FeaturedCompanySimulation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const dragScroll = useHorizontalDragScroll();
+  const { startSimulation } = useSimulationStart();
 
   useEffect(() => {
     async function loadFeaturedSimulations() {
@@ -436,13 +441,12 @@ function FeaturedCompanySimulations() {
 
           {!isLoading &&
             simulations.map((simulation) => (
-              <Link
+              <button
                 key={simulation.id}
-                to="/simulation/$id"
-                params={{ id: simulation.id }}
-                className="reference-featured-card"
+                type="button"
+                className="reference-featured-card text-left"
                 onClick={() =>
-                  trackSimulationCardClick(simulation.id, simulation.title, "home")
+                  startSimulation({ id: simulation.id, title: simulation.title, source: "home" })
                 }
               >
                 <SimulationCardPreview
@@ -459,7 +463,7 @@ function FeaturedCompanySimulations() {
                   compact
                   className="h-full"
                 />
-              </Link>
+              </button>
             ))}
         </div>
       </div>

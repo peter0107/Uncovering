@@ -62,6 +62,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/use-auth";
+import { AUTHENTICATION_ENABLED } from "@/lib/auth-features";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json, Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import { toast } from "sonner";
@@ -1648,7 +1649,11 @@ function MyPage() {
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
-      navigate({ to: "/login", search: { redirect: "/my" } });
+      if (AUTHENTICATION_ENABLED) {
+        navigate({ to: "/login", search: { redirect: "/my" } });
+      } else {
+        navigate({ to: "/", replace: true });
+      }
       return;
     }
 

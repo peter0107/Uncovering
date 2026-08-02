@@ -3,7 +3,9 @@ import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { AccountMenu } from "@/components/AccountMenu";
 import { BrandLogo } from "@/components/BrandLogo";
+import { GuestProfileMenu } from "@/components/GuestProfileMenu";
 import { useAuth } from "@/hooks/use-auth";
+import { AUTHENTICATION_ENABLED } from "@/lib/auth-features";
 
 const NAV: { to: string; label: string }[] = [];
 
@@ -42,7 +44,7 @@ export function SiteHeader() {
             <div className="hidden items-center gap-4 min-[42rem]:flex">
               {user ? (
                 <AccountMenu />
-              ) : (
+              ) : AUTHENTICATION_ENABLED ? (
                 <>
                   <Link
                     to="/login"
@@ -58,23 +60,29 @@ export function SiteHeader() {
                     시작하기
                   </Link>
                 </>
+              ) : (
+                <GuestProfileMenu />
               )}
             </div>
           )}
 
-          {!isLoginPage && <div className="flex items-center gap-1 min-[42rem]:hidden">
-            {user && <AccountMenu />}
-            <button
-              aria-label="메뉴"
-              onClick={() => setOpen((v) => !v)}
-              className="grid h-9 w-9 place-items-center rounded-[8px] bg-white text-[#1a2340] transition-colors hover:bg-[#e5edfb]"
-            >
-              {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
-          </div>}
+          {!isLoginPage && (
+            <div className="flex items-center gap-1 min-[42rem]:hidden">
+              {user ? <AccountMenu /> : !AUTHENTICATION_ENABLED ? <GuestProfileMenu /> : null}
+              {(user || AUTHENTICATION_ENABLED || NAV.length > 0) && (
+                <button
+                  aria-label="메뉴"
+                  onClick={() => setOpen((v) => !v)}
+                  className="grid h-9 w-9 place-items-center rounded-[8px] bg-white text-[#1a2340] transition-colors hover:bg-[#e5edfb]"
+                >
+                  {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
-        {!isLoginPage && open && (
+        {!isLoginPage && open && (user || AUTHENTICATION_ENABLED || NAV.length > 0) && (
           <div className="border-t border-border bg-background min-[42rem]:hidden">
             <div className="mx-auto flex max-w-[72.5rem] flex-col gap-1 px-5 py-3">
               {NAV.map((n) => (
@@ -87,7 +95,7 @@ export function SiteHeader() {
                   {n.label}
                 </Link>
               ))}
-              {!user && (
+              {AUTHENTICATION_ENABLED && !user && (
                 <>
                   <Link
                     to="/login"

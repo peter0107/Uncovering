@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { isAdminEmail } from "@/lib/admin";
+import { AUTHENTICATION_ENABLED } from "@/lib/auth-features";
 
 export const Route = createFileRoute("/start")({
   head: () => ({ meta: [{ title: "시작하기" }] }),
@@ -15,6 +16,11 @@ function StartDispatcher() {
 
   useEffect(() => {
     if (loading) return;
+
+    if (!AUTHENTICATION_ENABLED) {
+      navigate({ to: "/simulations", replace: true });
+      return;
+    }
 
     if (!user) {
       navigate({ to: "/login", search: { redirect: "/start" }, replace: true });

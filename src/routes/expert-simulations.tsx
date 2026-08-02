@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
-import { trackSimulationCardClick } from "@/lib/posthog";
+import { useSimulationStart } from "@/components/SimulationStartProvider";
 import { supabase } from "@/integrations/supabase/client";
 import { DOMAIN_CATEGORIES, isDomainCategory } from "@/lib/domain-categories";
 import { INITIAL_PROFILE_FORM, JobInterestFields } from "@/lib/profile-fields";
@@ -64,6 +64,7 @@ function ExpertCardSkeleton() {
 
 function ExpertSimulationsPage() {
   const { user, loading: authLoading } = useAuth();
+  const { startSimulation } = useSimulationStart();
   const [simulations, setSimulations] = useState<ExpertSimulation[]>([]);
   const [jobInterests, setJobInterests] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -311,17 +312,16 @@ function ExpertSimulationsPage() {
               </>
             ) : visibleSimulations.length > 0 ? (
               visibleSimulations.map((simulation) => (
-                <Link
+                <button
                   key={simulation.id}
-                  to="/simulation/$id"
-                  params={{ id: simulation.id }}
-                  className="block h-full"
+                  type="button"
+                  className="block h-full w-full text-left"
                   onClick={() =>
-                    trackSimulationCardClick(
-                      simulation.id,
-                      simulation.title,
-                      "expert_simulations",
-                    )
+                    startSimulation({
+                      id: simulation.id,
+                      title: simulation.title,
+                      source: "expert_simulations",
+                    })
                   }
                 >
                   <ExpertSimulationCard
@@ -338,7 +338,7 @@ function ExpertSimulationsPage() {
                     profileImageUrl={simulation.profileImageUrl}
                     className="h-full"
                   />
-                </Link>
+                </button>
               ))
             ) : simulations.length > 0 ? (
               <div className="col-span-full flex flex-col items-center py-20 text-center text-zinc-500">

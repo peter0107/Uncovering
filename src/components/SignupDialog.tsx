@@ -16,6 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { GoogleSignInButton } from "@/components/GoogleSignInButton";
+import { GOOGLE_SIGN_IN_ENABLED } from "@/lib/auth-features";
 import { captureLogin, captureSignup } from "@/lib/posthog";
 
 type Props = {
@@ -118,7 +119,7 @@ export function SignupDialog({ trigger, redirectTo = "/experiences", defaultMode
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="6자 이상"
-                className="pl-9"
+                className="ph-mask pl-9"
               />
             </div>
           </div>
@@ -134,7 +135,7 @@ export function SignupDialog({ trigger, redirectTo = "/experiences", defaultMode
                   value={passwordConfirm}
                   onChange={(e) => setPasswordConfirm(e.target.value)}
                   placeholder="비밀번호를 다시 입력해주세요"
-                  className="pl-9"
+                  className="ph-mask pl-9"
                 />
               </div>
               {passwordConfirm.length > 0 && password !== passwordConfirm && (
@@ -169,21 +170,25 @@ export function SignupDialog({ trigger, redirectTo = "/experiences", defaultMode
           )}
         </form>
 
-        <div className="relative my-2">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">또는</span>
-          </div>
-        </div>
+        {GOOGLE_SIGN_IN_ENABLED && (
+          <>
+            <div className="relative my-2">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">또는</span>
+              </div>
+            </div>
 
-        <GoogleSignInButton
-          onSuccess={() => {
-            setOpen(false);
-            navigate({ to: redirectTo });
-          }}
-        />
+            <GoogleSignInButton
+              onSuccess={() => {
+                setOpen(false);
+                navigate({ to: redirectTo });
+              }}
+            />
+          </>
+        )}
 
         <div className="text-center text-sm text-muted-foreground">
           {isSignup ? "이미 계정이 있으신가요?" : "아직 계정이 없으신가요?"}{" "}

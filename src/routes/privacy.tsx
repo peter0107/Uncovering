@@ -89,7 +89,7 @@ function PrivacyPage() {
               <tr className="border-b border-zinc-200">
                 <td className="px-3 py-3">PostHog, Google Analytics, Microsoft Clarity</td>
                 <td className="px-3 py-3">서비스 이용 분석과 오류 개선</td>
-                <td className="px-3 py-3">접속 및 이용 이벤트 정보</td>
+                <td className="px-3 py-3">접속·이용 이벤트 및 화면 기록 정보(비밀번호·인증번호 제외)</td>
               </tr>
             </tbody>
           </table>
@@ -140,7 +140,7 @@ function PrivacyPage() {
               <tr className="border-b border-zinc-200">
                 <td className="px-3 py-3">PostHog, Inc.</td>
                 <td className="px-3 py-3">미국</td>
-                <td className="px-3 py-3">접속 및 이용 이벤트 정보</td>
+                <td className="px-3 py-3">접속·이용 이벤트 및 화면 기록 정보(비밀번호·인증번호 제외)</td>
                 <td className="px-3 py-3">서비스 이용 분석과 오류 개선</td>
               </tr>
               <tr className="border-b border-zinc-200">

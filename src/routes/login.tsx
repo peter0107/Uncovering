@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Label } from "@/components/ui/label";
 import { GoogleSignInButton } from "@/components/GoogleSignInButton";
+import { AUTHENTICATION_ENABLED, GOOGLE_SIGN_IN_ENABLED } from "@/lib/auth-features";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { getPostLoginPath } from "@/lib/admin";
@@ -41,6 +42,8 @@ function LoginPage() {
   const navigate = useNavigate();
   const { redirect } = useSearch({ from: "/login" });
   const { user, loading: authLoading } = useAuth();
+  const safeRedirect =
+    redirect.startsWith("/") && !redirect.startsWith("//") && redirect !== "/login" ? redirect : "/";
   const [view, setView] = useState<LoginView>("choice");
   const [mode, setMode] = useState<LoginMode>("signup");
   const [email, setEmail] = useState("");
@@ -79,6 +82,12 @@ function LoginPage() {
       ? email.includes("@")
       : password.length >= 8 && password === passwordConfirm;
 
+  useEffect(() => {
+    if (!AUTHENTICATION_ENABLED) {
+      navigate({ to: safeRedirect, replace: true });
+    }
+  }, [navigate, safeRedirect]);
+
   function updatePasswordLockState(event: KeyboardEvent<HTMLInputElement>) {
     setPasswordLockState({
       capsLock: event.getModifierState("CapsLock"),
@@ -111,6 +120,8 @@ function LoginPage() {
     const interval = window.setInterval(updateRemainingSeconds, 1_000);
     return () => window.clearInterval(interval);
   }, [emailVerified, verificationExpiresAt]);
+
+  if (!AUTHENTICATION_ENABLED) return null;
 
   function startVerificationCountdown() {
     setVerificationExpiresAt(Date.now() + 2 * 60 * 1_000);
@@ -356,7 +367,8 @@ async function submitNickname(event: FormEvent) {
                 <UserRound className="!h-5 !w-5" />
                 닉네임으로 시작하기
               </Button>
-              <GoogleSignInButton size="large" appearance="matched" />
+              {GOOGLE_SIGN_IN_ENABLED && <GoogleSignInButton size="large" appearance="matched" />}
+
               <Button
                 type="button"
                 variant="outline"
@@ -488,6 +500,7 @@ async function submitNickname(event: FormEvent) {
                       pattern={REGEXP_ONLY_DIGITS}
                       inputMode="numeric"
                       disabled={emailVerified}
+                      className="ph-mask"
                       containerClassName="flex-1 justify-start"
                     >
                       <InputOTPGroup>
@@ -541,7 +554,7 @@ async function submitNickname(event: FormEvent) {
                       onKeyDown={updatePasswordLockState}
                       onKeyUp={updatePasswordLockState}
                       placeholder="8자 이상"
-                      className="rounded-[4px] pl-9 pr-10"
+                      className="ph-mask rounded-[4px] pl-9 pr-10"
                     />
                     <button
                       type="button"
@@ -579,7 +592,7 @@ async function submitNickname(event: FormEvent) {
                         onBlur={() => setActivePasswordField(null)}
                         onKeyDown={updatePasswordLockState}
                         onKeyUp={updatePasswordLockState}
-                        className="rounded-[4px] pl-9 pr-10"
+                        className="ph-mask rounded-[4px] pl-9 pr-10"
                       />
                       <button
                         type="button"

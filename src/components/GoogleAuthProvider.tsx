@@ -15,12 +15,12 @@ import {
   loadGoogleIdentity,
   type GoogleIdentity,
 } from "@/lib/google-identity";
-import { getGoogleClientId } from "@/lib/google-auth.functions";
 import { captureLogin, captureSignup, consumeGoogleLoginPending } from "@/lib/posthog";
+import { GOOGLE_SIGN_IN_ENABLED } from "@/lib/auth-features";
 
 const SIGNUP_DETECTION_WINDOW_MS = 2 * 60 * 1000;
 
-type GoogleAuthStatus = "loading" | "ready" | "error";
+type GoogleAuthStatus = "disabled" | "loading" | "ready" | "error";
 
 type GoogleButtonAction = {
   onSuccess?: () => void;
@@ -37,27 +37,54 @@ type GoogleAuthContextValue = {
 
 const GoogleAuthContext = createContext<GoogleAuthContextValue | null>(null);
 
+async function resolveGoogleClientId(): Promise<string> {
+  const bundledClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim();
+  if (bundledClientId) return bundledClientId;
+
+  const response = await fetch("/api/google-client-id", {
+    cache: "no-store",
+    headers: { accept: "application/json" },
+  });
+  if (!response.ok) {
+    throw new Error("Google 로그인 설정을 불러오지 못했습니다.");
+  }
+
+  const payload: unknown = await response.json();
+  if (!payload || typeof payload !== "object") return "";
+  const clientId = (payload as { clientId?: unknown }).clientId;
+  return typeof clientId === "string" ? clientId.trim() : "";
+}
+
 export function GoogleAuthProvider({ children }: { children: ReactNode }) {
   const actionsRef = useRef(new Map<string, GoogleButtonAction>());
   const pendingActionRef = useRef<string | null>(null);
   const initializedRef = useRef(false);
   const [google, setGoogle] = useState<GoogleIdentity | null>(null);
-  const [status, setStatus] = useState<GoogleAuthStatus>("loading");
+  const [status, setStatus] = useState<GoogleAuthStatus>(
+    GOOGLE_SIGN_IN_ENABLED ? "loading" : "disabled",
+  );
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
 
+    if (!GOOGLE_SIGN_IN_ENABLED) {
+      setGoogle(null);
+      setStatus("disabled");
+      return () => {
+        cancelled = true;
+      };
+    }
+
     async function initializeGoogleIdentity() {
       if (initializedRef.current) return;
 
       setStatus("loading");
       try {
-        // Vite variables are fixed during the build. The server fallback keeps
-        // Google Sign-In available when the Worker variable is updated later.
-        const bundledClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim();
-        const clientId = bundledClientId || (await getGoogleClientId()).clientId;
+        // Cloudflare bindings are read at request time so credential updates do
+        // not require a client-side Vite rebuild.
+        const clientId = await resolveGoogleClientId();
         if (!clientId) {
           throw new Error("Google Client ID가 설정되지 않았습니다.");
         }

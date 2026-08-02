@@ -31,6 +31,7 @@ import {
 import { cn } from "@/lib/utils";
 import { capturePostHogEvent, consumeSimulationEntry } from "@/lib/posthog";
 import { useAuth } from "@/hooks/use-auth";
+import { AUTHENTICATION_ENABLED } from "@/lib/auth-features";
 import { supabase } from "@/integrations/supabase/client";
 import { chatWithSimulationAssistant } from "@/lib/ai-chat.functions";
 import { toast } from "sonner";
@@ -253,7 +254,7 @@ function SimulationDetailPage() {
   useEffect(() => {
     if (authLoading) return;
 
-    if (isPreview) {
+    if (isPreview || !AUTHENTICATION_ENABLED) {
       setAccessReady(true);
       return;
     }
@@ -298,7 +299,7 @@ function SimulationDetailPage() {
   }, [authLoading, id, isPreview, navigate, user]);
 
   useEffect(() => {
-    if (authLoading || !accessReady || (!user && !isPreview)) return;
+    if (authLoading || !accessReady || (AUTHENTICATION_ENABLED && !user && !isPreview)) return;
 
     async function loadSimulation() {
       try {
@@ -390,7 +391,7 @@ function SimulationDetailPage() {
   // simulation_start는 카드 클릭이 아니라 상세 화면 실제 진입 시점에 찍는다.
   // 로그인·온보딩 리다이렉트를 거쳐 도착한 경우도 여기서 잡힌다 (entry = 출발지)
   useEffect(() => {
-    if (isPreview || !accessReady || !user || !sim) return;
+    if (isPreview || !accessReady || !sim || (AUTHENTICATION_ENABLED && !user)) return;
     if (startCapturedRef.current === sim.id) return;
     startCapturedRef.current = sim.id;
     const entry = consumeSimulationEntry(sim.id) ?? "direct";
@@ -469,8 +470,12 @@ function SimulationDetailPage() {
       return;
     }
     if (!user) {
-      toast.error("제출하려면 로그인이 필요해요.");
-      navigate({ to: "/login", search: { redirect: `/simulation/${id}` } });
+      if (AUTHENTICATION_ENABLED) {
+        toast.error("제출하려면 로그인이 필요해요.");
+        navigate({ to: "/login", search: { redirect: `/simulation/${id}` } });
+      } else {
+        toast.error("현재 답안 제출은 사용할 수 없습니다.");
+      }
       return;
     }
 
@@ -519,8 +524,12 @@ function SimulationDetailPage() {
   const handleApply = async () => {
     if (!sim) return;
     if (!user) {
-      toast.error("지원하려면 로그인이 필요해요.");
-      navigate({ to: "/login", search: { redirect: `/simulation/${id}` } });
+      if (AUTHENTICATION_ENABLED) {
+        toast.error("지원하려면 로그인이 필요해요.");
+        navigate({ to: "/login", search: { redirect: `/simulation/${id}` } });
+      } else {
+        toast.error("현재 지원 기능은 사용할 수 없습니다.");
+      }
       return;
     }
 
@@ -564,7 +573,7 @@ function SimulationDetailPage() {
     toast.success(`${sim.company_name}에 지원했어요. 기업 화면에서 확인할 수 있습니다.`);
   };
 
-  if (authLoading || (!user && !isPreview) || loading) {
+  if (authLoading || (AUTHENTICATION_ENABLED && !user && !isPreview) || loading) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-12">
         <Skeleton className="h-8 w-2/3" />

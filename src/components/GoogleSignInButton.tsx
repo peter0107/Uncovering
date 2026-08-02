@@ -108,6 +108,8 @@ export function GoogleSignInButton({
 
   const matchedAppearance = appearance === "matched";
 
+  if (status === "disabled") return null;
+
   if (status === "error") {
     return (
       <button

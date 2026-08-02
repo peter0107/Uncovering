@@ -5,6 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { INITIAL_PROFILE_FORM, JobInterestFields } from "@/lib/profile-fields";
+import {
+  clearPendingProfileNickname,
+  getPendingProfileNickname,
+} from "@/lib/pending-simulation-nickname";
+import { AUTHENTICATION_ENABLED } from "@/lib/auth-features";
 
 export const Route = createFileRoute("/onboarding")({
   validateSearch: (search: Record<string, unknown>) => {
@@ -27,7 +32,12 @@ function OnboardingPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (authLoading || user) return;
+    if (authLoading) return;
+    if (!AUTHENTICATION_ENABLED) {
+      navigate({ to: redirect ?? "/simulations", replace: true });
+      return;
+    }
+    if (user) return;
     const loginRedirect = redirect
       ? `/onboarding?redirect=${encodeURIComponent(redirect)}`
       : "/onboarding";
@@ -50,6 +60,7 @@ function OnboardingPage() {
 
     setSaving(true);
     try {
+      const pendingNickname = getPendingProfileNickname();
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
       if (!accessToken) {
@@ -67,11 +78,13 @@ function OnboardingPage() {
       });
       const result = (await response.json().catch(() => null)) as { error?: string } | null;
 
+
       if (!response.ok) {
         toast.error(result?.error ?? "온보딩 정보를 저장하지 못했습니다.");
         return;
       }
 
+      if (pendingNickname) clearPendingProfileNickname();
       navigate({ to: redirect ?? "/simulations", replace: true });
     } catch (error) {
       console.error("[Onboarding]", error);
