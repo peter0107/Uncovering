@@ -42,7 +42,7 @@ export function SiteHeader() {
 
           {!isLoginPage && (
             <div className="hidden items-center gap-4 min-[42rem]:flex">
-              {user ? (
+              {AUTHENTICATION_ENABLED && user ? (
                 <AccountMenu />
               ) : AUTHENTICATION_ENABLED ? (
                 <>
@@ -68,8 +68,8 @@ export function SiteHeader() {
 
           {!isLoginPage && (
             <div className="flex items-center gap-1 min-[42rem]:hidden">
-              {user ? <AccountMenu /> : !AUTHENTICATION_ENABLED ? <GuestProfileMenu /> : null}
-              {(user || AUTHENTICATION_ENABLED || NAV.length > 0) && (
+              {AUTHENTICATION_ENABLED && user ? <AccountMenu /> : <GuestProfileMenu />}
+              {(AUTHENTICATION_ENABLED || NAV.length > 0) && (
                 <button
                   aria-label="메뉴"
                   onClick={() => setOpen((v) => !v)}
@@ -82,7 +82,7 @@ export function SiteHeader() {
           )}
         </div>
 
-        {!isLoginPage && open && (user || AUTHENTICATION_ENABLED || NAV.length > 0) && (
+        {!isLoginPage && open && (AUTHENTICATION_ENABLED || NAV.length > 0) && (
           <div className="border-t border-border bg-background min-[42rem]:hidden">
             <div className="mx-auto flex max-w-[72.5rem] flex-col gap-1 px-5 py-3">
               {NAV.map((n) => (

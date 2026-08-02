@@ -172,7 +172,7 @@ function Header({
         </nav>
 
         <div className="reference-desktop-actions">
-          {user ? (
+          {AUTHENTICATION_ENABLED && user ? (
             <AccountMenu />
           ) : AUTHENTICATION_ENABLED ? (
             <>
@@ -189,7 +189,7 @@ function Header({
         </div>
 
         <div className="reference-mobile-actions">
-          {user ? <AccountMenu /> : !AUTHENTICATION_ENABLED ? <GuestProfileMenu /> : null}
+          {AUTHENTICATION_ENABLED && user ? <AccountMenu /> : <GuestProfileMenu />}
           <button
             type="button"
             onClick={onMenuToggle}

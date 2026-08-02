@@ -18,6 +18,7 @@ import {
 } from "@/lib/pending-simulation-nickname";
 import { trackSimulationCardClick, type SimulationEntrySource } from "@/lib/posthog";
 import { supabase } from "@/integrations/supabase/client";
+import { signInWithNickname } from "@/lib/nickname-auth";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -61,15 +62,14 @@ export function SimulationStartProvider({ children }: { children: ReactNode }) {
 
   const continueToSimulation = useCallback(
     async (nextRequest: StartRequest, displayName: string) => {
-      if (user) {
-        try {
-          await persistNickname(user.id, user.email ?? "", displayName);
-          clearPendingProfileNickname();
-        } catch (error) {
-          console.error("[Simulation nickname]", error);
-          toast.error("닉네임을 저장하지 못했습니다.");
-          return;
-        }
+try {
+        const activeUser = user ?? (await signInWithNickname(displayName)).user;
+        await persistNickname(activeUser.id, activeUser.email ?? "", displayName);
+        clearPendingProfileNickname();
+      } catch (error) {
+        console.error("[Simulation nickname]", error);
+        toast.error(error instanceof Error ? error.message : "닉네임을 저장하지 못했습니다.");
+        return;
       }
 
       trackSimulationCardClick(nextRequest.id, nextRequest.title, nextRequest.source);
@@ -81,13 +81,7 @@ export function SimulationStartProvider({ children }: { children: ReactNode }) {
 
   const startSimulation = useCallback(
     (nextRequest: StartRequest) => {
-      const savedNickname = getSavedSimulationNickname();
-      if (savedNickname) {
-        void continueToSimulation(nextRequest, savedNickname);
-        return;
-      }
-
-      setNickname("");
+      setNickname(getSavedSimulationNickname());
       setRequest(nextRequest);
     },
     [continueToSimulation],
