@@ -13,11 +13,22 @@ export async function signInWithNickname(input: string, password?: string) {
   if (validationError) throw new Error(validationError);
   await supabase.auth.signOut();
   const response = await fetch("/api/nickname/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ nickname, password }) });
-  const result = (await response.json().catch(() => null)) as { tokenHash?: string; admin?: boolean; error?: string } | null;
-  if (!response.ok || !result?.tokenHash) throw new Error(result?.error || "닉네임으로 로그인하지 못했습니다.");
-  const { data, error } = await supabase.auth.verifyOtp({ token_hash: result.tokenHash, type: "magiclink" });
-  if (error || !data.user) throw new Error("로그인 세션을 만들지 못했습니다.");
-  return { user: data.user, admin: result.admin === true };
+  const result = (await response.json().catch(() => null)) as {
+    tokenHash?: string;
+    accessToken?: string;
+    refreshToken?: string;
+    admin?: boolean;
+    error?: string;
+  } | null;
+  if (!response.ok || !result) throw new Error(result?.error || "닉네임으로 로그인하지 못했습니다.");
+
+  const authResult = result.accessToken && result.refreshToken
+    ? await supabase.auth.setSession({ access_token: result.accessToken, refresh_token: result.refreshToken })
+    : result.tokenHash
+      ? await supabase.auth.verifyOtp({ token_hash: result.tokenHash, type: "magiclink" })
+      : { data: { user: null }, error: new Error("로그인 토큰이 없습니다.") };
+  if (authResult.error || !authResult.data.user) throw new Error("로그인 세션을 만들지 못했습니다.");
+  return { user: authResult.data.user, admin: result.admin === true };
 }
 export async function getCurrentNickname(userId: string) {
   const { data } = await supabase.from("job_seekers").select("nickname, display_name").eq("id", userId).maybeSingle();

@@ -50,12 +50,23 @@ export async function handleNicknameLoginRequest(request: Request) {
     if (!adminUser) return json({ error: "관리자 계정을 찾지 못했습니다." }, 500);
 
     const { error: roleError } = await supabaseAdmin.auth.admin.updateUserById(adminUser.id, {
+      password: configuredPassword,
       app_metadata: { role: "admin" },
     });
     if (roleError) return json({ error: "관리자 권한을 발급하지 못했습니다." }, 500);
+
+    const { data: adminSession, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
+      email,
+      password: configuredPassword,
+    });
+    if (signInError || !adminSession.session) return json({ error: "관리자 로그인을 시작하지 못했습니다." }, 500);
+    return json({
+      accessToken: adminSession.session.access_token,
+      refreshToken: adminSession.session.refresh_token,
+      admin: true,
+    });
   }
 
-  // 관리자 권한을 먼저 반영한 뒤 토큰을 한 번만 생성해야 토큰의 app_metadata가 최신 상태가 된다.
   const { data: link, error: linkError } = await supabaseAdmin.auth.admin.generateLink({ type: "magiclink", email });
   if (linkError || !link.properties?.hashed_token) return json({ error: "닉네임 로그인을 시작하지 못했습니다." }, 500);
   return json({ tokenHash: link.properties.hashed_token, admin: isAdmin });
