@@ -177,6 +177,11 @@ export async function capturePostHogEvent(
 
 const SIGNUP_CAPTURED_PREFIX = "ph_signup_captured_";
 
+function getPostHogPersonProperties(email?: string) {
+  const normalizedEmail = email?.trim().toLowerCase();
+  return normalizedEmail ? { email: normalizedEmail } : undefined;
+}
+
 export async function captureSignup(userId: string, email?: string): Promise<boolean> {
   const key = `${SIGNUP_CAPTURED_PREFIX}${userId}`;
   try {
@@ -188,7 +193,7 @@ export async function captureSignup(userId: string, email?: string): Promise<boo
   const posthog = await getPostHogClient();
   if (!posthog) return false;
 
-  posthog.identify(userId, email ? { email: email.trim().toLowerCase() } : undefined);
+  posthog.identify(userId, getPostHogPersonProperties(email));
   posthog.capture("user_signed_up");
   try {
     window.localStorage.setItem(key, "1");
@@ -201,6 +206,6 @@ export async function captureSignup(userId: string, email?: string): Promise<boo
 export async function captureLogin(userId: string, email?: string) {
   const posthog = await getPostHogClient();
   if (!posthog) return;
-  posthog.identify(userId, email ? { email: email.trim().toLowerCase() } : undefined);
+  posthog.identify(userId, getPostHogPersonProperties(email));
   posthog.capture("user_logged_in");
 }

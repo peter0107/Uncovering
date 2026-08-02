@@ -81,6 +81,7 @@ export type AdminSubmissionAnswer = {
   id: string;
   applicantName: string;
   applicantEmail: string;
+  jobInterests: string[];
   companyName: string;
   companyCode: string;
   simulationTitle: string;
@@ -472,6 +473,9 @@ function mapAdminSubmission(
     id: String(row.id),
     applicantName: String(seeker.display_name ?? "이름 미입력"),
     applicantEmail: String(seeker.email ?? ""),
+    jobInterests: Array.isArray(seeker.job_interests)
+      ? seeker.job_interests.map((interest) => String(interest))
+      : [],
     companyName: String(company.name ?? ""),
     companyCode: String(company.code ?? company.unique_code ?? ""),
     simulationTitle: String(simulation.title ?? ""),
@@ -581,7 +585,7 @@ export const getAdminSubmissionAnswers = createServerFn({ method: "GET" }).handl
     const { data, error } = await supabaseAdmin
       .from("submissions")
       .select(
-        "id, response_text, response_json, ai_chat_log, duration_sec, submitted_at, created_at, answer_transmission_consent, job_seekers(display_name, email), job_simulations(id, company_id, title, role_label, job_family, companies(name, code, unique_code))",
+        "id, response_text, response_json, ai_chat_log, duration_sec, submitted_at, created_at, answer_transmission_consent, job_seekers(display_name, email, job_interests), job_simulations(id, company_id, title, role_label, job_family, companies(name, code, unique_code))",
       )
       .not("submitted_at", "is", null)
       .order("submitted_at", { ascending: false });

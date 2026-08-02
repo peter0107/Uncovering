@@ -55,7 +55,7 @@ export function SignupDialog({ trigger, redirectTo = "/experiences", defaultMode
           toast.error(error.message);
           return;
         }
-        if (data.user) await captureSignup(data.user.id, data.user.email);
+        if (data.user) await captureSignup(data.user.id, data.user.email ?? email);
         toast.success("회원가입이 완료되었습니다. 메일함에서 인증을 완료해주세요.");
         setOpen(false);
       } else {
@@ -64,7 +64,7 @@ export function SignupDialog({ trigger, redirectTo = "/experiences", defaultMode
           toast.error(error.message);
           return;
         }
-        if (data.user) await captureLogin(data.user.id, data.user.email);
+        if (data.user) await captureLogin(data.user.id, data.user.email ?? email);
         toast.success("로그인되었습니다.");
         setOpen(false);
         navigate({ to: redirectTo });

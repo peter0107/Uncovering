@@ -4,6 +4,7 @@ import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { handleCompleteOnboardingRequest } from "./lib/onboarding.functions";
 import { handleGenerateSimulationRequest } from "./lib/simulation-generator.functions";
+import { handleNicknameCheckRequest, handleNicknameLoginRequest } from "./lib/nickname-auth.functions";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -86,6 +87,16 @@ export default {
           return new Response("Method Not Allowed", { status: 405 });
         }
         return handleCompleteOnboardingRequest(request);
+      }
+
+      if (pathname === "/api/nickname/check") {
+        if (request.method !== "GET") return new Response("Method Not Allowed", { status: 405 });
+        return handleNicknameCheckRequest(request);
+      }
+
+      if (pathname === "/api/nickname/login") {
+        if (request.method !== "POST") return new Response("Method Not Allowed", { status: 405 });
+        return handleNicknameLoginRequest(request);
       }
 
       const handler = await getServerEntry();

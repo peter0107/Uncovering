@@ -228,10 +228,27 @@ function SubmissionDetail({
             </span>
           </div>
         </div>
-        <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-3">
+        <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
           <div>
             <dt className="text-xs text-neutral-500">직무</dt>
             <dd className="mt-1 font-medium">{submission.roleLabel}</dd>
+          </div>
+          <div>
+            <dt className="text-xs text-neutral-500">관심 직무</dt>
+            <dd className="mt-1 flex flex-wrap gap-1.5">
+              {submission.jobInterests.length > 0 ? (
+                submission.jobInterests.map((interest) => (
+                  <span
+                    key={interest}
+                    className="rounded-md bg-neutral-100 px-2 py-1 text-xs font-medium text-neutral-700"
+                  >
+                    {interest}
+                  </span>
+                ))
+              ) : (
+                <span className="font-medium text-neutral-400">미선택</span>
+              )}
+            </dd>
           </div>
           <div>
             <dt className="text-xs text-neutral-500">시뮬레이션</dt>

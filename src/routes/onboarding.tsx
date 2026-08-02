@@ -50,30 +50,26 @@ function OnboardingPage() {
 
     setSaving(true);
     try {
-      const { data: updated, error: updateError } = await supabase
-        .from("job_seekers")
-        .update({ job_interests: jobInterests })
-        .eq("id", user.id)
-        .select("id");
-
-      if (updateError) {
-        console.error("[Onboarding update]", updateError);
-        toast.error("온보딩 정보를 저장하지 못했습니다.");
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) {
+        toast.error("로그인이 필요합니다.");
         return;
       }
 
-      if (!updated?.length) {
-        const { error: insertError } = await supabase.from("job_seekers").insert({
-          id: user.id,
-          email: user.email ?? "",
-          job_interests: jobInterests,
-        });
+      const response = await fetch("/api/complete-onboarding", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ jobInterests }),
+      });
+      const result = (await response.json().catch(() => null)) as { error?: string } | null;
 
-        if (insertError) {
-          console.error("[Onboarding insert]", insertError);
-          toast.error("온보딩 정보를 저장하지 못했습니다.");
-          return;
-        }
+      if (!response.ok) {
+        toast.error(result?.error ?? "온보딩 정보를 저장하지 못했습니다.");
+        return;
       }
 
       navigate({ to: redirect ?? "/simulations", replace: true });
