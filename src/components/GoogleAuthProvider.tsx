@@ -15,6 +15,7 @@ import {
   loadGoogleIdentity,
   type GoogleIdentity,
 } from "@/lib/google-identity";
+import { getGoogleClientId } from "@/lib/google-auth.functions";
 import { captureLogin, captureSignup, consumeGoogleLoginPending } from "@/lib/posthog";
 
 const SIGNUP_DETECTION_WINDOW_MS = 2 * 60 * 1000;
@@ -53,9 +54,12 @@ export function GoogleAuthProvider({ children }: { children: ReactNode }) {
 
       setStatus("loading");
       try {
-        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim();
+        // Vite variables are fixed during the build. The server fallback keeps
+        // Google Sign-In available when the Worker variable is updated later.
+        const bundledClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim();
+        const clientId = bundledClientId || (await getGoogleClientId()).clientId;
         if (!clientId) {
-          throw new Error("VITE_GOOGLE_CLIENT_ID가 설정되지 않았습니다.");
+          throw new Error("Google Client ID가 설정되지 않았습니다.");
         }
 
         const googleIdentity = await loadGoogleIdentity();
@@ -68,7 +72,7 @@ export function GoogleAuthProvider({ children }: { children: ReactNode }) {
           nonce: hashedNonce,
           auto_select: false,
           use_fedcm_for_prompt: false,
-          use_fedcm_for_button: true,
+          use_fedcm_for_button: false,
           callback: async ({ credential, state }) => {
             if (cancelled) return;
 
@@ -78,35 +82,43 @@ export function GoogleAuthProvider({ children }: { children: ReactNode }) {
               ? actionsRef.current.get(actionState)
               : undefined;
 
-            const { data, error } = await supabase.auth.signInWithIdToken({
-              provider: "google",
-              token: credential,
-              nonce,
-            });
+            try {
+              const { data, error } = await supabase.auth.signInWithIdToken({
+                provider: "google",
+                token: credential,
+                nonce,
+              });
 
-            if (error) {
-              setIsAuthenticating(false);
-              toast.error("Google 로그인에 실패했습니다.");
+              if (error) {
+                toast.error("Google 로그인에 실패했습니다.");
+                console.error("[Google Sign-In]", error);
+                return;
+              }
+
+              const user = data.user;
+              if (user && consumeGoogleLoginPending()) {
+                const createdAtMs = Date.parse(user.created_at);
+                const isNewSignup =
+                  Number.isFinite(createdAtMs) &&
+                  Date.now() - createdAtMs < SIGNUP_DETECTION_WINDOW_MS;
+                const signupCaptured = isNewSignup
+                  ? await captureSignup(user.id, user.email)
+                  : false;
+                if (!signupCaptured) {
+                  await captureLogin(user.id, user.email);
+                }
+              }
+
+              pendingActionRef.current = null;
+              action?.onSuccess?.();
+            } catch (error) {
               console.error("[Google Sign-In]", error);
-              return;
-            }
-
-            const user = data.user;
-            if (user && consumeGoogleLoginPending()) {
-              const createdAtMs = Date.parse(user.created_at);
-              const isNewSignup =
-                Number.isFinite(createdAtMs) &&
-                Date.now() - createdAtMs < SIGNUP_DETECTION_WINDOW_MS;
-              const signupCaptured = isNewSignup
-                ? await captureSignup(user.id, user.email)
-                : false;
-              if (!signupCaptured) {
-                await captureLogin(user.id, user.email);
+              toast.error("Google 로그인에 실패했습니다.");
+            } finally {
+              if (!cancelled) {
+                setIsAuthenticating(false);
               }
             }
-
-            pendingActionRef.current = null;
-            action?.onSuccess?.();
           },
         });
 

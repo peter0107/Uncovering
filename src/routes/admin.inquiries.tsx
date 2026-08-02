@@ -17,9 +17,9 @@ export const Route = createFileRoute("/admin/inquiries")({
   component: AdminInquiries,
 });
 
-type Tab = "applications" | "coffeeChats";
+type Tab = "applications" | "coffeeChats" | "companyRoleRequests";
 
-const EMPTY: AdminInquiries = { applications: [], bookings: [] };
+const EMPTY: AdminInquiries = { applications: [], bookings: [], companyRoleRequests: [] };
 
 function AdminInquiries() {
   const navigate = useNavigate();
@@ -58,6 +58,7 @@ function AdminInquiries() {
 
   const applications = data.applications;
   const bookings = data.bookings;
+  const companyRoleRequests = data.companyRoleRequests;
 
   return (
     <AdminShell>
@@ -86,6 +87,12 @@ function AdminInquiries() {
         </TabButton>
         <TabButton active={tab === "coffeeChats"} onClick={() => setTab("coffeeChats")}>
           커피챗 예약 <TabCount>{bookings.length}</TabCount>
+        </TabButton>
+        <TabButton
+          active={tab === "companyRoleRequests"}
+          onClick={() => setTab("companyRoleRequests")}
+        >
+          희망 기업·직무 <TabCount>{companyRoleRequests.length}</TabCount>
         </TabButton>
       </div>
 
@@ -152,9 +159,9 @@ function AdminInquiries() {
             ))}
           </div>
         )
-      ) : bookings.length === 0 ? (
+      ) : tab === "coffeeChats" && bookings.length === 0 ? (
         <EmptyState />
-      ) : (
+      ) : tab === "coffeeChats" ? (
         <div className="mt-6 space-y-3">
           {bookings.map((item) => (
             <div key={item.id} className="rounded-md border border-neutral-200 p-4">
@@ -172,6 +179,23 @@ function AdminInquiries() {
                 <p className="mt-3 whitespace-pre-wrap rounded-md bg-neutral-50 p-3 text-sm text-neutral-700">
                   {item.hiringConcern}
                 </p>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : companyRoleRequests.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <div className="mt-6 space-y-3">
+          {companyRoleRequests.map((item) => (
+            <div key={item.id} className="rounded-md border border-neutral-200 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-semibold text-neutral-900">{item.companyName}</p>
+                <span className="text-xs text-neutral-400">{item.createdAt}</span>
+              </div>
+              <p className="mt-2 text-sm text-neutral-600">희망 직무: {item.roleName}</p>
+              {item.requesterEmail && (
+                <p className="mt-1 text-sm text-neutral-600">요청자: {item.requesterEmail}</p>
               )}
             </div>
           ))}

@@ -17,9 +17,13 @@ export function SiteHeader() {
     <>
       <header className="sticky top-0 z-40 w-full border-b border-border bg-background">
         <div className="mx-auto flex h-16 w-full max-w-[72.5rem] items-center justify-between px-12 max-[42rem]:px-5">
-          <a href="/" className="flex items-center" aria-label="Beginner 홈">
+          <Link
+            to="/"
+            className="flex items-center"
+            aria-label="Beginner 홈"
+          >
             <BrandLogo className="h-[1.9rem] w-auto max-w-[9.75rem] object-contain object-left" />
-          </a>
+          </Link>
 
           <nav className="hidden items-center gap-7 min-[42rem]:flex">
             {NAV.map((n) => (

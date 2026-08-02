@@ -7,24 +7,44 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 
 import appCss from "../styles.css?url";
 import { Toaster } from "@/components/ui/sonner";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
-import { NavigationOverlay } from "@/components/LoadingOverlay";
+import { LoadingOverlay, LoadingOverlayProvider, useLoadingOverlay } from "@/components/LoadingOverlay";
 import { ClarityTracker } from "@/components/ClarityTracker";
 import { GoogleAnalyticsTracker } from "@/components/GoogleAnalyticsTracker";
 import { PostHogTracker } from "@/components/PostHogTracker";
 import { GoogleAuthProvider } from "@/components/GoogleAuthProvider";
 import { useRouterState } from "@tanstack/react-router";
 
+function useDelayedLoading(active: boolean, delay = 450) {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    if (!active) {
+      setIsVisible(false);
+      return;
+    }
+
+    const timer = window.setTimeout(() => setIsVisible(true), delay);
+    return () => window.clearTimeout(timer);
+  }, [active, delay]);
+
+  return isVisible;
+}
+
 function GlobalNavigationOverlay() {
   const isNavigating = useRouterState({
     select: (s) => s.isLoading || s.isTransitioning,
   });
-  if (!isNavigating) return null;
-  return <NavigationOverlay />;
+  const { isRequestLoading } = useLoadingOverlay();
+  const showNavigationLoading = useDelayedLoading(isNavigating);
+
+  if (!showNavigationLoading && !isRequestLoading) return null;
+  return <LoadingOverlay message={showNavigationLoading ? "페이지 이동 중..." : "불러오는 중..."} />;
 }
 
 function SiteLayout({ children }: { children: React.ReactNode }) {
@@ -167,16 +187,18 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <GoogleAuthProvider>
-        <ClarityTracker />
-        <GoogleAnalyticsTracker />
-        <PostHogTracker />
-        <SiteLayout>
-          <Outlet />
-        </SiteLayout>
-        <GlobalNavigationOverlay />
-        <Toaster />
-      </GoogleAuthProvider>
+      <LoadingOverlayProvider>
+        <GoogleAuthProvider>
+          <ClarityTracker />
+          <GoogleAnalyticsTracker />
+          <PostHogTracker />
+          <SiteLayout>
+            <Outlet />
+          </SiteLayout>
+          <GlobalNavigationOverlay />
+          <Toaster />
+        </GoogleAuthProvider>
+      </LoadingOverlayProvider>
     </QueryClientProvider>
   );
 }

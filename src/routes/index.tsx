@@ -153,7 +153,12 @@ function Header({
   return (
     <header className="reference-header">
       <div className="reference-shell reference-header-inner">
-        <Link to="/" onClick={onMenuClose}>
+        <Link
+          to="/"
+          onClick={() => {
+            onMenuClose();
+          }}
+        >
           <Brand />
         </Link>
 
