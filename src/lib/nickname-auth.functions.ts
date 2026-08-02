@@ -45,13 +45,12 @@ export async function handleNicknameLoginRequest(request: Request) {
 
   const { data: link, error: linkError } = await supabaseAdmin.auth.admin.generateLink({ type: "magiclink", email });
   if (linkError || !link.properties?.hashed_token) return json({ error: "닉네임 로그인을 시작하지 못했습니다." }, 500);
-  const userId = seeker?.id ?? link.user.id;
+  const userId = link.user.id;
   if (isAdmin) {
     const { error: roleError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
       app_metadata: { role: "admin" },
     });
     if (roleError) return json({ error: "관리자 권한을 발급하지 못했습니다." }, 500);
   }
-  if (isAdmin) await supabaseAdmin.from("job_seekers").upsert({ id: userId, email, nickname, display_name: nickname }, { onConflict: "id" });
   return json({ tokenHash: link.properties.hashed_token, admin: isAdmin });
 }

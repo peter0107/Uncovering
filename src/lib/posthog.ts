@@ -171,6 +171,23 @@ export function consumeSimulationEntry(simulationId: string): SimulationEntrySou
   }
 }
 
+export async function captureNicknameSubmitted(
+  nicknameInput: string,
+  simulation: { id: string; name: string; source: SimulationEntrySource },
+) {
+  const nickname = nicknameInput.trim().toLowerCase();
+  if (!nickname) return;
+  const posthog = await getPostHogClient();
+  if (!posthog) return;
+
+  posthog.identify(nickname, { nickname, auth_type: "nickname" });
+  posthog.capture("nickname_submitted", {
+    simulation_id: String(simulation.id),
+    simulation_name: String(simulation.name),
+    entry_source: simulation.source,
+  });
+}
+
 export async function capturePostHogEvent(
   event: string,
   properties?: Record<string, unknown>,
