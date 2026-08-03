@@ -96,7 +96,7 @@ async function fetchRecommended(seeker: JobSeeker): Promise<Simulation[]> {
     .eq("simulation_source", "company")
     .eq("is_public", true)
     .is("deleted_at", null)
-    .limit(20); // 클라이언트에서 필터·정렬 후 3개 추출
+    .limit(20); // 클라이언트에서 필터·정렬 후 4개 추출
 
   if (error) throw error;
   if (!data || data.length === 0) return [];
@@ -115,12 +115,12 @@ async function fetchRecommended(seeker: JobSeeker): Promise<Simulation[]> {
     return scoreB - scoreA;
   });
 
-  return sorted.slice(0, 3).map(({ _domainMatch: _d, _companyMatch: _c, ...rest }) => rest);
+  return sorted.slice(0, 4).map(({ _domainMatch: _d, _companyMatch: _c, ...rest }) => rest);
 }
 
 // 비로그인 방문자용 · 전체 직무 보기: 개인화 없이 전체 시뮬레이션 목록
-export async function fetchAll(): Promise<Simulation[]> {
-  const { data, error } = await supabase
+export async function fetchAll(limit?: number): Promise<Simulation[]> {
+  const query = supabase
     .from("job_simulations")
     .select(
       "id, title, role_label, description, job_family, domain, estimated_minutes, card_image_url, companies(name, description, logo_url, is_partner)",
@@ -129,6 +129,8 @@ export async function fetchAll(): Promise<Simulation[]> {
     .eq("is_public", true)
     .is("deleted_at", null)
     .order("created_at", { ascending: false });
+
+  const { data, error } = await (limit ? query.limit(limit) : query);
 
   if (error) throw error;
   if (!data) return [];
@@ -228,7 +230,7 @@ function SimulationsPage() {
         if (!user) {
           // 비로그인 방문자: 개인화 없이 전체 목록 둘러보기
           setSeeker(null);
-          setSims(await fetchAll());
+          setSims(await fetchAll(4));
           return;
         }
 
@@ -341,7 +343,7 @@ function SimulationsPage() {
         {isGuest ? "직무 시뮬레이션" : "맞춤 추천"}
       </p>
       <h1 className="text-2xl font-bold text-zinc-900 md:text-3xl">
-        {isGuest ? "원하는 시뮬레이션을 선택하세요" : "나를 위한 시뮬레이션 3개"}
+        {isGuest ? "원하는 시뮬레이션을 선택하세요" : `나를 위한 시뮬레이션 ${sims.length || 4}개`}
       </h1>
       {isGuest && (
         <p className="mt-2 text-sm text-zinc-400">
