@@ -195,16 +195,16 @@ function AllSimulationsPage() {
             <p className="mt-2 max-w-xs text-sm text-zinc-400">
               검색어나 직무군 필터를 바꿔 다시 시도해 보세요.
             </p>
-            <button
-              type="button"
-              onClick={() => {
-                setQuery("");
-                setSelectedDomain(null);
-              }}
-              className="mt-6 rounded-md border border-zinc-300 px-4 py-2 text-sm text-zinc-700 hover:border-zinc-900 hover:text-zinc-900"
-            >
-              필터 초기화
-            </button>
+            <div className="mt-6 text-sm text-zinc-500">
+              <span>원하는 기업과 원하는 직무가 없나요? </span>
+              <button
+                type="button"
+                onClick={() => setRequestDialogOpen(true)}
+                className="font-medium text-zinc-900 underline underline-offset-4 hover:text-zinc-600"
+              >
+                요청하기
+              </button>
+            </div>
           </div>
         ) : (
           <div className="col-span-full flex flex-col items-center py-20 text-center">
@@ -224,7 +224,7 @@ function AllSimulationsPage() {
         )}
       </div>
 
-      {!loading && (
+      {!loading && filtered.length > 0 && (
         <div className="mt-10 text-center text-sm text-zinc-500">
           <span>원하는 기업과 원하는 직무가 없나요? </span>
           <button
