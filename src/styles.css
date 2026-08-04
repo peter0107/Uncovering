@@ -1564,6 +1564,12 @@
     color: #6b7280;
     font-size: 0.875rem;
     line-height: 1.4;
+    text-decoration: none;
+  }
+
+  .reference-hero-caption:hover {
+    color: #4b5563;
+    text-decoration: underline;
   }
 
   .reference-hero-glow {

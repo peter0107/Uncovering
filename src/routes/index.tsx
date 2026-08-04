@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Check, Menu, X } from "lucide-react";
-import { useEffect, useRef, useState, type MouseEvent, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
 
 import { AccountMenu } from "@/components/AccountMenu";
 import { GuestProfileMenu } from "@/components/GuestProfileMenu";
@@ -475,14 +475,6 @@ function Index() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const closeMenu = () => setIsMenuOpen(false);
 
-  const scrollToCompanySimulations = (event: MouseEvent<HTMLAnchorElement>) => {
-    event.preventDefault();
-    document.getElementById("company-simulations")?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-  };
-
   useEffect(() => {
     const sections = Array.from(document.querySelectorAll<HTMLElement>(".reference-reveal"));
 
@@ -529,16 +521,12 @@ function Index() {
             <p className="reference-hero-description">
               Beginner는 실제 직무를 미리 온라인으로 체험하도록 하는 직무 시뮬레이션 플랫폼입니다.
             </p>
-            <a
-              href="#company-simulations"
-              className="reference-hero-action"
-              onClick={scrollToCompanySimulations}
-            >
+            <Link to="/simulations/all" className="reference-hero-action">
               무료로 시작하기 <ArrowRight aria-hidden="true" />
-            </a>
-            <p className="reference-hero-caption">
-              가입 후 3분이면 첫 과제가 도착해요
-            </p>
+            </Link>
+            <Link to="/form" className="reference-hero-caption">
+              원하는 직무 요청하기
+            </Link>
           </div>
         </section>
       </div>
@@ -597,9 +585,9 @@ function Index() {
           <div className="reference-shell reference-cta-inner">
             <h2>첫 과제, 지금 무료로 받아보세요</h2>
             <p>현직자가 제시한 업무를 직접 경험해보세요.</p>
-            <a href="#company-simulations" onClick={scrollToCompanySimulations}>
+            <Link to="/simulations/all">
               무료로 시작하기 <ArrowRight aria-hidden="true" />
-            </a>
+            </Link>
           </div>
         </section>
       </main>
