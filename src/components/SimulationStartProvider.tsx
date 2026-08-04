@@ -25,7 +25,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { signInWithNickname } from "@/lib/nickname-auth";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -90,7 +96,13 @@ export function SimulationStartProvider({ children }: { children: ReactNode }) {
   const startSimulation = useCallback(
     (nextRequest: StartRequest) => {
       trackSimulationCardClick(nextRequest.id, nextRequest.title, nextRequest.source);
-      setNickname(getSavedSimulationNickname());
+      const savedNickname = getSavedSimulationNickname();
+      if (savedNickname) {
+        void continueToSimulation(nextRequest, savedNickname);
+        return;
+      }
+
+      setNickname("");
       setRequest(nextRequest);
     },
     [continueToSimulation],

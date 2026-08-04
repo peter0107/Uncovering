@@ -10,7 +10,8 @@ export const Route = createFileRoute("/form")({
       { title: "관심 직무를 신청해보세요 | Beginner" },
       {
         name: "description",
-        content: "궁금한 직무를 신청하면 실제 기업에서 맡게 될 업무를 바탕으로 시뮬레이션을 만들어드립니다.",
+        content:
+          "궁금한 직무를 신청하면 실제 기업에서 맡게 될 업무를 바탕으로 시뮬레이션을 만들어드립니다.",
       },
     ],
   }),
@@ -82,9 +83,7 @@ function AdsPage() {
               </h1>
               <p className="mt-4 text-[0.9375rem] leading-7 text-[#667085] [word-break:keep-all]">
                 <span className="block">아래 폼에 궁금한 직무를 적어주세요.</span>
-                <span className="block">
-                  실제 기업에 입사하면 맡게 될 업무를 제공해드립니다.
-                </span>
+                <span className="block">실제 기업에 입사하면 맡게 될 업무를 제공해드립니다.</span>
                 <span className="block">완성되면 이메일로 안내드리겠습니다.</span>
               </p>
             </div>
@@ -172,18 +171,15 @@ function AdsPage() {
             </form>
 
             <aside className="mt-12 border-t border-[#e5e9f0] pt-8">
-              <p className="text-xs font-bold tracking-[0.08em] text-[#667085]">
-                베타 오픈 직무
-              </p>
+              <p className="text-xs font-bold tracking-[0.08em] text-[#667085]">베타 오픈 직무</p>
               <h2 className="mt-3 text-xl font-extrabold tracking-[-0.03em] text-[#1a2340]">
                 지금 체험할 수 있는 직무를 확인해보세요
               </h2>
               <p className="mt-2 text-sm leading-6 text-[#667085]">
-                Beginner 홈페이지에서 현재 베타로 공개된 직무 시뮬레이션을 바로 체험할 수
-                있습니다.
+                Beginner 홈페이지에서 현재 베타로 공개된 직무 시뮬레이션을 바로 체험할 수 있습니다.
               </p>
               <Link
-                to="/simulations"
+                to="/simulations/all"
                 className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-[#d9dee8] bg-white px-4 text-sm font-bold text-[#1a2340] transition-colors hover:border-[#1659e3] hover:text-[#1659e3]"
               >
                 베타 직무 보러가기
