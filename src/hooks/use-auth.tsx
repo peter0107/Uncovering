@@ -1,17 +1,14 @@
 import { useEffect, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
-import { isAdminUser } from "@/lib/admin";
-import { AUTHENTICATION_ENABLED } from "@/lib/auth-features";
 
 let cachedSession: Session | null = null;
 let cachedUser: User | null = null;
 let authInitialized = false;
 
-// 로그인 UI를 감춘 MVP 동안 닉네임 방문자는 비로그인으로 취급하지만,
-// /admin은 세션의 admin 권한으로 접근을 판별하므로 관리자 세션은 그대로 노출한다.
-const visibleSession = (s: Session | null) =>
-  AUTHENTICATION_ENABLED || isAdminUser(s?.user) ? s : null;
+// Account UI visibility is controlled at its call sites. The nickname session must remain
+// available here because simulation submission requires its user id and JWT.
+const visibleSession = (session: Session | null) => session;
 
 export function useAuth() {
   const [session, setSession] = useState<Session | null>(cachedSession);
