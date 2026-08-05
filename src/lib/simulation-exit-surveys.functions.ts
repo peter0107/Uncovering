@@ -31,6 +31,10 @@ const submitExitSurveySchema = z
     }
   });
 
+const deleteExitSurveySchema = z.object({
+  id: z.string().uuid(),
+});
+
 function createPublicServerClient() {
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY;
@@ -128,3 +132,21 @@ export const getAdminSimulationExitSurveys = createServerFn({ method: "GET" }).h
     });
   },
 );
+
+export const deleteAdminSimulationExitSurvey = createServerFn({ method: "POST" })
+  .inputValidator(deleteExitSurveySchema)
+  .handler(async ({ data }) => {
+    await assertAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("simulation_exit_surveys")
+      .delete()
+      .eq("id", data.id);
+
+    if (error) {
+      console.error("Failed to delete simulation exit survey:", error);
+      throw new Error("이탈 설문을 삭제하지 못했습니다.");
+    }
+
+    return { ok: true as const };
+  });

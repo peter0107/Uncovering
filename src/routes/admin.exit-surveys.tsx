@@ -1,11 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { BrandLogo } from "@/components/BrandLogo";
 import { useAuth } from "@/hooks/use-auth";
 import {
+  deleteAdminSimulationExitSurvey,
   getAdminSimulationExitSurveys,
   type AdminExitSurvey,
 } from "@/lib/simulation-exit-surveys.functions";
@@ -41,6 +42,7 @@ function AdminExitSurveys() {
   const { user, loading: authLoading } = useAuth();
   const [surveys, setSurveys] = useState<AdminExitSurvey[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const loadedUserIdRef = useRef<string | null>(null);
 
   const loadSurveys = useCallback(async () => {
@@ -65,6 +67,24 @@ function AdminExitSurveys() {
     void loadSurveys();
   }, [authLoading, user, navigate, loadSurveys]);
 
+  const deleteSurvey = useCallback(
+    async (survey: AdminExitSurvey) => {
+      if (deletingId) return;
+      if (!window.confirm("이 설문 답변을 삭제하시겠어요? 삭제 후 복구할 수 없습니다.")) return;
+
+      setDeletingId(survey.id);
+      try {
+        await deleteAdminSimulationExitSurvey({ data: { id: survey.id } });
+        setSurveys((current) => current.filter((item) => item.id !== survey.id));
+        toast.success("설문 답변을 삭제했습니다.");
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "설문 답변을 삭제하지 못했습니다.");
+      } finally {
+        setDeletingId(null);
+      }
+    },
+    [deletingId],
+  );
   const counts = useMemo(
     () =>
       surveys.reduce<Record<string, number>>((result, survey) => {
@@ -114,7 +134,7 @@ function AdminExitSurveys() {
       ) : (
         <div className="mt-6 overflow-hidden rounded-md border border-neutral-200">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[850px] text-left text-sm">
+            <table className="w-full min-w-[920px] text-left text-sm">
               <thead className="bg-neutral-50 text-xs text-neutral-500">
                 <tr>
                   <th className="px-4 py-3 font-medium">제출 시각</th>
@@ -123,6 +143,7 @@ function AdminExitSurveys() {
                   <th className="px-4 py-3 font-medium">이탈 이유</th>
                   <th className="px-4 py-3 font-medium">진행 상황</th>
                   <th className="px-4 py-3 font-medium">체류 시간</th>
+                  <th className="px-4 py-3 text-right font-medium">관리</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-200">
@@ -148,6 +169,17 @@ function AdminExitSurveys() {
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-neutral-600">
                       {formatDuration(survey.elapsedSeconds)}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-right">
+                      <button
+                        type="button"
+                        onClick={() => void deleteSurvey(survey)}
+                        disabled={deletingId !== null}
+                        aria-label={`${survey.simulationTitle} 설문 삭제`}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </td>
                   </tr>
                 ))}
