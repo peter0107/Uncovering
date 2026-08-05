@@ -35,6 +35,7 @@ import { Route as AdminSimulationsRouteImport } from './routes/admin.simulations
 import { Route as AdminSimulationGeneratorRouteImport } from './routes/admin.simulation-generator'
 import { Route as AdminInquiriesRouteImport } from './routes/admin.inquiries'
 import { Route as AdminExpertSimulationsRouteImport } from './routes/admin.expert-simulations'
+import { Route as AdminExitSurveysRouteImport } from './routes/admin.exit-surveys'
 import { Route as AdminAiPromptsRouteImport } from './routes/admin.ai-prompts'
 import { Route as SimulationIdFeedbackRouteImport } from './routes/simulation.$id.feedback'
 import { Route as ExpertSimulationIdReviewRouteImport } from './routes/expert-simulation.$id.review'
@@ -171,6 +172,11 @@ const AdminExpertSimulationsRoute = AdminExpertSimulationsRouteImport.update({
   path: '/expert-simulations',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminExitSurveysRoute = AdminExitSurveysRouteImport.update({
+  id: '/exit-surveys',
+  path: '/exit-surveys',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAiPromptsRoute = AdminAiPromptsRouteImport.update({
   id: '/ai-prompts',
   path: '/ai-prompts',
@@ -211,6 +217,7 @@ export interface FileRoutesByFullPath {
   '/start': typeof StartRoute
   '/terms': typeof TermsRoute
   '/admin/ai-prompts': typeof AdminAiPromptsRoute
+  '/admin/exit-surveys': typeof AdminExitSurveysRoute
   '/admin/expert-simulations': typeof AdminExpertSimulationsRoute
   '/admin/inquiries': typeof AdminInquiriesRoute
   '/admin/simulation-generator': typeof AdminSimulationGeneratorRoute
@@ -243,6 +250,7 @@ export interface FileRoutesByTo {
   '/start': typeof StartRoute
   '/terms': typeof TermsRoute
   '/admin/ai-prompts': typeof AdminAiPromptsRoute
+  '/admin/exit-surveys': typeof AdminExitSurveysRoute
   '/admin/expert-simulations': typeof AdminExpertSimulationsRoute
   '/admin/inquiries': typeof AdminInquiriesRoute
   '/admin/simulation-generator': typeof AdminSimulationGeneratorRoute
@@ -276,6 +284,7 @@ export interface FileRoutesById {
   '/start': typeof StartRoute
   '/terms': typeof TermsRoute
   '/admin/ai-prompts': typeof AdminAiPromptsRoute
+  '/admin/exit-surveys': typeof AdminExitSurveysRoute
   '/admin/expert-simulations': typeof AdminExpertSimulationsRoute
   '/admin/inquiries': typeof AdminInquiriesRoute
   '/admin/simulation-generator': typeof AdminSimulationGeneratorRoute
@@ -310,6 +319,7 @@ export interface FileRouteTypes {
     | '/start'
     | '/terms'
     | '/admin/ai-prompts'
+    | '/admin/exit-surveys'
     | '/admin/expert-simulations'
     | '/admin/inquiries'
     | '/admin/simulation-generator'
@@ -342,6 +352,7 @@ export interface FileRouteTypes {
     | '/start'
     | '/terms'
     | '/admin/ai-prompts'
+    | '/admin/exit-surveys'
     | '/admin/expert-simulations'
     | '/admin/inquiries'
     | '/admin/simulation-generator'
@@ -374,6 +385,7 @@ export interface FileRouteTypes {
     | '/start'
     | '/terms'
     | '/admin/ai-prompts'
+    | '/admin/exit-surveys'
     | '/admin/expert-simulations'
     | '/admin/inquiries'
     | '/admin/simulation-generator'
@@ -600,6 +612,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminExpertSimulationsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/exit-surveys': {
+      id: '/admin/exit-surveys'
+      path: '/exit-surveys'
+      fullPath: '/admin/exit-surveys'
+      preLoaderRoute: typeof AdminExitSurveysRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/ai-prompts': {
       id: '/admin/ai-prompts'
       path: '/ai-prompts'
@@ -633,6 +652,7 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminAiPromptsRoute: typeof AdminAiPromptsRoute
+  AdminExitSurveysRoute: typeof AdminExitSurveysRoute
   AdminExpertSimulationsRoute: typeof AdminExpertSimulationsRoute
   AdminInquiriesRoute: typeof AdminInquiriesRoute
   AdminSimulationGeneratorRoute: typeof AdminSimulationGeneratorRoute
@@ -642,6 +662,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAiPromptsRoute: AdminAiPromptsRoute,
+  AdminExitSurveysRoute: AdminExitSurveysRoute,
   AdminExpertSimulationsRoute: AdminExpertSimulationsRoute,
   AdminInquiriesRoute: AdminInquiriesRoute,
   AdminSimulationGeneratorRoute: AdminSimulationGeneratorRoute,

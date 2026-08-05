@@ -863,6 +863,60 @@ export type Database = {
         }
         Relationships: []
       }
+      simulation_exit_surveys: {
+        Row: {
+          answered_count: number
+          created_at: string
+          elapsed_seconds: number
+          id: string
+          job_seeker_id: string | null
+          job_simulation_id: string
+          other_text: string | null
+          reason: string
+          step_index: number
+          total_steps: number
+        }
+        Insert: {
+          answered_count?: number
+          created_at?: string
+          elapsed_seconds?: number
+          id?: string
+          job_seeker_id?: string | null
+          job_simulation_id: string
+          other_text?: string | null
+          reason: string
+          step_index?: number
+          total_steps?: number
+        }
+        Update: {
+          answered_count?: number
+          created_at?: string
+          elapsed_seconds?: number
+          id?: string
+          job_seeker_id?: string | null
+          job_simulation_id?: string
+          other_text?: string | null
+          reason?: string
+          step_index?: number
+          total_steps?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "simulation_exit_surveys_job_seeker_id_fkey"
+            columns: ["job_seeker_id"]
+            isOneToOne: false
+            referencedRelation: "job_seekers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "simulation_exit_surveys_job_simulation_id_fkey"
+            columns: ["job_simulation_id"]
+            isOneToOne: false
+            referencedRelation: "job_simulations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       submissions: {
         Row: {
           ai_chat_log: Json
