@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   ChevronLeft,
   Clock,
-  AlertTriangle,
   Info,
   Send,
   X,
@@ -20,7 +19,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -185,7 +183,6 @@ function SimulationDetailPage() {
   const [submitting, setSubmitting] = useState(false);
   const [exitSurveyReason, setExitSurveyReason] = useState<ExitSurveyReason | null>(null);
   const [exitSurveyOtherText, setExitSurveyOtherText] = useState("");
-  const [exitSurveyCompleted, setExitSurveyCompleted] = useState(false);
   const [exitSurveySubmitting, setExitSurveySubmitting] = useState(false);
   const [submittedAt, setSubmittedAt] = useState<Date | null>(null);
   const [startedAt] = useState(() => new Date());
@@ -678,7 +675,6 @@ function SimulationDetailPage() {
   const resetExitFlow = () => {
     setExitSurveyReason(null);
     setExitSurveyOtherText("");
-    setExitSurveyCompleted(false);
     blocker.reset?.();
   };
 
@@ -727,95 +723,69 @@ function SimulationDetailPage() {
     }).catch((error) => console.error("[Simulation exit survey analytics]", error));
 
     setExitSurveySubmitting(false);
-    setExitSurveyCompleted(true);
+    blocker.proceed?.();
   };
   const blockerDialog = (
     <AlertDialog open={blocker.status === "blocked"}>
       <AlertDialogContent className="data-[state=closed]:!animate-none data-[state=open]:!animate-none">
-        {exitSurveyCompleted ? (
-          <>
-            <AlertDialogHeader>
-              <AlertDialogTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-red-500" />
-                지금 나가시겠어요?
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                진행 중인 시뮬레이션을 나가면 <b>응시 기록이 남아요.</b> 작성 중인 답안은 저장되지
-                않으니, 마저 작성하고 제출하는 걸 권해요.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={resetExitFlow}>계속 진행하기</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => blocker.proceed?.()}
-                className="bg-red-600 text-white hover:bg-red-700"
-              >
-                기록 남기고 나가기
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </>
-        ) : (
-          <>
-            <AlertDialogHeader>
-              <AlertDialogTitle>그만두려는 이유를 알려주세요</AlertDialogTitle>
-              <AlertDialogDescription>
-                시뮬레이션을 개선하는 데 참고할게요. 가장 가까운 이유 하나를 선택해 주세요.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <div className="grid gap-2 py-2" role="radiogroup" aria-label="시뮬레이션 이탈 이유">
-              {EXIT_SURVEY_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  role="radio"
-                  aria-checked={exitSurveyReason === option.value}
-                  onClick={() => setExitSurveyReason(option.value)}
-                  className={cn(
-                    "rounded-md border px-4 py-3 text-left text-sm transition-colors",
-                    exitSurveyReason === option.value
-                      ? "border-zinc-900 bg-zinc-900 text-white"
-                      : "border-zinc-200 bg-white text-zinc-800 hover:border-zinc-400",
-                  )}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-            {exitSurveyReason === "other" && (
-              <div className="space-y-2">
-                <label htmlFor="exit-survey-other" className="text-sm font-medium text-zinc-800">
-                  기타 이유
-                </label>
-                <Textarea
-                  id="exit-survey-other"
-                  value={exitSurveyOtherText}
-                  onChange={(event) => setExitSurveyOtherText(event.target.value.slice(0, 300))}
-                  maxLength={300}
-                  rows={3}
-                  autoFocus
-                  placeholder="그만두려는 이유를 간단히 적어주세요."
-                  className="resize-none"
-                />
-                <p className="text-right text-xs text-zinc-400">{exitSurveyOtherText.length}/300</p>
-              </div>
-            )}{" "}
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={resetExitFlow}>계속 진행하기</AlertDialogCancel>
-              <Button
-                type="button"
-                disabled={
-                  !exitSurveyReason ||
-                  (exitSurveyReason === "other" && !exitSurveyOtherText.trim()) ||
-                  exitSurveySubmitting
-                }
-                onClick={() => void submitExitSurvey()}
-                className="bg-zinc-900 text-white hover:bg-zinc-700"
-              >
-                {exitSurveySubmitting ? "저장 중..." : "선택하고 나가기"}
-              </Button>
-            </AlertDialogFooter>
-          </>
+        <AlertDialogHeader>
+          <AlertDialogTitle>그만두려는 이유를 알려주세요</AlertDialogTitle>
+          <AlertDialogDescription>
+            시뮬레이션을 개선하는 데 참고할게요. 가장 가까운 이유 하나를 선택해 주세요.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <div className="grid gap-2 py-2" role="radiogroup" aria-label="시뮬레이션 이탈 이유">
+          {EXIT_SURVEY_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              role="radio"
+              aria-checked={exitSurveyReason === option.value}
+              onClick={() => setExitSurveyReason(option.value)}
+              className={cn(
+                "rounded-md border px-4 py-3 text-left text-sm transition-colors",
+                exitSurveyReason === option.value
+                  ? "border-zinc-900 bg-zinc-900 text-white"
+                  : "border-zinc-200 bg-white text-zinc-800 hover:border-zinc-400",
+              )}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+        {exitSurveyReason === "other" && (
+          <div className="space-y-2">
+            <label htmlFor="exit-survey-other" className="text-sm font-medium text-zinc-800">
+              기타 이유
+            </label>
+            <Textarea
+              id="exit-survey-other"
+              value={exitSurveyOtherText}
+              onChange={(event) => setExitSurveyOtherText(event.target.value.slice(0, 300))}
+              maxLength={300}
+              rows={3}
+              autoFocus
+              placeholder="그만두려는 이유를 간단히 적어주세요."
+              className="resize-none"
+            />
+            <p className="text-right text-xs text-zinc-400">{exitSurveyOtherText.length}/300</p>
+          </div>
         )}
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={resetExitFlow}>계속 진행하기</AlertDialogCancel>
+          <Button
+            type="button"
+            disabled={
+              !exitSurveyReason ||
+              (exitSurveyReason === "other" && !exitSurveyOtherText.trim()) ||
+              exitSurveySubmitting
+            }
+            onClick={() => void submitExitSurvey()}
+            className="bg-zinc-900 text-white hover:bg-zinc-700"
+          >
+            {exitSurveySubmitting ? "저장 중..." : "선택하고 나가기"}
+          </Button>
+        </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   );
