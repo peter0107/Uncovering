@@ -173,10 +173,7 @@ function SimulationDetailPage() {
   const [consent, setConsent] = useState<boolean | null>(null);
   const [difficultyRating, setDifficultyRating] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [applying, setApplying] = useState(false);
   const [submittedAt, setSubmittedAt] = useState<Date | null>(null);
-  const [submittedId, setSubmittedId] = useState<string | null>(null);
-  const [applicationSent, setApplicationSent] = useState(false);
   const [startedAt] = useState(() => new Date());
   const startCapturedRef = useRef<string | null>(null);
 
@@ -515,62 +512,8 @@ function SimulationDetailPage() {
         // 무시
       }
     }
-    setSubmittedId(submission.id);
-    setApplicationSent(consent === true);
     setSubmittedAt(now);
     void capturePostHogEvent("simulation_complete", { simulation_id: String(sim.id) });
-  };
-
-  const handleApply = async () => {
-    if (!sim) return;
-    if (!user) {
-      if (AUTHENTICATION_ENABLED) {
-        toast.error("지원하려면 로그인이 필요해요.");
-        navigate({ to: "/login", search: { redirect: `/simulation/${id}` } });
-      } else {
-        toast.error("현재 지원 기능은 사용할 수 없습니다.");
-      }
-      return;
-    }
-
-    setApplying(true);
-
-    let targetSubmissionId = submittedId;
-    if (!targetSubmissionId) {
-      const { data: latestSubmission, error: findError } = await supabase
-        .from("submissions")
-        .select("id")
-        .eq("job_seeker_id", user.id)
-        .eq("job_simulation_id", sim.id)
-        .not("submitted_at", "is", null)
-        .order("submitted_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (findError || !latestSubmission) {
-        setApplying(false);
-        toast.error("먼저 시뮬레이션 답안을 제출해주세요.");
-        return;
-      }
-      targetSubmissionId = latestSubmission.id;
-      setSubmittedId(latestSubmission.id);
-    }
-
-    const { error } = await supabase
-      .from("submissions")
-      .update({ answer_transmission_consent: true })
-      .eq("id", targetSubmissionId)
-      .eq("job_seeker_id", user.id);
-
-    setApplying(false);
-
-    if (error) {
-      toast.error("지원 처리 중 오류가 발생했어요. 다시 시도해 주세요.");
-      return;
-    }
-
-    setApplicationSent(true);
-    toast.success(`${sim.company_name}에 지원했어요. 기업 화면에서 확인할 수 있습니다.`);
   };
 
   if (authLoading || (AUTHENTICATION_ENABLED && !user && !isPreview) || loading) {
@@ -597,51 +540,10 @@ function SimulationDetailPage() {
   }
 
   if (submittedAt) {
-    const isExpertSimulation = sim.simulation_source === "expert";
-    const isUnofficialSubmitted = !isExpertSimulation && !sim.company_is_partner;
     return (
       <div className="mx-auto max-w-md px-4 py-20 text-center">
         <CheckCircle2 className="mx-auto h-12 w-12 text-zinc-900" />
         <h1 className="mt-4 text-xl font-bold text-zinc-900">제출이 완료됐어요</h1>
-        <p className="mt-2 text-sm text-zinc-500">
-          {isExpertSimulation
-            ? "현직자 모범답안과 AI 활용 평가 결과를 확인할 수 있어요."
-            : isUnofficialSubmitted
-              ? `${sim.company_name}는 아직 Beginner 참여 전이에요. 참여하게 되면 동의한 답안이 전달돼요.`
-              : applicationSent
-                ? `${sim.company_name}에 답안이 전달돼요. 관심이 있으면 먼저 연락드릴 수 있어요.`
-                : "지원하기를 누르면 이력서와 시뮬레이션 답안이 기업 담당자 화면에 표시돼요."}
-        </p>
-        <div className="mt-8 flex flex-col gap-2">
-          {isExpertSimulation ? (
-            <Link
-              to="/expert-simulation/$id/feedback"
-              params={{ id: sim.id }}
-              search={submittedId ? { submission: submittedId } : {}}
-            >
-              <Button className="w-full rounded-md bg-zinc-900 text-white hover:bg-zinc-700">
-                리포트 보러 가기
-              </Button>
-            </Link>
-          ) : isUnofficialSubmitted ? (
-            <div className="rounded-md border border-zinc-200 bg-zinc-50 px-4 py-3 text-xs leading-5 text-zinc-500">
-              마이페이지 이력에 저장됐어요. 이 기업이 Beginner에 참여하면 동의한 답안이 전달돼요.
-            </div>
-          ) : (
-            <Button
-              className="rounded-md bg-zinc-900 text-white hover:bg-zinc-700"
-              disabled={applying || applicationSent}
-              onClick={handleApply}
-            >
-              {applicationSent ? "지원 완료" : applying ? "지원 중..." : "지원하기"}
-            </Button>
-          )}
-          <Link to="/simulations">
-            <Button variant="outline" className="w-full rounded-md">
-              다른 시뮬레이션 더 보기
-            </Button>
-          </Link>
-        </div>
       </div>
     );
   }
@@ -664,7 +566,8 @@ function SimulationDetailPage() {
         ) : (
           <Building2 className="h-3.5 w-3.5" />
         )}
-        {sim.role_label || (isExpertSimulation ? sim.expert_job_title || sim.company_name : sim.company_name)}
+        {sim.role_label ||
+          (isExpertSimulation ? sim.expert_job_title || sim.company_name : sim.company_name)}
       </div>
       <h1 className="mt-1 text-2xl font-bold text-zinc-900">{sim.title}</h1>
       {sim.estimated_minutes && (
@@ -1071,7 +974,10 @@ function SimulationDetailPage() {
               <p className="text-sm font-medium text-zinc-700">제출 질문</p>
               <Card className="mt-1 p-3">
                 <div className="prose prose-sm prose-zinc max-w-none prose-table:text-sm">
-                  <RichTextContent value={sim.single_answer_question?.trim() || "답안 작성"} compact />
+                  <RichTextContent
+                    value={sim.single_answer_question?.trim() || "답안 작성"}
+                    compact
+                  />
                 </div>
               </Card>
             </div>
