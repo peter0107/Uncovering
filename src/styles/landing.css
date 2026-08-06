@@ -61,7 +61,8 @@
 .lp-outsourcing .pricerow { border: 1px solid #EEF0F4; border-radius: 12px; padding: 18px 22px; display: flex; justify-content: space-between; align-items: center; }
 .lp-outsourcing .pricerow.on { border: 2px solid #435BDA; background: #F0F3FD; }
 .lp-outsourcing .cta { background: #435BDA; border-radius: 20px; padding: 48px 32px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; color: #fff; }
-.lp-outsourcing .cta input { border: none; border-radius: 12px; padding: 15px 20px; font-size: 15px; min-width: 280px; font-family: inherit; }
+.lp-outsourcing .cta input { border: 1.5px solid #fff; border-radius: 12px; padding: 15px 20px; font-size: 15px; min-width: 280px; font-family: inherit; background: transparent; color: #fff; }
+.lp-outsourcing .cta input::placeholder { color: rgba(255,255,255,.75); }
 .lp-outsourcing .cta .go { background: #D9E0FA; color: #1A1A2E; font-weight: 700; border-radius: 12px; padding: 15px 28px; font-size: 15px; border: none; font-family: inherit; cursor: pointer; }
 .lp-outsourcing .form { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
 .lp-outsourcing footer { border-top: 1px solid #EEF0F4; padding: 20px 0; display: flex; justify-content: space-between; align-items: center; font-size: 13.5px; color: #9CA3AF; gap: 12px; flex-wrap: wrap; }
@@ -102,7 +103,7 @@
 .lp-trial .btn { display: inline-block; background: #435BDA; color: #fff; font-weight: 700; border-radius: 10px; padding: 11px 22px; font-size: 15px; }
 .lp-trial .burger { display: none; flex-direction: column; gap: 4.5px; padding: 8px; margin: -8px; }
 .lp-trial .burger span { width: 20px; height: 2px; background: #1B2440; border-radius: 2px; }
-.lp-trial .heroin { position: relative; padding: 56px 0 60px; display: grid; grid-template-columns: 1fr 420px; gap: 48px; align-items: center; }
+.lp-trial .heroin { position: relative; padding: 56px 0 60px; display: grid; grid-template-columns: 1fr 420px; gap: 48px; align-items: start; }
 .lp-trial .pill { align-self: flex-start; background: #E4E9FB; color: #435BDA; font-weight: 700; font-size: 14px; border-radius: 99px; padding: 9px 20px; }
 .lp-trial h1 { margin: 0; font-size: clamp(32px,5vw,52px); line-height: 1.22; letter-spacing: -1.8px; font-weight: 800; }
 .lp-trial .lead { margin: 0; font-size: clamp(15px,2vw,17px); color: #4B5563; line-height: 1.7; }
