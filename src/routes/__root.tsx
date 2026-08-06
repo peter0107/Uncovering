@@ -51,13 +51,14 @@ function GlobalNavigationOverlay() {
 function SiteLayout({ children }: { children: React.ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isHome = pathname === "/";
+  const isBareFullscreen = isHome || pathname.startsWith("/lp");
   const usesOwnHeader =
-    isHome ||
+    isBareFullscreen ||
     pathname.startsWith("/login") ||
     pathname.startsWith("/onboarding") ||
     pathname.startsWith("/biz") ||
     pathname.startsWith("/admin");
-  if (isHome) return <>{children}</>;
+  if (isBareFullscreen) return <>{children}</>;
 
   return (
     <div className="flex min-h-screen flex-col">

@@ -26,6 +26,9 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SimulationsAllRouteImport } from './routes/simulations_.all'
 import { Route as SimulationIdRouteImport } from './routes/simulation.$id'
+import { Route as LpTrialCompleteRouteImport } from './routes/lp_.trial-complete'
+import { Route as LpTrialRouteImport } from './routes/lp_.trial'
+import { Route as LpOutsourcingRouteImport } from './routes/lp_.outsourcing'
 import { Route as BizReviewRouteImport } from './routes/biz_.review'
 import { Route as BizContactRouteImport } from './routes/biz_.contact'
 import { Route as BizCoffeeChatRouteImport } from './routes/biz_.coffee-chat'
@@ -33,6 +36,7 @@ import { Route as BizApplyRouteImport } from './routes/biz_.apply'
 import { Route as AdminSubmissionsRouteImport } from './routes/admin.submissions'
 import { Route as AdminSimulationsRouteImport } from './routes/admin.simulations'
 import { Route as AdminSimulationGeneratorRouteImport } from './routes/admin.simulation-generator'
+import { Route as AdminLandingRouteImport } from './routes/admin.landing'
 import { Route as AdminInquiriesRouteImport } from './routes/admin.inquiries'
 import { Route as AdminExpertSimulationsRouteImport } from './routes/admin.expert-simulations'
 import { Route as AdminExitSurveysRouteImport } from './routes/admin.exit-surveys'
@@ -126,6 +130,21 @@ const SimulationIdRoute = SimulationIdRouteImport.update({
   path: '/simulation/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LpTrialCompleteRoute = LpTrialCompleteRouteImport.update({
+  id: '/lp_/trial-complete',
+  path: '/lp/trial-complete',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LpTrialRoute = LpTrialRouteImport.update({
+  id: '/lp_/trial',
+  path: '/lp/trial',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LpOutsourcingRoute = LpOutsourcingRouteImport.update({
+  id: '/lp_/outsourcing',
+  path: '/lp/outsourcing',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BizReviewRoute = BizReviewRouteImport.update({
   id: '/biz_/review',
   path: '/biz/review',
@@ -162,6 +181,11 @@ const AdminSimulationGeneratorRoute =
     path: '/simulation-generator',
     getParentRoute: () => AdminRoute,
   } as any)
+const AdminLandingRoute = AdminLandingRouteImport.update({
+  id: '/landing',
+  path: '/landing',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminInquiriesRoute = AdminInquiriesRouteImport.update({
   id: '/inquiries',
   path: '/inquiries',
@@ -220,6 +244,7 @@ export interface FileRoutesByFullPath {
   '/admin/exit-surveys': typeof AdminExitSurveysRoute
   '/admin/expert-simulations': typeof AdminExpertSimulationsRoute
   '/admin/inquiries': typeof AdminInquiriesRoute
+  '/admin/landing': typeof AdminLandingRoute
   '/admin/simulation-generator': typeof AdminSimulationGeneratorRoute
   '/admin/simulations': typeof AdminSimulationsRoute
   '/admin/submissions': typeof AdminSubmissionsRoute
@@ -227,6 +252,9 @@ export interface FileRoutesByFullPath {
   '/biz/coffee-chat': typeof BizCoffeeChatRoute
   '/biz/contact': typeof BizContactRoute
   '/biz/review': typeof BizReviewRoute
+  '/lp/outsourcing': typeof LpOutsourcingRoute
+  '/lp/trial': typeof LpTrialRoute
+  '/lp/trial-complete': typeof LpTrialCompleteRoute
   '/simulation/$id': typeof SimulationIdRouteWithChildren
   '/simulations/all': typeof SimulationsAllRoute
   '/expert-simulation/$id/feedback': typeof ExpertSimulationIdFeedbackRoute
@@ -253,6 +281,7 @@ export interface FileRoutesByTo {
   '/admin/exit-surveys': typeof AdminExitSurveysRoute
   '/admin/expert-simulations': typeof AdminExpertSimulationsRoute
   '/admin/inquiries': typeof AdminInquiriesRoute
+  '/admin/landing': typeof AdminLandingRoute
   '/admin/simulation-generator': typeof AdminSimulationGeneratorRoute
   '/admin/simulations': typeof AdminSimulationsRoute
   '/admin/submissions': typeof AdminSubmissionsRoute
@@ -260,6 +289,9 @@ export interface FileRoutesByTo {
   '/biz/coffee-chat': typeof BizCoffeeChatRoute
   '/biz/contact': typeof BizContactRoute
   '/biz/review': typeof BizReviewRoute
+  '/lp/outsourcing': typeof LpOutsourcingRoute
+  '/lp/trial': typeof LpTrialRoute
+  '/lp/trial-complete': typeof LpTrialCompleteRoute
   '/simulation/$id': typeof SimulationIdRouteWithChildren
   '/simulations/all': typeof SimulationsAllRoute
   '/expert-simulation/$id/feedback': typeof ExpertSimulationIdFeedbackRoute
@@ -287,6 +319,7 @@ export interface FileRoutesById {
   '/admin/exit-surveys': typeof AdminExitSurveysRoute
   '/admin/expert-simulations': typeof AdminExpertSimulationsRoute
   '/admin/inquiries': typeof AdminInquiriesRoute
+  '/admin/landing': typeof AdminLandingRoute
   '/admin/simulation-generator': typeof AdminSimulationGeneratorRoute
   '/admin/simulations': typeof AdminSimulationsRoute
   '/admin/submissions': typeof AdminSubmissionsRoute
@@ -294,6 +327,9 @@ export interface FileRoutesById {
   '/biz_/coffee-chat': typeof BizCoffeeChatRoute
   '/biz_/contact': typeof BizContactRoute
   '/biz_/review': typeof BizReviewRoute
+  '/lp_/outsourcing': typeof LpOutsourcingRoute
+  '/lp_/trial': typeof LpTrialRoute
+  '/lp_/trial-complete': typeof LpTrialCompleteRoute
   '/simulation/$id': typeof SimulationIdRouteWithChildren
   '/simulations_/all': typeof SimulationsAllRoute
   '/expert-simulation/$id/feedback': typeof ExpertSimulationIdFeedbackRoute
@@ -322,6 +358,7 @@ export interface FileRouteTypes {
     | '/admin/exit-surveys'
     | '/admin/expert-simulations'
     | '/admin/inquiries'
+    | '/admin/landing'
     | '/admin/simulation-generator'
     | '/admin/simulations'
     | '/admin/submissions'
@@ -329,6 +366,9 @@ export interface FileRouteTypes {
     | '/biz/coffee-chat'
     | '/biz/contact'
     | '/biz/review'
+    | '/lp/outsourcing'
+    | '/lp/trial'
+    | '/lp/trial-complete'
     | '/simulation/$id'
     | '/simulations/all'
     | '/expert-simulation/$id/feedback'
@@ -355,6 +395,7 @@ export interface FileRouteTypes {
     | '/admin/exit-surveys'
     | '/admin/expert-simulations'
     | '/admin/inquiries'
+    | '/admin/landing'
     | '/admin/simulation-generator'
     | '/admin/simulations'
     | '/admin/submissions'
@@ -362,6 +403,9 @@ export interface FileRouteTypes {
     | '/biz/coffee-chat'
     | '/biz/contact'
     | '/biz/review'
+    | '/lp/outsourcing'
+    | '/lp/trial'
+    | '/lp/trial-complete'
     | '/simulation/$id'
     | '/simulations/all'
     | '/expert-simulation/$id/feedback'
@@ -388,6 +432,7 @@ export interface FileRouteTypes {
     | '/admin/exit-surveys'
     | '/admin/expert-simulations'
     | '/admin/inquiries'
+    | '/admin/landing'
     | '/admin/simulation-generator'
     | '/admin/simulations'
     | '/admin/submissions'
@@ -395,6 +440,9 @@ export interface FileRouteTypes {
     | '/biz_/coffee-chat'
     | '/biz_/contact'
     | '/biz_/review'
+    | '/lp_/outsourcing'
+    | '/lp_/trial'
+    | '/lp_/trial-complete'
     | '/simulation/$id'
     | '/simulations_/all'
     | '/expert-simulation/$id/feedback'
@@ -422,6 +470,9 @@ export interface RootRouteChildren {
   BizCoffeeChatRoute: typeof BizCoffeeChatRoute
   BizContactRoute: typeof BizContactRoute
   BizReviewRoute: typeof BizReviewRoute
+  LpOutsourcingRoute: typeof LpOutsourcingRoute
+  LpTrialRoute: typeof LpTrialRoute
+  LpTrialCompleteRoute: typeof LpTrialCompleteRoute
   SimulationIdRoute: typeof SimulationIdRouteWithChildren
   SimulationsAllRoute: typeof SimulationsAllRoute
   ExpertSimulationIdFeedbackRoute: typeof ExpertSimulationIdFeedbackRoute
@@ -549,6 +600,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SimulationIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/lp_/trial-complete': {
+      id: '/lp_/trial-complete'
+      path: '/lp/trial-complete'
+      fullPath: '/lp/trial-complete'
+      preLoaderRoute: typeof LpTrialCompleteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lp_/trial': {
+      id: '/lp_/trial'
+      path: '/lp/trial'
+      fullPath: '/lp/trial'
+      preLoaderRoute: typeof LpTrialRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lp_/outsourcing': {
+      id: '/lp_/outsourcing'
+      path: '/lp/outsourcing'
+      fullPath: '/lp/outsourcing'
+      preLoaderRoute: typeof LpOutsourcingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/biz_/review': {
       id: '/biz_/review'
       path: '/biz/review'
@@ -596,6 +668,13 @@ declare module '@tanstack/react-router' {
       path: '/simulation-generator'
       fullPath: '/admin/simulation-generator'
       preLoaderRoute: typeof AdminSimulationGeneratorRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/landing': {
+      id: '/admin/landing'
+      path: '/landing'
+      fullPath: '/admin/landing'
+      preLoaderRoute: typeof AdminLandingRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/inquiries': {
@@ -655,6 +734,7 @@ interface AdminRouteChildren {
   AdminExitSurveysRoute: typeof AdminExitSurveysRoute
   AdminExpertSimulationsRoute: typeof AdminExpertSimulationsRoute
   AdminInquiriesRoute: typeof AdminInquiriesRoute
+  AdminLandingRoute: typeof AdminLandingRoute
   AdminSimulationGeneratorRoute: typeof AdminSimulationGeneratorRoute
   AdminSimulationsRoute: typeof AdminSimulationsRoute
   AdminSubmissionsRoute: typeof AdminSubmissionsRoute
@@ -665,6 +745,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminExitSurveysRoute: AdminExitSurveysRoute,
   AdminExpertSimulationsRoute: AdminExpertSimulationsRoute,
   AdminInquiriesRoute: AdminInquiriesRoute,
+  AdminLandingRoute: AdminLandingRoute,
   AdminSimulationGeneratorRoute: AdminSimulationGeneratorRoute,
   AdminSimulationsRoute: AdminSimulationsRoute,
   AdminSubmissionsRoute: AdminSubmissionsRoute,
@@ -704,6 +785,9 @@ const rootRouteChildren: RootRouteChildren = {
   BizCoffeeChatRoute: BizCoffeeChatRoute,
   BizContactRoute: BizContactRoute,
   BizReviewRoute: BizReviewRoute,
+  LpOutsourcingRoute: LpOutsourcingRoute,
+  LpTrialRoute: LpTrialRoute,
+  LpTrialCompleteRoute: LpTrialCompleteRoute,
   SimulationIdRoute: SimulationIdRouteWithChildren,
   SimulationsAllRoute: SimulationsAllRoute,
   ExpertSimulationIdFeedbackRoute: ExpertSimulationIdFeedbackRoute,

@@ -741,6 +741,87 @@ export type Database = {
           },
         ]
       }
+      landing_leads: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          payload: Json
+          source: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          payload?: Json
+          source?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          payload?: Json
+          source?: string
+        }
+        Relationships: []
+      }
+      landing_trial_orders: {
+        Row: {
+          amount: number
+          company_type: string
+          created_at: string
+          delivered_at: string | null
+          email: string
+          id: string
+          job_role: string
+          mul_no: string | null
+          order_id: string
+          paid_at: string | null
+          pay_type: string | null
+          phone: string
+          plan: string
+          refund_reason: string | null
+          refunded_at: string | null
+          status: string
+        }
+        Insert: {
+          amount: number
+          company_type: string
+          created_at?: string
+          delivered_at?: string | null
+          email: string
+          id?: string
+          job_role: string
+          mul_no?: string | null
+          order_id: string
+          paid_at?: string | null
+          pay_type?: string | null
+          phone: string
+          plan: string
+          refund_reason?: string | null
+          refunded_at?: string | null
+          status?: string
+        }
+        Update: {
+          amount?: number
+          company_type?: string
+          created_at?: string
+          delivered_at?: string | null
+          email?: string
+          id?: string
+          job_role?: string
+          mul_no?: string | null
+          order_id?: string
+          paid_at?: string | null
+          pay_type?: string | null
+          phone?: string
+          plan?: string
+          refund_reason?: string | null
+          refunded_at?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       resumes: {
         Row: {
           basics: Json
