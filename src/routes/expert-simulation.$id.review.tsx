@@ -61,13 +61,13 @@ function ExpertSimulationReviewPage() {
     [simulation],
   );
 
-  const submitFeedback = async (verdict?: "approved" | "revise") => {
+  const submitFeedback = async () => {
     if (!feedback.trim()) return;
     setSubmitting(true);
     setError(null);
     try {
       await submitPublicExpertSimulationFeedback({
-        data: { id, token, reviewerName, feedback, verdict },
+        data: { id, token, reviewerName, feedback },
       });
       setSubmitted(true);
       setFeedback("");
@@ -149,7 +149,7 @@ function ExpertSimulationReviewPage() {
           <h2 className="text-sm font-semibold text-zinc-900">검수 의견</h2>
           <p className="mt-1 text-sm text-zinc-500">
             {simulation.isTrial
-              ? "승인하시면 이 과제를 결제자에게 발송합니다. 고쳐야 할 부분이 있다면 '수정 필요'로 남겨주세요."
+              ? "제출해주신 의견은 저희가 확인 후 결제자에게 과제를 발송합니다."
               : "이 시뮬레이션에 대한 의견을 남겨주세요."}
           </p>
           <div className="mt-4 grid gap-3">
@@ -164,29 +164,18 @@ function ExpertSimulationReviewPage() {
               value={feedback}
               onChange={(event) => setFeedback(event.target.value.slice(0, 5000))}
               maxLength={5000}
-              placeholder="현실성, 난이도, 제공 자료의 충분함, 모범답안의 타당성을 봐주세요."
+              placeholder="수정 필요한 부분 남겨주시면 감사하겠습니다."
               className="min-h-40 resize-y rounded-md border border-zinc-300 p-3 text-sm leading-6 outline-none focus:border-zinc-900"
             />
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <span className="text-xs text-zinc-400">{feedback.length.toLocaleString()} / 5,000자</span>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => void submitFeedback("revise")}
-                  disabled={submitting || !feedback.trim()}
-                  className="h-10 rounded-md border border-zinc-300 px-4 text-sm font-medium text-zinc-800 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  수정 필요
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void submitFeedback("approved")}
-                  disabled={submitting || !feedback.trim()}
-                  className="h-10 rounded-md bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {submitting ? "저장 중..." : "승인"}
-                </button>
-              </div>
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => void submitFeedback()}
+                disabled={submitting || !feedback.trim()}
+                className="h-10 rounded-md bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {submitting ? "저장 중..." : "제출"}
+              </button>
             </div>
             {submitted && <p className="text-sm text-zinc-600">검수 의견을 보냈습니다. 감사합니다.</p>}
           </div>

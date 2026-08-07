@@ -59,13 +59,13 @@ type TrialOrderEditPatch = {
 
 /**
  * 체험 주문의 진행 단계. 관리자가 다음에 뭘 눌러야 하는지 한 줄로 보여주기 위한 것.
- * 과제 배정 → 현직자 검수 → 관리자 최종 승인(코드 발급+발송 자동) → 결제자 제출
+ * 과제 배정 → 현직자 검수 의견 → 관리자가 내용을 읽고 최종 승인(코드 발급+발송 자동) → 결제자 제출
+ * 승인/수정 구분은 현직자가 아니라 관리자가 검수 의견을 읽고 직접 판단한다.
  */
 function trialStage(order: TrialOrder): { label: string; tone: "todo" | "wait" | "done" } {
   if (order.status !== "paid") return { label: "결제 전", tone: "wait" };
   if (!order.simulationId) return { label: "과제 미생성", tone: "todo" };
-  if (order.reviewVerdict === "revise") return { label: "수정 필요", tone: "todo" };
-  if (order.reviewVerdict !== "approved") {
+  if (order.reviewCount === 0) {
     return { label: "과제 생성완료 · 현직자 검수 대기", tone: "wait" };
   }
   if (!order.deliveredAt) return { label: "최종 승인 대기", tone: "todo" };
@@ -73,10 +73,9 @@ function trialStage(order: TrialOrder): { label: string; tone: "todo" | "wait" |
   return { label: "제출 완료", tone: "done" };
 }
 
-function reviewLinkFor(order: TrialOrder, reviewerName?: string): string {
+function reviewLinkFor(order: TrialOrder): string {
   if (!order.simulationId || !order.reviewToken) return "";
-  const base = `${window.location.origin}/expert-simulation/${order.simulationId}/review?token=${order.reviewToken}`;
-  return reviewerName ? `${base}&reviewer=${encodeURIComponent(reviewerName)}` : base;
+  return `${window.location.origin}/expert-simulation/${order.simulationId}/review?token=${order.reviewToken}`;
 }
 
 function trialTaskLinkFor(order: TrialOrder): string {
@@ -138,7 +137,7 @@ function AdminLanding() {
       if (busyOrderId) return;
       const confirmMessage = order.deliveredAt
         ? "체험 과제 안내 이메일을 다시 보낼까요?"
-        : "현직자 승인을 확인했나요? 지금 코드 발급과 이메일 발송이 자동으로 진행됩니다.";
+        : "검수 의견을 확인했나요? 지금 코드 발급과 이메일 발송이 자동으로 진행됩니다.";
       if (!window.confirm(confirmMessage)) return;
       setBusyOrderId(order.orderId);
       try {
@@ -294,23 +293,6 @@ function AdminLanding() {
       }
     },
     [busyOrderId, load],
-  );
-
-  const makeReviewerLink = useCallback(
-    (order: TrialOrder) => {
-      const name = window.prompt("현직자 이름을 입력해주세요 (링크에 포함됩니다).");
-      if (name === null) return;
-      const trimmed = name.trim();
-      if (!trimmed) {
-        toast.error("이름을 입력해주세요.");
-        return;
-      }
-      void copyText(
-        reviewLinkFor(order, trimmed),
-        `${trimmed}님용 검수 링크를 복사했습니다.`,
-      );
-    },
-    [copyText],
   );
 
   const leads = data.leads;
@@ -495,21 +477,13 @@ function AdminLanding() {
                             검수 페이지 열기
                           </a>
                         )}
-                        {order.reviewToken && (
-                          <ActionButton
-                            disabled={busyOrderId !== null}
-                            onClick={() => makeReviewerLink(order)}
-                          >
-                            현직자 링크 만들기
-                          </ActionButton>
-                        )}
                         {order.status === "paid" && order.simulationId && (
                           <ActionButton
-                            disabled={busyOrderId !== null || order.reviewVerdict !== "approved"}
+                            disabled={busyOrderId !== null || order.reviewCount === 0}
                             title={
-                              order.reviewVerdict === "approved"
+                              order.reviewCount > 0
                                 ? undefined
-                                : "먼저 현직자 검수 승인을 받아주세요."
+                                : "먼저 현직자 검수 의견을 받아주세요."
                             }
                             onClick={() => void issueCode(order)}
                           >
@@ -529,7 +503,7 @@ function AdminLanding() {
                             과제 링크 복사
                           </ActionButton>
                         )}
-                        {order.status === "paid" && order.reviewVerdict === "approved" && (
+                        {order.status === "paid" && order.reviewCount > 0 && (
                           <button
                             type="button"
                             onClick={() => void finalizeDelivery(order)}

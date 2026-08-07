@@ -710,20 +710,18 @@ export const issueTrialAccessCode = createServerFn({ method: "POST" })
     if (order.status !== "paid") throw new Error("결제 완료된 주문에만 코드를 발급할 수 있습니다.");
     if (!order.simulation_id) throw new Error("먼저 과제를 배정해주세요.");
 
-    // 클라이언트 게이트를 우회해도 서버가 다시 막는다 — 최근 검수의 판정만 본다.
-    const { data: latestReview, error: reviewError } = await supabaseAdmin
+    // 클라이언트 게이트를 우회해도 서버가 다시 막는다 — 검수 의견이 하나라도 있어야 한다.
+    // 승인/수정 구분은 없다 — 현직자는 의견만 남기고, 관리자가 내용을 보고 최종 승인한다.
+    const { count: reviewCount, error: reviewError } = await supabaseAdmin
       .from("expert_simulation_share_feedback")
-      .select("verdict")
-      .eq("simulation_id", order.simulation_id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .select("id", { count: "exact", head: true })
+      .eq("simulation_id", order.simulation_id);
     if (reviewError) {
-      console.error("Failed to load latest review verdict for code issue:", reviewError);
+      console.error("Failed to load review count for code issue:", reviewError);
       throw new Error("검수 상태를 확인하지 못했습니다.");
     }
-    if (latestReview?.verdict !== "approved") {
-      throw new Error("현직자 검수 승인 후 코드를 발급할 수 있습니다.");
+    if (!reviewCount) {
+      throw new Error("현직자 검수 의견을 받은 후 코드를 발급할 수 있습니다.");
     }
 
     return { accessCode: await assignAccessCode(supabaseAdmin, data.orderId) };
@@ -832,8 +830,8 @@ async function sendTrialTaskEmail(params: {
 }
 
 /**
- * 관리자의 "최종 승인" 클릭에서만 호출한다. 현직자 승인(verdict='approved')만으로는
- * 절대 자동 실행되지 않는다 — 반드시 관리자가 한 번 더 확인하고 눌러야 한다.
+ * 관리자의 "최종 승인" 클릭에서만 호출한다. 현직자가 검수 의견을 남기는 것만으로는
+ * 절대 자동 실행되지 않는다 — 관리자가 그 내용을 직접 읽고 이 버튼으로 최종 승인해야 한다.
  * 절대 throw하지 않고 결과 객체로 성공/실패를 알린다.
  */
 async function deliverTrialTaskEmail(
@@ -851,15 +849,13 @@ async function deliverTrialTaskEmail(
     if (order.status !== "paid") return { ok: false, reason: "not-paid" };
     if (!order.simulation_id) return { ok: false, reason: "no-simulation" };
 
-    // UI 가드를 우회한 호출을 막기 위해 서버에서도 최신 판정을 재확인한다.
-    const { data: latestReview } = await supabaseAdmin
+    // UI 가드를 우회한 호출을 막기 위해 서버에서도 재확인한다 — 승인/수정 구분 없이
+    // 검수 의견이 하나라도 있으면 된다. 그 내용을 관리자가 직접 읽고 이 버튼으로 승인한다.
+    const { count: reviewCount } = await supabaseAdmin
       .from("expert_simulation_share_feedback")
-      .select("verdict")
-      .eq("simulation_id", order.simulation_id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (latestReview?.verdict !== "approved") return { ok: false, reason: "not-approved" };
+      .select("id", { count: "exact", head: true })
+      .eq("simulation_id", order.simulation_id);
+    if (!reviewCount) return { ok: false, reason: "not-approved" };
 
     const accessCode = order.access_code ?? (await assignAccessCode(supabaseAdmin, order.order_id));
     const taskLink = `${siteOrigin()}/lp/trial-task?code=${accessCode}`;
@@ -898,7 +894,7 @@ const FINALIZE_ERROR_MESSAGES: Record<string, string> = {
   "order-not-found": "주문을 찾을 수 없습니다.",
   "not-paid": "결제 완료된 주문이 아닙니다.",
   "no-simulation": "배정된 과제가 없습니다.",
-  "not-approved": "현직자 승인이 완료되지 않았습니다.",
+  "not-approved": "현직자 검수 의견이 아직 없습니다.",
   "delivered-flag-not-set": "메일은 발송됐지만 상태 갱신에 실패했습니다. 다시 시도해주세요.",
   "unexpected-error": "이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.",
 };
