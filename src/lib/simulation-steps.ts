@@ -27,6 +27,7 @@ export type AuthoredStep = {
   materials?: string; // 제공 자료 — 이 단계의 왼쪽 자료 (마크다운)
   hint?: string; // 초심자용 힌트 (마크다운)
   completionMessage?: string; // 완료 메시지 (마크다운)
+  modelAnswer?: string; // 모범답안 (마크다운) — 제출 후에만 공개
   prompts: AuthoredPrompt[];
 };
 
@@ -48,6 +49,8 @@ export type WizardStep = {
   materials?: string;
   hint?: string;
   completionMessage?: string;
+  /** 제출 후에만 채워 보낸다. 수행 중에는 서버가 이 필드를 제거한다. */
+  modelAnswer?: string;
   prompts: WizardPrompt[];
 };
 
@@ -99,6 +102,7 @@ function fromAuthoredSteps(
       materials: item.materials?.trim() || undefined,
       hint: item.hint?.trim() || undefined,
       completionMessage: item.completionMessage?.trim() || undefined,
+      modelAnswer: item.modelAnswer?.trim() || undefined,
       prompts,
     });
   }

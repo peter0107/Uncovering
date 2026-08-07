@@ -546,6 +546,7 @@ export type Database = {
           id: string
           reviewer_name: string | null
           simulation_id: string
+          verdict: string | null
         }
         Insert: {
           created_at?: string
@@ -553,6 +554,7 @@ export type Database = {
           id?: string
           reviewer_name?: string | null
           simulation_id: string
+          verdict?: string | null
         }
         Update: {
           created_at?: string
@@ -560,6 +562,7 @@ export type Database = {
           id?: string
           reviewer_name?: string | null
           simulation_id?: string
+          verdict?: string | null
         }
         Relationships: [
           {
@@ -767,7 +770,12 @@ export type Database = {
       }
       landing_trial_orders: {
         Row: {
+          access_code: string | null
           amount: number
+          answer_json: Json | null
+          answer_started_at: string | null
+          answer_submitted_at: string | null
+          answer_text: string | null
           company_type: string
           created_at: string
           delivered_at: string | null
@@ -782,10 +790,16 @@ export type Database = {
           plan: string
           refund_reason: string | null
           refunded_at: string | null
+          simulation_id: string | null
           status: string
         }
         Insert: {
+          access_code?: string | null
           amount: number
+          answer_json?: Json | null
+          answer_started_at?: string | null
+          answer_submitted_at?: string | null
+          answer_text?: string | null
           company_type: string
           created_at?: string
           delivered_at?: string | null
@@ -800,10 +814,16 @@ export type Database = {
           plan: string
           refund_reason?: string | null
           refunded_at?: string | null
+          simulation_id?: string | null
           status?: string
         }
         Update: {
+          access_code?: string | null
           amount?: number
+          answer_json?: Json | null
+          answer_started_at?: string | null
+          answer_submitted_at?: string | null
+          answer_text?: string | null
           company_type?: string
           created_at?: string
           delivered_at?: string | null
@@ -818,9 +838,18 @@ export type Database = {
           plan?: string
           refund_reason?: string | null
           refunded_at?: string | null
+          simulation_id?: string | null
           status?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "landing_trial_orders_simulation_id_fkey"
+            columns: ["simulation_id"]
+            isOneToOne: false
+            referencedRelation: "job_simulations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       resumes: {
         Row: {

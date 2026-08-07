@@ -1834,6 +1834,20 @@ function StepEditor({
                     </div>
                   ))}
                 </div>
+
+                <div className="mt-4">
+                  <RichTextEditor
+                    label="모범답안 (제출 후 공개)"
+                    value={step.modelAnswer ?? ""}
+                    onChange={(value) => updateStep(stepIndex, { modelAnswer: value })}
+                    placeholder="정답만 나열하지 말고 어떤 근거로 그렇게 판단했는지 사고 과정을 함께 작성하세요."
+                    minHeight="12rem"
+                  />
+                  <p className="mt-1.5 text-xs text-neutral-500">
+                    체험 과제 수행자가 답안을 제출한 뒤 자기 답안과 나란히 비교하는 내용입니다. 수행
+                    중에는 노출되지 않습니다.
+                  </p>
+                </div>
               </div>
             )}
           </div>

@@ -26,6 +26,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SimulationsAllRouteImport } from './routes/simulations_.all'
 import { Route as SimulationIdRouteImport } from './routes/simulation.$id'
+import { Route as LpTrialTaskRouteImport } from './routes/lp_.trial-task'
 import { Route as LpTrialCompleteRouteImport } from './routes/lp_.trial-complete'
 import { Route as LpTrialRouteImport } from './routes/lp_.trial'
 import { Route as LpOutsourcingRouteImport } from './routes/lp_.outsourcing'
@@ -128,6 +129,11 @@ const SimulationsAllRoute = SimulationsAllRouteImport.update({
 const SimulationIdRoute = SimulationIdRouteImport.update({
   id: '/simulation/$id',
   path: '/simulation/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LpTrialTaskRoute = LpTrialTaskRouteImport.update({
+  id: '/lp_/trial-task',
+  path: '/lp/trial-task',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LpTrialCompleteRoute = LpTrialCompleteRouteImport.update({
@@ -255,6 +261,7 @@ export interface FileRoutesByFullPath {
   '/lp/outsourcing': typeof LpOutsourcingRoute
   '/lp/trial': typeof LpTrialRoute
   '/lp/trial-complete': typeof LpTrialCompleteRoute
+  '/lp/trial-task': typeof LpTrialTaskRoute
   '/simulation/$id': typeof SimulationIdRouteWithChildren
   '/simulations/all': typeof SimulationsAllRoute
   '/expert-simulation/$id/feedback': typeof ExpertSimulationIdFeedbackRoute
@@ -292,6 +299,7 @@ export interface FileRoutesByTo {
   '/lp/outsourcing': typeof LpOutsourcingRoute
   '/lp/trial': typeof LpTrialRoute
   '/lp/trial-complete': typeof LpTrialCompleteRoute
+  '/lp/trial-task': typeof LpTrialTaskRoute
   '/simulation/$id': typeof SimulationIdRouteWithChildren
   '/simulations/all': typeof SimulationsAllRoute
   '/expert-simulation/$id/feedback': typeof ExpertSimulationIdFeedbackRoute
@@ -330,6 +338,7 @@ export interface FileRoutesById {
   '/lp_/outsourcing': typeof LpOutsourcingRoute
   '/lp_/trial': typeof LpTrialRoute
   '/lp_/trial-complete': typeof LpTrialCompleteRoute
+  '/lp_/trial-task': typeof LpTrialTaskRoute
   '/simulation/$id': typeof SimulationIdRouteWithChildren
   '/simulations_/all': typeof SimulationsAllRoute
   '/expert-simulation/$id/feedback': typeof ExpertSimulationIdFeedbackRoute
@@ -369,6 +378,7 @@ export interface FileRouteTypes {
     | '/lp/outsourcing'
     | '/lp/trial'
     | '/lp/trial-complete'
+    | '/lp/trial-task'
     | '/simulation/$id'
     | '/simulations/all'
     | '/expert-simulation/$id/feedback'
@@ -406,6 +416,7 @@ export interface FileRouteTypes {
     | '/lp/outsourcing'
     | '/lp/trial'
     | '/lp/trial-complete'
+    | '/lp/trial-task'
     | '/simulation/$id'
     | '/simulations/all'
     | '/expert-simulation/$id/feedback'
@@ -443,6 +454,7 @@ export interface FileRouteTypes {
     | '/lp_/outsourcing'
     | '/lp_/trial'
     | '/lp_/trial-complete'
+    | '/lp_/trial-task'
     | '/simulation/$id'
     | '/simulations_/all'
     | '/expert-simulation/$id/feedback'
@@ -473,6 +485,7 @@ export interface RootRouteChildren {
   LpOutsourcingRoute: typeof LpOutsourcingRoute
   LpTrialRoute: typeof LpTrialRoute
   LpTrialCompleteRoute: typeof LpTrialCompleteRoute
+  LpTrialTaskRoute: typeof LpTrialTaskRoute
   SimulationIdRoute: typeof SimulationIdRouteWithChildren
   SimulationsAllRoute: typeof SimulationsAllRoute
   ExpertSimulationIdFeedbackRoute: typeof ExpertSimulationIdFeedbackRoute
@@ -598,6 +611,13 @@ declare module '@tanstack/react-router' {
       path: '/simulation/$id'
       fullPath: '/simulation/$id'
       preLoaderRoute: typeof SimulationIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lp_/trial-task': {
+      id: '/lp_/trial-task'
+      path: '/lp/trial-task'
+      fullPath: '/lp/trial-task'
+      preLoaderRoute: typeof LpTrialTaskRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lp_/trial-complete': {
@@ -788,6 +808,7 @@ const rootRouteChildren: RootRouteChildren = {
   LpOutsourcingRoute: LpOutsourcingRoute,
   LpTrialRoute: LpTrialRoute,
   LpTrialCompleteRoute: LpTrialCompleteRoute,
+  LpTrialTaskRoute: LpTrialTaskRoute,
   SimulationIdRoute: SimulationIdRouteWithChildren,
   SimulationsAllRoute: SimulationsAllRoute,
   ExpertSimulationIdFeedbackRoute: ExpertSimulationIdFeedbackRoute,

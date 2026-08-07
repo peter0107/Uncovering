@@ -2,8 +2,10 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Plus, Sparkles, Trash2, Wand2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { z } from "zod";
 
 import { useAuth } from "@/hooks/use-auth";
+import { assignTrialSimulation } from "@/lib/landing.functions";
 import { BrandLogo } from "@/components/BrandLogo";
 import { RichTextContent } from "@/components/RichTextEditor";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +23,13 @@ import {
 } from "@/lib/simulations.functions";
 
 export const Route = createFileRoute("/admin/simulation-generator")({
+  // order가 있으면 체험 주문 전용 과제를 만드는 모드다 (admin/landing에서 진입).
+  // 기존 진입점(/admin 링크)은 파라미터 없이 들어오므로 전부 optional이어야 한다.
+  validateSearch: z.object({
+    order: z.string().optional(),
+    jobRole: z.string().optional(),
+    companyType: z.string().optional(),
+  }),
   head: () => ({
     meta: [
       { title: "Beginner - JD 시뮬레이션 생성기" },
@@ -160,12 +169,13 @@ function AdminSimulationGenerator() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const userId = user?.id ?? null;
+  const { order: trialOrderId, jobRole, companyType } = Route.useSearch();
 
   const [companies, setCompanies] = useState<AdminCompany[]>([]);
   const loadedUserIdRef = useRef<string | null>(null);
 
   const [companyName, setCompanyName] = useState("");
-  const [roleName, setRoleName] = useState("");
+  const [roleName, setRoleName] = useState(jobRole ?? "");
   const [domain, setDomain] = useState<string>(DOMAIN_CATEGORIES[0]);
   const [sources, setSources] = useState<SourceInput[]>([createSource()]);
   const [note, setNote] = useState("");
@@ -294,7 +304,15 @@ function AdminSimulationGenerator() {
           steps: draft.simulation.steps,
         },
       });
-      void result;
+      if (trialOrderId) {
+        // 체험 주문 전용 과제 — 주문에 연결하고 현직자 검수 링크까지 한 번에 발급한다.
+        await assignTrialSimulation({
+          data: { orderId: trialOrderId, simulationId: result.id },
+        });
+        toast.success("과제를 주문에 배정했어요. 검수 링크를 현직자에게 전달하세요.");
+        navigate({ to: "/admin/landing" });
+        return;
+      }
       toast.success("비공개 시뮬레이션으로 저장했어요. 시뮬레이션 관리에서 공개·수정할 수 있어요.");
       navigate({ to: "/admin/simulations" });
     } catch (error) {
@@ -332,6 +350,16 @@ function AdminSimulationGenerator() {
           에서 수정할 수 있습니다.
         </p>
       </div>
+
+      {trialOrderId && (
+        <div className="mt-6 rounded-md border border-neutral-300 bg-neutral-50 p-4">
+          <p className="text-sm font-semibold text-neutral-900">체험 주문 전용 과제 모드</p>
+          <p className="mt-1 text-sm text-neutral-600">
+            {[jobRole, companyType].filter(Boolean).join(" · ") || "주문 정보 없음"} — 저장하면 이
+            주문에 배정되고 현직자 검수 링크가 발급됩니다. 공개 목록에는 노출되지 않습니다.
+          </p>
+        </div>
+      )}
 
       {/* 입력 */}
       <section className="mt-6">

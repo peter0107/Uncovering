@@ -59,13 +59,13 @@ function ExpertSimulationReviewPage() {
     [simulation],
   );
 
-  const submitFeedback = async () => {
+  const submitFeedback = async (verdict?: "approved" | "revise") => {
     if (!feedback.trim()) return;
     setSubmitting(true);
     setError(null);
     try {
       await submitPublicExpertSimulationFeedback({
-        data: { id, token, reviewerName, feedback },
+        data: { id, token, reviewerName, feedback, verdict },
       });
       setSubmitted(true);
       setFeedback("");
@@ -119,15 +119,38 @@ function ExpertSimulationReviewPage() {
                 <div className="mt-4 space-y-5">
                   <ContentBlock label="상황 안내" value={step.situation ?? ""} />
                   <ContentBlock label="제공 자료" value={step.materials ?? ""} />
-                  <ContentBlock label="답변 질문" value={step.prompts?.[0]?.body ?? ""} />
+                  {(step.prompts ?? []).map((prompt, promptIndex) => (
+                    <ContentBlock
+                      key={prompt.id || promptIndex}
+                      label={
+                        (step.prompts ?? []).length > 1
+                          ? `답변 질문 ${promptIndex + 1}`
+                          : "답변 질문"
+                      }
+                      value={prompt.body ?? ""}
+                    />
+                  ))}
+                  <ContentBlock label="힌트" value={step.hint ?? ""} />
+                  <ContentBlock label="모범답안" value={step.modelAnswer ?? ""} />
                 </div>
               </section>
             ))}
           </>
         )}
 
+        <ContentBlock
+          label={simulation.steps.length > 0 ? "모범답안 총평" : "모범답안"}
+          value={simulation.modelAnswer}
+        />
+
         <section className="border-t border-zinc-200 pt-6">
-          <div className="grid gap-3">
+          <h2 className="text-sm font-semibold text-zinc-900">검수 의견</h2>
+          <p className="mt-1 text-sm text-zinc-500">
+            {simulation.isTrial
+              ? "승인하시면 이 과제를 결제자에게 발송합니다. 고쳐야 할 부분이 있다면 '수정 필요'로 남겨주세요."
+              : "이 시뮬레이션에 대한 의견을 남겨주세요."}
+          </p>
+          <div className="mt-4 grid gap-3">
             <input
               value={reviewerName}
               onChange={(event) => setReviewerName(event.target.value)}
@@ -139,21 +162,31 @@ function ExpertSimulationReviewPage() {
               value={feedback}
               onChange={(event) => setFeedback(event.target.value.slice(0, 5000))}
               maxLength={5000}
-              placeholder="피드백"
+              placeholder="현실성, 난이도, 제공 자료의 충분함, 모범답안의 타당성을 봐주세요."
               className="min-h-40 resize-y rounded-md border border-zinc-300 p-3 text-sm leading-6 outline-none focus:border-zinc-900"
             />
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <span className="text-xs text-zinc-400">{feedback.length.toLocaleString()} / 5,000자</span>
-              <button
-                type="button"
-                onClick={() => void submitFeedback()}
-                disabled={submitting || !feedback.trim()}
-                className="h-10 rounded-md bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {submitting ? "저장 중..." : "피드백 보내기"}
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => void submitFeedback("revise")}
+                  disabled={submitting || !feedback.trim()}
+                  className="h-10 rounded-md border border-zinc-300 px-4 text-sm font-medium text-zinc-800 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  수정 필요
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void submitFeedback("approved")}
+                  disabled={submitting || !feedback.trim()}
+                  className="h-10 rounded-md bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {submitting ? "저장 중..." : "승인"}
+                </button>
+              </div>
             </div>
-            {submitted && <p className="text-sm text-zinc-600">피드백을 보냈습니다.</p>}
+            {submitted && <p className="text-sm text-zinc-600">검수 의견을 보냈습니다. 감사합니다.</p>}
           </div>
         </section>
       </div>

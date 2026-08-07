@@ -72,6 +72,8 @@ export type AdminSimulationStep = {
   materials?: string;
   hint?: string;
   completionMessage?: string;
+  /** 이 단계의 모범답안. 수행자에게는 제출 후에만 공개한다 (체험 과제 비교 화면). */
+  modelAnswer?: string;
   prompts: AdminSimulationPrompt[];
 };
 
@@ -213,6 +215,7 @@ const createCompanySimulationInputSchema = z.object({
         materials: z.string().optional(),
         hint: z.string().optional(),
         completionMessage: z.string().optional(),
+        modelAnswer: z.string().optional(),
         prompts: z
           .array(
             z.object({

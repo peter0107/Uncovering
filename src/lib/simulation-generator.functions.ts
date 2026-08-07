@@ -117,6 +117,7 @@ const toolStepSchema = z.object({
   question: z.string().trim().min(1).max(8000),
   hint: z.string().max(4000).optional().default(""),
   completionMessage: z.string().max(2000).optional().default(""),
+  modelAnswer: z.string().max(12000).optional().default(""),
 });
 
 const toolOutputSchema = z.object({
@@ -264,6 +265,11 @@ const GENERATE_TOOL = {
                 },
                 hint: { type: "string", description: "초심자용 힌트 (마크다운)" },
                 completionMessage: { type: "string", description: "단계 완료 메시지 (선택)" },
+                modelAnswer: {
+                  type: "string",
+                  description:
+                    "이 단계 질문의 모범답안 (마크다운). 수행자가 제출한 뒤 자기 답안과 비교하는 용도이므로, 정답만 나열하지 말고 어떤 근거로 그렇게 판단했는지 사고 과정을 함께 쓴다. 제공 자료의 수치를 실제로 인용할 것.",
+                },
               },
             },
           },
@@ -805,6 +811,7 @@ async function generateSimulationDraftFromInput(
       materials: step.materials.trim(),
       hint: step.hint.trim(),
       completionMessage: step.completionMessage.trim(),
+      modelAnswer: step.modelAnswer.trim(),
       prompts: [
         {
           id: `${stepId}-p1`,

@@ -573,3 +573,193 @@ export const refundTrialOrder = createServerFn({ method: "POST" })
     }
     return { ok: true as const };
   });
+
+// ── 체험 과제 배정 · 검수 · 코드 발급 ──────────────────────────────
+// 흐름: [과제 생성/배정] → 현직자 검수 → [코드 발급] → [발송 완료] → 결제자 열람
+// 결제자 코드는 status='paid' AND delivered_at is not null 일 때만 통한다 (trial-task.functions.ts).
+
+/** 혼동하기 쉬운 글자(I·L·O·0·1)를 뺀 31자 알파벳. */
+const ACCESS_CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+const ACCESS_CODE_LENGTH = 10;
+
+// 레포에 코드 대입 방어(레이트리밋)가 없으므로 길이로 방어한다. 31^10 ≈ 8.2e14.
+function generateAccessCode(): string {
+  // 256 % 31 != 0 이라 나머지 연산은 앞 글자에 편향이 생긴다. 248 이상은 버려 균등하게 뽑는다.
+  const limit = Math.floor(256 / ACCESS_CODE_ALPHABET.length) * ACCESS_CODE_ALPHABET.length;
+  let code = "";
+  while (code.length < ACCESS_CODE_LENGTH) {
+    const bytes = new Uint8Array(ACCESS_CODE_LENGTH);
+    crypto.getRandomValues(bytes);
+    for (const byte of bytes) {
+      if (byte >= limit) continue;
+      code += ACCESS_CODE_ALPHABET[byte % ACCESS_CODE_ALPHABET.length];
+      if (code.length === ACCESS_CODE_LENGTH) break;
+    }
+  }
+  return code;
+}
+
+const assignTrialSimulationSchema = z.object({
+  orderId: z.string().uuid(),
+  simulationId: z.string().uuid(),
+});
+
+/** 주문에 전용 시뮬레이션을 연결하고 현직자 검수 링크 토큰을 발급한다. */
+export const assignTrialSimulation = createServerFn({ method: "POST" })
+  .inputValidator(assignTrialSimulationSchema)
+  .handler(async ({ data }): Promise<{ reviewToken: string }> => {
+    await assertAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: order, error: orderError } = await supabaseAdmin
+      .from("landing_trial_orders")
+      .select("order_id, status")
+      .eq("order_id", data.orderId)
+      .maybeSingle();
+    if (orderError) {
+      console.error("Failed to load trial order for assignment:", orderError);
+      throw new Error("주문을 불러오지 못했습니다.");
+    }
+    if (!order) throw new Error("주문을 찾을 수 없습니다.");
+    if (order.status !== "paid") throw new Error("결제 완료된 주문에만 과제를 배정할 수 있습니다.");
+
+    const { data: simulation, error: simulationError } = await supabaseAdmin
+      .from("job_simulations")
+      .select("id, feedback_share_token")
+      .eq("id", data.simulationId)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (simulationError) {
+      console.error("Failed to load simulation for trial assignment:", simulationError);
+      throw new Error("시뮬레이션을 불러오지 못했습니다.");
+    }
+    if (!simulation) throw new Error("시뮬레이션을 찾을 수 없습니다.");
+
+    const reviewToken = simulation.feedback_share_token ?? crypto.randomUUID();
+
+    // 체험 과제는 절대 공개 목록에 뜨면 안 된다.
+    const { error: markError } = await supabaseAdmin
+      .from("job_simulations")
+      .update({
+        simulation_source: "trial",
+        is_public: false,
+        feedback_share_token: reviewToken,
+      })
+      .eq("id", data.simulationId);
+    if (markError) {
+      console.error("Failed to mark simulation as trial:", markError);
+      throw new Error("과제를 체험용으로 전환하지 못했습니다.");
+    }
+
+    const { error: linkError } = await supabaseAdmin
+      .from("landing_trial_orders")
+      .update({ simulation_id: data.simulationId })
+      .eq("order_id", data.orderId);
+    if (linkError) {
+      console.error("Failed to link trial simulation to order:", linkError);
+      throw new Error("주문에 과제를 연결하지 못했습니다.");
+    }
+
+    return { reviewToken };
+  });
+
+const issueTrialAccessCodeSchema = z.object({ orderId: z.string().uuid() });
+
+/** 결제자 고유코드를 발급한다. 재발급하면 기존 코드는 즉시 무효가 된다. */
+export const issueTrialAccessCode = createServerFn({ method: "POST" })
+  .inputValidator(issueTrialAccessCodeSchema)
+  .handler(async ({ data }): Promise<{ accessCode: string }> => {
+    await assertAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: order, error: orderError } = await supabaseAdmin
+      .from("landing_trial_orders")
+      .select("order_id, status, simulation_id")
+      .eq("order_id", data.orderId)
+      .maybeSingle();
+    if (orderError) {
+      console.error("Failed to load trial order for code issue:", orderError);
+      throw new Error("주문을 불러오지 못했습니다.");
+    }
+    if (!order) throw new Error("주문을 찾을 수 없습니다.");
+    if (order.status !== "paid") throw new Error("결제 완료된 주문에만 코드를 발급할 수 있습니다.");
+    if (!order.simulation_id) throw new Error("먼저 과제를 배정해주세요.");
+
+    // unique 인덱스 충돌은 사실상 없지만, 부딪히면 다시 뽑는다.
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const accessCode = generateAccessCode();
+      const { error } = await supabaseAdmin
+        .from("landing_trial_orders")
+        .update({ access_code: accessCode })
+        .eq("order_id", data.orderId);
+      if (!error) return { accessCode };
+      if (error.code !== "23505") {
+        console.error("Failed to issue trial access code:", error);
+        throw new Error("코드를 발급하지 못했습니다.");
+      }
+    }
+    throw new Error("코드를 발급하지 못했습니다. 다시 시도해주세요.");
+  });
+
+export type TrialReviewFeedback = {
+  id: string;
+  reviewerName: string;
+  feedback: string;
+  verdict: string;
+  createdAt: string;
+};
+
+export type TrialOrderDetail = {
+  reviews: TrialReviewFeedback[];
+  answerText: string;
+  answerSubmittedAt: string;
+};
+
+const trialOrderDetailSchema = z.object({ orderId: z.string().uuid() });
+
+/** 주문 하나의 현직자 검수 의견과 결제자 제출 답안을 불러온다. */
+export const getTrialOrderDetail = createServerFn({ method: "GET" })
+  .inputValidator(trialOrderDetailSchema)
+  .handler(async ({ data }): Promise<TrialOrderDetail> => {
+    await assertAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: order, error: orderError } = await supabaseAdmin
+      .from("landing_trial_orders")
+      .select("simulation_id, answer_text, answer_submitted_at")
+      .eq("order_id", data.orderId)
+      .maybeSingle();
+    if (orderError) {
+      console.error("Failed to load trial order detail:", orderError);
+      throw new Error("주문을 불러오지 못했습니다.");
+    }
+    if (!order) throw new Error("주문을 찾을 수 없습니다.");
+
+    let reviews: TrialReviewFeedback[] = [];
+    if (order.simulation_id) {
+      const { data: rows, error } = await supabaseAdmin
+        .from("expert_simulation_share_feedback")
+        .select("id, reviewer_name, feedback, verdict, created_at")
+        .eq("simulation_id", order.simulation_id)
+        .order("created_at", { ascending: false });
+      if (error) {
+        console.error("Failed to load trial review feedback:", error);
+        throw new Error("검수 의견을 불러오지 못했습니다.");
+      }
+      reviews = (rows ?? []).map((row) => ({
+        id: row.id,
+        reviewerName: row.reviewer_name ?? "",
+        feedback: row.feedback,
+        verdict: row.verdict ?? "",
+        createdAt: formatDateTime(row.created_at),
+      }));
+    }
+
+    return {
+      reviews,
+      answerText: order.answer_text ?? "",
+      answerSubmittedAt: order.answer_submitted_at
+        ? formatDateTime(order.answer_submitted_at)
+        : "",
+    };
+  });

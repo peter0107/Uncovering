@@ -108,6 +108,10 @@ export type PublicExpertSimulationReview = {
   sharedSituation: string;
   sharedMaterials: string;
   steps: AdminSimulationStep[];
+  /** 시뮬레이션 단위 모범답안 (스텝별 모범답안이 없을 때의 총평) */
+  modelAnswer: string;
+  /** true면 체험 결제자에게 발송될 주문 전용 과제 — 검수 후 발송된다. */
+  isTrial: boolean;
 };
 
 const domainCategorySchema = z.enum(DOMAIN_CATEGORIES);
@@ -177,7 +181,12 @@ const publicExpertSimulationReviewSchema = z.object({
 const publicExpertSimulationFeedbackSchema = publicExpertSimulationReviewSchema.extend({
   reviewerName: z.string().trim().max(80).optional().default(""),
   feedback: z.string().trim().min(1).max(5000),
+  verdict: z.enum(["approved", "revise"]).optional(),
 });
+
+// 검수 링크로 열 수 있는 시뮬레이션 종류.
+// 'expert' = 현직자 저작 시뮬레이션 공유 피드백, 'trial' = 체험 주문 전용 과제 검수.
+const REVIEWABLE_SOURCES = ["expert", "trial"] as const;
 const expertFeedbackInputSchema = z.object({
   simulationId: z.string().uuid(),
   submissionId: z.string().uuid().optional(),
@@ -446,11 +455,11 @@ export const getOrCreateExpertSimulationShareLink = createServerFn({ method: "PO
       .from("job_simulations")
       .select("feedback_share_token")
       .eq("id", data.id)
-      .eq("simulation_source", "expert")
+      .in("simulation_source", REVIEWABLE_SOURCES)
       .is("deleted_at", null)
       .maybeSingle();
 
-    if (error || !simulation) throw new Error("현직자 시뮬레이션을 찾지 못했습니다.");
+    if (error || !simulation) throw new Error("검수할 시뮬레이션을 찾지 못했습니다.");
     if (simulation.feedback_share_token) return { token: simulation.feedback_share_token };
 
     const token = crypto.randomUUID();
@@ -469,11 +478,11 @@ export const getPublicExpertSimulationReview = createServerFn({ method: "GET" })
     const { data: simulation, error } = await supabaseAdmin
       .from("job_simulations")
       .select(
-        "id, title, role_label, description, estimated_minutes, expert_nickname, expert_company_type, expert_experience_band, expert_job_title, simulation_format, selection_mode, single_answer_question, task_prompt, shared_situation, shared_materials, steps",
+        "id, title, role_label, description, estimated_minutes, expert_nickname, expert_company_type, expert_experience_band, expert_job_title, simulation_format, selection_mode, single_answer_question, task_prompt, shared_situation, shared_materials, steps, expert_model_answer, simulation_source",
       )
       .eq("id", data.id)
       .eq("feedback_share_token", data.token)
-      .eq("simulation_source", "expert")
+      .in("simulation_source", REVIEWABLE_SOURCES)
       .is("deleted_at", null)
       .maybeSingle();
 
@@ -496,6 +505,8 @@ export const getPublicExpertSimulationReview = createServerFn({ method: "GET" })
       sharedSituation: String(row.shared_situation ?? ""),
       sharedMaterials: String(row.shared_materials ?? ""),
       steps: mapSteps(row.steps),
+      modelAnswer: String(row.expert_model_answer ?? ""),
+      isTrial: row.simulation_source === "trial",
     };
   });
 
@@ -508,7 +519,7 @@ export const submitPublicExpertSimulationFeedback = createServerFn({ method: "PO
       .select("id")
       .eq("id", data.id)
       .eq("feedback_share_token", data.token)
-      .eq("simulation_source", "expert")
+      .in("simulation_source", REVIEWABLE_SOURCES)
       .is("deleted_at", null)
       .maybeSingle();
     if (error || !simulation) throw new Error("유효하지 않은 피드백 링크입니다.");
@@ -519,6 +530,7 @@ export const submitPublicExpertSimulationFeedback = createServerFn({ method: "PO
         simulation_id: simulation.id,
         reviewer_name: data.reviewerName || null,
         feedback: data.feedback,
+        verdict: data.verdict ?? null,
       });
     if (insertError) throw new Error("피드백을 저장하지 못했습니다.");
     return { ok: true };

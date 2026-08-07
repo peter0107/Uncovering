@@ -1,16 +1,19 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { RefreshCw } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { BrandLogo } from "@/components/BrandLogo";
 import { useAuth } from "@/hooks/use-auth";
 import {
   getAdminLandingData,
+  getTrialOrderDetail,
+  issueTrialAccessCode,
   markTrialOrderDelivered,
   refundTrialOrder,
   TRIAL_PLAN_LABELS,
   type AdminLandingData,
+  type TrialOrderDetail,
 } from "@/lib/landing.functions";
 
 export const Route = createFileRoute("/admin/landing")({
@@ -32,6 +35,38 @@ const STATUS_LABELS: Record<string, string> = {
   refunded: "환불됨",
 };
 
+const VERDICT_LABELS: Record<string, string> = {
+  approved: "승인",
+  revise: "수정 필요",
+};
+
+type TrialOrder = AdminLandingData["orders"][number];
+
+/**
+ * 체험 주문의 진행 단계. 관리자가 다음에 뭘 눌러야 하는지 한 줄로 보여주기 위한 것.
+ * 과제 배정 → 현직자 검수 → 코드 발급 → 발송(코드 활성화) → 결제자 제출
+ */
+function trialStage(order: TrialOrder): { label: string; tone: "todo" | "wait" | "done" } {
+  if (order.status !== "paid") return { label: "결제 전", tone: "wait" };
+  if (!order.simulationId) return { label: "과제 미생성", tone: "todo" };
+  if (order.reviewVerdict === "revise") return { label: "수정 필요", tone: "todo" };
+  if (order.reviewVerdict !== "approved") return { label: "검수 대기", tone: "wait" };
+  if (!order.accessCode) return { label: "코드 미발급", tone: "todo" };
+  if (!order.deliveredAt) return { label: "발송 대기", tone: "todo" };
+  if (!order.answerSubmittedAt) return { label: "발송 완료 · 미제출", tone: "done" };
+  return { label: "제출 완료", tone: "done" };
+}
+
+function reviewLinkFor(order: TrialOrder): string {
+  if (!order.simulationId || !order.reviewToken) return "";
+  return `${window.location.origin}/expert-simulation/${order.simulationId}/review?token=${order.reviewToken}`;
+}
+
+function trialTaskLinkFor(order: TrialOrder): string {
+  if (!order.accessCode) return "";
+  return `${window.location.origin}/lp/trial-task?code=${order.accessCode}`;
+}
+
 function isOverdue(order: AdminLandingData["orders"][number]): boolean {
   if (order.status !== "paid" || order.deliveredAt) return false;
   const paidAtSource = order.paidAt || order.createdAt;
@@ -49,6 +84,9 @@ function AdminLanding() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [busyOrderId, setBusyOrderId] = useState<string | null>(null);
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const [detail, setDetail] = useState<TrialOrderDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
   const loadedUserIdRef = useRef<string | null>(null);
   const userId = user?.id ?? null;
 
@@ -113,6 +151,57 @@ function AdminLanding() {
       }
     },
     [busyOrderId, load],
+  );
+
+  const issueCode = useCallback(
+    async (order: TrialOrder) => {
+      if (busyOrderId) return;
+      if (order.accessCode && !window.confirm("코드를 다시 발급하면 기존 코드는 즉시 무효가 됩니다. 진행할까요?")) {
+        return;
+      }
+      setBusyOrderId(order.orderId);
+      try {
+        const { accessCode } = await issueTrialAccessCode({ data: { orderId: order.orderId } });
+        toast.success(`코드를 발급했습니다: ${accessCode}`);
+        await load();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "코드 발급에 실패했습니다.");
+      } finally {
+        setBusyOrderId(null);
+      }
+    },
+    [busyOrderId, load],
+  );
+
+  const copyText = useCallback(async (text: string, message: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success(message);
+    } catch {
+      toast.error("복사에 실패했습니다.");
+    }
+  }, []);
+
+  const toggleDetail = useCallback(
+    async (orderId: string) => {
+      if (expandedOrderId === orderId) {
+        setExpandedOrderId(null);
+        setDetail(null);
+        return;
+      }
+      setExpandedOrderId(orderId);
+      setDetail(null);
+      setDetailLoading(true);
+      try {
+        setDetail(await getTrialOrderDetail({ data: { orderId } }));
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "상세를 불러오지 못했습니다.");
+        setExpandedOrderId(null);
+      } finally {
+        setDetailLoading(false);
+      }
+    },
+    [expandedOrderId],
   );
 
   const leads = data.leads;
@@ -199,7 +288,7 @@ function AdminLanding() {
       ) : (
         <div className="mt-6 overflow-hidden rounded-md border border-neutral-200">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[960px] text-left text-sm">
+            <table className="w-full min-w-[1180px] text-left text-sm">
               <thead className="bg-neutral-50 text-xs text-neutral-500">
                 <tr>
                   <th className="px-4 py-3 font-medium">신청 시각</th>
@@ -207,12 +296,14 @@ function AdminLanding() {
                   <th className="px-4 py-3 font-medium">플랜 / 금액</th>
                   <th className="px-4 py-3 font-medium">연락처</th>
                   <th className="px-4 py-3 font-medium">상태</th>
+                  <th className="px-4 py-3 font-medium">과제 / 검수</th>
                   <th className="px-4 py-3 text-right font-medium">관리</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-200">
                 {orders.map((order) => (
-                  <tr key={order.id} className={isOverdue(order) ? "bg-red-50 align-top" : "align-top"}>
+                  <Fragment key={order.id}>
+                  <tr className={isOverdue(order) ? "bg-red-50 align-top" : "align-top"}>
                     <td className="whitespace-nowrap px-4 py-3 text-neutral-500">{order.createdAt}</td>
                     <td className="px-4 py-3 text-neutral-700">
                       {order.jobRole} · {order.companyType}
@@ -235,17 +326,109 @@ function AdminLanding() {
                         <p className="mt-1 text-xs font-medium text-red-600">24시간 경과, 미발송</p>
                       )}
                     </td>
+                    <td className="px-4 py-3">
+                      {order.status === "paid" ? (
+                        <div className="space-y-1.5">
+                          <StageBadge stage={trialStage(order)} />
+                          {order.simulationTitle && (
+                            <p className="max-w-[220px] truncate text-xs text-neutral-500">
+                              {order.simulationTitle}
+                            </p>
+                          )}
+                          {order.reviewCount > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => void toggleDetail(order.orderId)}
+                              className="text-xs text-neutral-500 underline hover:text-neutral-900"
+                            >
+                              검수 의견 {order.reviewCount}건
+                              {order.reviewVerdict
+                                ? ` · ${VERDICT_LABELS[order.reviewVerdict] ?? order.reviewVerdict}`
+                                : ""}
+                            </button>
+                          )}
+                          {order.accessCode && (
+                            <p className="font-mono text-xs tracking-wider text-neutral-700">
+                              {order.accessCode}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-neutral-400">—</span>
+                      )}
+                    </td>
                     <td className="whitespace-nowrap px-4 py-3 text-right">
-                      <div className="flex justify-end gap-2">
+                      <div className="flex flex-wrap justify-end gap-2">
+                        {order.status === "paid" && !order.simulationId && (
+                          <ActionButton
+                            disabled={busyOrderId !== null}
+                            onClick={() =>
+                              navigate({
+                                to: "/admin/simulation-generator",
+                                search: {
+                                  order: order.orderId,
+                                  jobRole: order.jobRole,
+                                  companyType: order.companyType,
+                                },
+                              })
+                            }
+                          >
+                            과제 생성
+                          </ActionButton>
+                        )}
+                        {order.reviewToken && (
+                          <ActionButton
+                            disabled={busyOrderId !== null}
+                            onClick={() =>
+                              void copyText(reviewLinkFor(order), "검수 링크를 복사했습니다.")
+                            }
+                          >
+                            검수 링크 복사
+                          </ActionButton>
+                        )}
+                        {order.status === "paid" && order.simulationId && (
+                          <ActionButton
+                            disabled={busyOrderId !== null}
+                            onClick={() => void issueCode(order)}
+                          >
+                            {order.accessCode ? "코드 재발급" : "코드 발급"}
+                          </ActionButton>
+                        )}
+                        {order.accessCode && (
+                          <ActionButton
+                            disabled={busyOrderId !== null}
+                            onClick={() =>
+                              void copyText(
+                                trialTaskLinkFor(order),
+                                "과제 링크를 복사했습니다. 코드와 함께 보내주세요.",
+                              )
+                            }
+                          >
+                            과제 링크 복사
+                          </ActionButton>
+                        )}
                         {order.status === "paid" && !order.deliveredAt && (
                           <button
                             type="button"
                             onClick={() => void markDelivered(order.orderId)}
-                            disabled={busyOrderId !== null}
-                            className="inline-flex h-8 items-center justify-center rounded-md border border-neutral-300 px-2.5 text-xs font-medium hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
+                            disabled={busyOrderId !== null || !order.accessCode}
+                            title={
+                              order.accessCode
+                                ? "발송 완료로 표시하면 결제자가 코드로 과제를 열 수 있습니다."
+                                : "먼저 코드를 발급해주세요."
+                            }
+                            className="inline-flex h-8 items-center justify-center rounded-md border border-neutral-900 bg-neutral-900 px-2.5 text-xs font-medium text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40"
                           >
                             발송 완료
                           </button>
+                        )}
+                        {order.answerSubmittedAt && (
+                          <ActionButton
+                            disabled={busyOrderId !== null}
+                            onClick={() => void toggleDetail(order.orderId)}
+                          >
+                            답안 보기
+                          </ActionButton>
                         )}
                         {order.status === "paid" && (
                           <button
@@ -260,6 +443,67 @@ function AdminLanding() {
                       </div>
                     </td>
                   </tr>
+                  {expandedOrderId === order.orderId && (
+                    <tr>
+                      <td colSpan={7} className="bg-neutral-50 px-4 py-4">
+                        {detailLoading ? (
+                          <p className="text-sm text-neutral-500">불러오는 중입니다...</p>
+                        ) : !detail ? (
+                          <p className="text-sm text-neutral-500">표시할 내용이 없습니다.</p>
+                        ) : (
+                          <div className="space-y-5">
+                            <div>
+                              <p className="text-xs font-semibold text-neutral-700">현직자 검수 의견</p>
+                              {detail.reviews.length === 0 ? (
+                                <p className="mt-1 text-sm text-neutral-500">아직 검수 의견이 없습니다.</p>
+                              ) : (
+                                <ul className="mt-2 space-y-2">
+                                  {detail.reviews.map((review) => (
+                                    <li
+                                      key={review.id}
+                                      className="rounded-md border border-neutral-200 bg-white p-3"
+                                    >
+                                      <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-500">
+                                        <span className="font-medium text-neutral-800">
+                                          {review.reviewerName || "익명"}
+                                        </span>
+                                        {review.verdict && (
+                                          <span
+                                            className={`rounded-full px-2 py-0.5 font-medium ${
+                                              review.verdict === "approved"
+                                                ? "bg-neutral-900 text-white"
+                                                : "bg-amber-100 text-amber-800"
+                                            }`}
+                                          >
+                                            {VERDICT_LABELS[review.verdict] ?? review.verdict}
+                                          </span>
+                                        )}
+                                        <span>{review.createdAt}</span>
+                                      </div>
+                                      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-700">
+                                        {review.feedback}
+                                      </p>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </div>
+                            {detail.answerSubmittedAt && (
+                              <div>
+                                <p className="text-xs font-semibold text-neutral-700">
+                                  결제자 제출 답안 · {detail.answerSubmittedAt}
+                                </p>
+                                <pre className="mt-2 max-h-96 overflow-auto whitespace-pre-wrap rounded-md border border-neutral-200 bg-white p-3 text-sm leading-6 text-neutral-700">
+                                  {detail.answerText || "내용 없음"}
+                                </pre>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
                 ))}
               </tbody>
             </table>
@@ -291,6 +535,41 @@ function TabButton({
     >
       {children}
     </button>
+  );
+}
+
+function ActionButton({
+  children,
+  onClick,
+  disabled,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="inline-flex h-8 items-center justify-center rounded-md border border-neutral-300 px-2.5 text-xs font-medium hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
+    >
+      {children}
+    </button>
+  );
+}
+
+function StageBadge({ stage }: { stage: ReturnType<typeof trialStage> }) {
+  const tone =
+    stage.tone === "todo"
+      ? "bg-amber-100 text-amber-800"
+      : stage.tone === "done"
+        ? "bg-neutral-900 text-white"
+        : "bg-neutral-100 text-neutral-600";
+  return (
+    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${tone}`}>
+      {stage.label}
+    </span>
   );
 }
 
