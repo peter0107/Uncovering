@@ -34,6 +34,18 @@ const COMPANY_TYPES = ["IT 스타트업", "대기업", "중견기업", "공공�
 const OTHER_JOB_ROLE = "그 외 직무";
 const OTHER_COMPANY_TYPE = "기타";
 
+function formatPhoneNumber(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+
+  if (digits.length <= 3) {
+    return digits;
+  }
+  if (digits.length <= 7) {
+    return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+  }
+  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
+}
+
 function ApplyForm() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [jobRole, setJobRole] = useState(JOB_ROLES[0]);
@@ -231,7 +243,7 @@ function ApplyForm() {
               className="textinput"
               placeholder="010-1234-5678"
               value={phone}
-              onChange={(event) => setPhone(event.target.value.replace(/[^\d-]/g, "").slice(0, 13))}
+              onChange={(event) => setPhone(formatPhoneNumber(event.target.value))}
             />
           </div>
         </>
