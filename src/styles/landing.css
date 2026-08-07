@@ -139,8 +139,10 @@
 .lp-trial .opt > span:first-child { min-width: 0; }
 .lp-trial .opt b { font-size: 14.5px; }
 .lp-trial .opt span.sub { font-size: 12.5px; color: #6B7280; display: block; margin-top: 2px; }
-.lp-trial .opt .price { font-size: 16px; font-weight: 800; color: #4B5563; white-space: nowrap; }
+.lp-trial .opt .price { display: flex; align-items: baseline; gap: 6px; font-size: 16px; font-weight: 800; color: #4B5563; white-space: nowrap; }
 .lp-trial .opt.on .price { color: #435BDA; }
+.lp-trial .opt .price-original { font-size: 12.5px; font-weight: 600; color: #9CA3AF; }
+.lp-trial .opt .price-badge { font-size: 11px; font-weight: 800; color: #DC2626; background: #FEE2E2; border-radius: 4px; padding: 2px 5px; }
 .lp-trial .opt:focus-visible,
 .lp-trial .back:focus-visible,
 .lp-trial .submit:focus-visible,

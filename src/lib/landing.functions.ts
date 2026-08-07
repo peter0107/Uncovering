@@ -112,10 +112,13 @@ export const submitLandingLead = createServerFn({ method: "POST" })
 
 // ── 27b: 직무 체험 주문 (PG: 페이앱) ─────────────────────────────
 export const TRIAL_PLAN_PRICES = {
-  single: 9900,
+  single: 10000,
   pack3: 19800,
   monthly: 29000,
 } as const;
+
+export const TRIAL_SINGLE_ORIGINAL_PRICE = 25000;
+export const TRIAL_SINGLE_DISCOUNT_PERCENT = 60;
 
 export const TRIAL_PLAN_LABELS: Record<keyof typeof TRIAL_PLAN_PRICES, { name: string; sub: string }> = {
   single: { name: "체험 1회", sub: "과제 1건 · 현직자 답안 포함" },
@@ -368,6 +371,16 @@ export type AdminLandingTrialOrder = {
   refundedAt: string;
   refundReason: string;
   createdAt: string;
+  /** 이 주문에 배정된 전용 시뮬레이션 */
+  simulationId: string;
+  simulationTitle: string;
+  /** 현직자 검수 링크 토큰 (배정 시 발급) */
+  reviewToken: string;
+  reviewCount: number;
+  /** 가장 최근 검수 판정. approved | revise | "" */
+  reviewVerdict: string;
+  accessCode: string;
+  answerSubmittedAt: string;
 };
 
 export type AdminLandingData = {
@@ -391,6 +404,51 @@ export const getAdminLandingData = createServerFn({ method: "GET" }).handler(
       console.error("Failed to load landing trial orders:", ordersRes.error);
       throw new Error("주문 목록을 불러오지 못했습니다.");
     }
+
+    // 배정된 시뮬레이션 제목·검수 토큰과 현직자 검수 현황을 곁들인다.
+    const simulationIds = [
+      ...new Set((ordersRes.data ?? []).map((row) => row.simulation_id).filter(Boolean)),
+    ] as string[];
+
+    const simulations = new Map<string, { title: string; token: string }>();
+    const reviews = new Map<string, { count: number; verdict: string }>();
+
+    if (simulationIds.length > 0) {
+      const [simRes, reviewRes] = await Promise.all([
+        supabaseAdmin
+          .from("job_simulations")
+          .select("id, title, feedback_share_token")
+          .in("id", simulationIds),
+        supabaseAdmin
+          .from("expert_simulation_share_feedback")
+          .select("simulation_id, verdict, created_at")
+          .in("simulation_id", simulationIds)
+          .order("created_at", { ascending: false }),
+      ]);
+      if (simRes.error) {
+        console.error("Failed to load trial simulations:", simRes.error);
+      } else {
+        for (const row of simRes.data ?? []) {
+          simulations.set(row.id, {
+            title: row.title ?? "",
+            token: row.feedback_share_token ?? "",
+          });
+        }
+      }
+      if (reviewRes.error) {
+        console.error("Failed to load trial review feedback:", reviewRes.error);
+      } else {
+        for (const row of reviewRes.data ?? []) {
+          const current = reviews.get(row.simulation_id) ?? { count: 0, verdict: "" };
+          // created_at 내림차순이라 첫 판정이 최신이다.
+          reviews.set(row.simulation_id, {
+            count: current.count + 1,
+            verdict: current.verdict || (row.verdict ?? ""),
+          });
+        }
+      }
+    }
+
     return {
       leads: (leadsRes.data ?? []).map((row) => {
         const payload: Record<string, unknown> =
@@ -411,23 +469,36 @@ export const getAdminLandingData = createServerFn({ method: "GET" }).handler(
           createdAt: formatDateTime(row.created_at),
         };
       }),
-      orders: (ordersRes.data ?? []).map((row) => ({
-        id: row.id,
-        orderId: row.order_id,
-        email: row.email,
-        phone: row.phone,
-        jobRole: row.job_role,
-        companyType: row.company_type,
-        plan: row.plan as keyof typeof TRIAL_PLAN_PRICES,
-        amount: row.amount,
-        status: row.status,
-        payType: row.pay_type ?? "",
-        paidAt: row.paid_at ? formatDateTime(row.paid_at) : "",
-        deliveredAt: row.delivered_at ? formatDateTime(row.delivered_at) : "",
-        refundedAt: row.refunded_at ? formatDateTime(row.refunded_at) : "",
-        refundReason: row.refund_reason ?? "",
-        createdAt: formatDateTime(row.created_at),
-      })),
+      orders: (ordersRes.data ?? []).map((row) => {
+        const simulation = row.simulation_id ? simulations.get(row.simulation_id) : undefined;
+        const review = row.simulation_id ? reviews.get(row.simulation_id) : undefined;
+        return {
+          id: row.id,
+          orderId: row.order_id,
+          email: row.email,
+          phone: row.phone,
+          jobRole: row.job_role,
+          companyType: row.company_type,
+          plan: row.plan as keyof typeof TRIAL_PLAN_PRICES,
+          amount: row.amount,
+          status: row.status,
+          payType: row.pay_type ?? "",
+          paidAt: row.paid_at ? formatDateTime(row.paid_at) : "",
+          deliveredAt: row.delivered_at ? formatDateTime(row.delivered_at) : "",
+          refundedAt: row.refunded_at ? formatDateTime(row.refunded_at) : "",
+          refundReason: row.refund_reason ?? "",
+          createdAt: formatDateTime(row.created_at),
+          simulationId: row.simulation_id ?? "",
+          simulationTitle: simulation?.title ?? "",
+          reviewToken: simulation?.token ?? "",
+          reviewCount: review?.count ?? 0,
+          reviewVerdict: review?.verdict ?? "",
+          accessCode: row.access_code ?? "",
+          answerSubmittedAt: row.answer_submitted_at
+            ? formatDateTime(row.answer_submitted_at)
+            : "",
+        };
+      }),
     };
   },
 );

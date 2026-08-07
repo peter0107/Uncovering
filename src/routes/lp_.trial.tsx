@@ -2,7 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 
 import { BrandLogo } from "@/components/BrandLogo";
-import { createTrialOrder } from "@/lib/landing.functions";
+import {
+  createTrialOrder,
+  TRIAL_PLAN_PRICES,
+  TRIAL_SINGLE_DISCOUNT_PERCENT,
+  TRIAL_SINGLE_ORIGINAL_PRICE,
+} from "@/lib/landing.functions";
 
 export const Route = createFileRoute("/lp_/trial")({
   head: () => ({
@@ -222,12 +227,16 @@ function ApplyForm() {
 
           <div className="fgroup">
             <span className="flabel">결제 옵션</span>
-            <div className="opt fixed">
+            <div className="opt solo">
               <span>
                 <b>체험 1회</b>
                 <span className="sub">과제 1건 · 현직자 답안 포함</span>
               </span>
-              <span className="price">9,900원</span>
+              <span className="price">
+                <s className="price-original">{TRIAL_SINGLE_ORIGINAL_PRICE.toLocaleString()}원</s>
+                <span className="price-badge">{TRIAL_SINGLE_DISCOUNT_PERCENT}%</span>
+                <b>{TRIAL_PLAN_PRICES.single.toLocaleString()}원</b>
+              </span>
             </div>
           </div>
 
@@ -399,7 +408,7 @@ function LpTrialPage() {
                     }}
                   >
                     <span style={{ fontSize: 12, color: "#6B7280" }}>결제 금액</span>
-                    <b style={{ fontSize: 18, color: "#435BDA" }}>9,900원</b>
+                    <b style={{ fontSize: 18, color: "#435BDA" }}>{TRIAL_PLAN_PRICES.single.toLocaleString()}원</b>
                   </div>
                   <span
                     style={{
