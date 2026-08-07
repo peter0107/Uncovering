@@ -28,18 +28,18 @@
 .lp-outsourcing .burger span { width: 20px; height: 2px; background: #1B2440; border-radius: 2px; }
 .lp-outsourcing .heroin { position: relative; padding: 76px 0 68px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 26px; }
 .lp-outsourcing .pill { background: #E4E9FB; color: #435BDA; font-weight: 700; font-size: 14px; border-radius: 99px; padding: 9px 20px; }
-.lp-outsourcing h1 { margin: 0; font-size: clamp(34px,6vw,58px); line-height: 1.2; letter-spacing: -2px; font-weight: 800; }
+.lp-outsourcing h1 { margin: 0; font-size: clamp(34px,6vw,58px); line-height: 1.2; letter-spacing: 0; font-weight: 800; }
 .lp-outsourcing .lead { margin: 0; font-size: clamp(15px,2.2vw,19px); color: #4B5563; line-height: 1.65; max-width: 640px; word-break: keep-all; }
 .lp-outsourcing .ctas { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
 .lp-outsourcing .note { font-size: 14px; color: #6B7280; }
 .lp-outsourcing section { padding: 56px 0; }
 .lp-outsourcing .sect-gray { background: #F7F8FA; }
 .lp-outsourcing .eyebrow { font-size: 13.5px; color: #435BDA; letter-spacing: 2px; font-weight: 800; margin: 0; }
-.lp-outsourcing h2 { margin: 0; font-size: clamp(25px,4vw,34px); letter-spacing: -1px; line-height: 1.3; }
+.lp-outsourcing h2 { margin: 0; font-size: clamp(25px,4vw,34px); letter-spacing: 0; line-height: 1.3; }
 .lp-outsourcing .center { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .lp-outsourcing .grid3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; margin-top: 32px; }
 .lp-outsourcing .card { background: #fff; border: 1px solid #EEF0F4; border-radius: 8px; padding: 26px; display: flex; flex-direction: column; gap: 12px; }
-.lp-outsourcing .card h3 { margin: 0; font-size: 18px; letter-spacing: -.4px; }
+.lp-outsourcing .card h3 { margin: 0; font-size: 18px; letter-spacing: 0; }
 .lp-outsourcing .card p { margin: 0; font-size: 14.5px; color: #4B5563; line-height: 1.65; }
 .lp-outsourcing .step { width: 34px; height: 34px; border-radius: 10px; background: #E4E9FB; color: #435BDA; display: grid; place-items: center; font-weight: 800; font-size: 15px; }
 .lp-outsourcing .mock { margin-top: 6px; border: 1px solid #E3E6EC; border-radius: 8px; overflow: hidden; background: #fff; }
@@ -60,17 +60,26 @@
 .lp-outsourcing .two { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
 .lp-outsourcing .pricerow { border: 1px solid #EEF0F4; border-radius: 8px; padding: 18px 22px; display: flex; justify-content: space-between; align-items: center; }
 .lp-outsourcing .pricerow.on { border: 2px solid #435BDA; background: #F0F3FD; }
-.lp-outsourcing .cta { background: #435BDA; border-radius: 8px; padding: 48px 32px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; color: #fff; }
+.lp-outsourcing .cta { background: #435BDA; border-radius: 8px; padding: 52px 32px; display: flex; flex-direction: column; align-items: center; gap: 16px; text-align: center; color: #fff; }
 .lp-outsourcing .cta input,
 .lp-outsourcing .cta textarea { width: 100%; border: 1.5px solid #fff; border-radius: 8px; padding: 12px 14px; font-size: 15px; font-family: inherit; background: transparent; color: #fff; outline: none; }
-.lp-outsourcing .cta textarea { min-height: 112px; resize: vertical; line-height: 1.55; }
+.lp-outsourcing .cta textarea { min-height: 136px; resize: vertical; line-height: 1.55; }
 .lp-outsourcing .cta input::placeholder,
 .lp-outsourcing .cta textarea::placeholder { color: rgba(255,255,255,.75); }
-.lp-outsourcing .cta .go { align-self: center; background: #D9E0FA; color: #1A1A2E; font-weight: 700; border-radius: 8px; padding: 13px 24px; font-size: 15px; border: none; font-family: inherit; cursor: pointer; }
-.lp-outsourcing .consult-form { width: min(100%, 720px); display: flex; flex-direction: column; gap: 14px; margin-top: 6px; }
-.lp-outsourcing .consult-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; text-align: left; }
-.lp-outsourcing .consult-field { display: flex; flex-direction: column; gap: 7px; font-size: 13px; font-weight: 600; }
+.lp-outsourcing .cta .go { align-self: center; min-height: 44px; background: #D9E0FA; color: #1A1A2E; font-weight: 700; border-radius: 8px; padding: 12px 24px; font-size: 15px; border: none; font-family: inherit; cursor: pointer; transition: background-color 160ms ease, color 160ms ease; }
+.lp-outsourcing .cta .go:hover:not(:disabled) { background: #fff; }
+.lp-outsourcing .cta .go:disabled { cursor: wait; opacity: .7; }
+.lp-outsourcing .cta .go:focus-visible,
+.lp-outsourcing .cta input:focus-visible,
+.lp-outsourcing .cta textarea:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.lp-outsourcing .consult-form { width: min(100%, 760px); display: flex; flex-direction: column; gap: 16px; margin-top: 4px; }
+.lp-outsourcing .consult-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; text-align: left; }
+.lp-outsourcing .consult-field { min-width: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13px; font-weight: 700; }
 .lp-outsourcing .consult-field.full { grid-column: 1 / -1; }
+.lp-outsourcing .consult-success { width: min(100%, 760px); padding: 30px 0 10px; text-align: center; }
+.lp-outsourcing .consult-success b { display: block; font-size: 18px; line-height: 1.4; }
+.lp-outsourcing .consult-success p { margin: 8px 0 0; font-size: 14px; line-height: 1.6; color: #D9E0FA; }
+.lp-outsourcing .consult-error { width: 100%; margin: 0; font-size: 13px; line-height: 1.5; color: #FFE0E0; text-align: left; }
 .lp-outsourcing footer { border-top: 1px solid #EEF0F4; padding: 20px 0; display: flex; justify-content: space-between; align-items: center; font-size: 13.5px; color: #9CA3AF; gap: 12px; flex-wrap: wrap; }
 .lp-outsourcing footer div { display: flex; gap: 18px; flex-wrap: wrap; }
 @media (max-width: 640px) {
@@ -79,11 +88,11 @@
   .lp-outsourcing .navlinks { display: none; }
   .lp-outsourcing .burger { display: flex; }
   .lp-outsourcing .heroin { padding: 52px 0 56px; gap: 22px; }
-  .lp-outsourcing h1 { letter-spacing: -1.2px; }
+  .lp-outsourcing h1 { letter-spacing: 0; }
   .lp-outsourcing section { padding: 44px 0; }
   .lp-outsourcing .ctas { width: 100%; flex-direction: column; }
   .lp-outsourcing .ctas .btn { width: 100%; text-align: center; }
-  .lp-outsourcing .cta { padding: 36px 22px; }
+  .lp-outsourcing .cta { padding: 40px 22px; }
   .lp-outsourcing .consult-grid { grid-template-columns: 1fr; }
   .lp-outsourcing .consult-field.full { grid-column: auto; }
   .lp-outsourcing .cta .go { width: 100%; }

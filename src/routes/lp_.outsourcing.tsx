@@ -58,9 +58,9 @@ function ConsultationForm() {
 
   if (isSubmitted) {
     return (
-      <div style={{ textAlign: "center" }}>
-        <b style={{ fontSize: 16 }}>상담 신청이 접수됐어요</b>
-        <p style={{ margin: "6px 0 0", fontSize: 14, color: "#D9E0FA" }}>
+      <div className="consult-success" role="status" aria-live="polite">
+        <b>상담 신청이 접수됐어요</b>
+        <p>
           입력해 주신 연락처로 안내드릴게요.
         </p>
       </div>
@@ -68,7 +68,7 @@ function ConsultationForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="consult-form">
+    <form onSubmit={handleSubmit} className="consult-form" aria-busy={isSubmitting}>
       <div className="consult-grid">
         <label className="consult-field">
           <span>기업명</span>
@@ -76,6 +76,7 @@ function ConsultationForm() {
             type="text"
             required
             maxLength={100}
+            autoComplete="organization"
             placeholder="기업명을 입력해주세요"
             value={companyName}
             onChange={(event) => setCompanyName(event.target.value)}
@@ -87,6 +88,7 @@ function ConsultationForm() {
             type="text"
             required
             maxLength={100}
+            autoComplete="name"
             placeholder="담당자명을 입력해주세요"
             value={contactName}
             onChange={(event) => setContactName(event.target.value)}
@@ -98,6 +100,7 @@ function ConsultationForm() {
             type="email"
             required
             maxLength={200}
+            autoComplete="email"
             placeholder="name@company.com"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
@@ -109,6 +112,8 @@ function ConsultationForm() {
             type="tel"
             required
             maxLength={20}
+            inputMode="tel"
+            autoComplete="tel"
             placeholder="010-1234-5678"
             value={phone}
             onChange={(event) => setPhone(event.target.value)}
@@ -140,9 +145,7 @@ function ConsultationForm() {
         {isSubmitting ? "접수 중..." : "상담 신청하기"}
       </button>
       {error && (
-        <p role="alert" style={{ width: "100%", margin: 0, fontSize: 13, color: "#FFD9D9" }}>
-          {error}
-        </p>
+        <p role="alert" className="consult-error">{error}</p>
       )}
     </form>
   );
