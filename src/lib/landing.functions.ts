@@ -133,10 +133,13 @@ const createTrialOrderSchema = z.object({
   companyType: z.string().trim().min(1).max(100),
   plan: trialPlanSchema,
   email: z.string().trim().email().max(200),
-  phone: z.string().trim().min(9).max(20).regex(/^[\d\-+() ]+$/),
   agreedToTerms: z.literal(true),
   website: z.string().max(0).optional().default(""), // honeypot
 });
+
+// 연락처는 더 이상 폼에서 받지 않는다 — 페이앱 payrequest API가 recvphone을 필수로
+// 요구해서 고정값을 보낸다. smsuse=n이라 실제로 SMS는 발송되지 않는다.
+const PLACEHOLDER_PHONE = "010-0000-0000";
 
 const PAYAPP_API_URL = "https://api.payapp.kr/oapi/apiLoad.html";
 
@@ -177,7 +180,7 @@ export const createTrialOrder = createServerFn({ method: "POST" })
     const { error: insertError } = await supabaseAdmin.from("landing_trial_orders").insert({
       order_id: orderId,
       email: data.email,
-      phone: data.phone,
+      phone: PLACEHOLDER_PHONE,
       job_role: data.jobRole,
       company_type: data.companyType,
       plan: data.plan,
@@ -196,7 +199,7 @@ export const createTrialOrder = createServerFn({ method: "POST" })
       linkkey,
       goodname: `직무 체험 - ${data.jobRole}`,
       price: String(amount),
-      recvphone: data.phone,
+      recvphone: PLACEHOLDER_PHONE,
       shopname: "Beginner",
       smsuse: "n",
       skip_cstpage: "y",

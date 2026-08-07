@@ -53,20 +53,8 @@ const JOB_ROLES_BY_CATEGORY: Record<DomainCategory, string[]> = {
 
 const COMPANY_TYPES = ["IT 스타트업", "대기업", "중견기업", "공공기관", "기타"];
 
-function formatPhoneNumber(value: string): string {
-  const digits = value.replace(/\D/g, "").slice(0, 11);
-
-  if (digits.length <= 3) {
-    return digits;
-  }
-  if (digits.length <= 7) {
-    return `${digits.slice(0, 3)}-${digits.slice(3)}`;
-  }
-  return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`;
-}
-
 function ApplyForm() {
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2>(1);
   const [jobCategory, setJobCategory] = useState<DomainCategory>(DOMAIN_CATEGORIES[0]);
   const [jobRole, setJobRole] = useState(JOB_ROLES_BY_CATEGORY[DOMAIN_CATEGORIES[0]][0]);
   const [customJobRole, setCustomJobRole] = useState("");
@@ -79,7 +67,6 @@ function ApplyForm() {
   const [companyType, setCompanyType] = useState(COMPANY_TYPES[0]);
   const [customCompanyType, setCustomCompanyType] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [website, setWebsite] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -108,8 +95,8 @@ function ApplyForm() {
     if (!selections) {
       return;
     }
-    if (step < 3) {
-      setStep((currentStep) => (currentStep + 1) as 2 | 3);
+    if (step < 2) {
+      setStep(2);
       return;
     }
     if (!agreedToTerms) {
@@ -124,7 +111,6 @@ function ApplyForm() {
           companyType: selections.effectiveCompanyType,
           plan: "single",
           email: email.trim(),
-          phone: phone.trim(),
           agreedToTerms: true,
           website,
         },
@@ -144,15 +130,9 @@ function ApplyForm() {
     <form className="apply" onSubmit={handleSubmit}>
       <div className="apply-head">
         <span className="apply-step" aria-live="polite">
-          Step {step} / 3
+          Step {step} / 2
         </span>
-        <h3>
-          {step === 1
-            ? "직무와 기업을 선택해주세요"
-            : step === 2
-              ? "이메일 주소를 입력해주세요"
-              : "결제 정보를 확인해주세요"}
-        </h3>
+        <h3>{step === 1 ? "직무와 기업을 선택해주세요" : "이메일과 결제 정보를 확인해주세요"}</h3>
       </div>
 
       {step === 1 ? (
@@ -222,7 +202,7 @@ function ApplyForm() {
             )}
           </div>
         </>
-      ) : step === 2 ? (
+      ) : (
         <>
           <div className="selection-summary">
             <span>
@@ -248,21 +228,6 @@ function ApplyForm() {
             />
           </div>
 
-        </>
-      ) : (
-        <>
-          <div className="selection-summary">
-            <span>
-              직무 <b>{jobRole === OTHER_JOB_ROLE ? customJobRole : jobRole}</b>
-            </span>
-            <span>
-              기업 <b>{companyType === OTHER_COMPANY_TYPE ? customCompanyType : companyType}</b>
-            </span>
-            <span>
-              이메일 <b>{email}</b>
-            </span>
-          </div>
-
           <div className="fgroup">
             <span className="flabel">결제 옵션</span>
             <div className="opt solo">
@@ -276,22 +241,6 @@ function ApplyForm() {
                 <b>{TRIAL_PLAN_PRICES.single.toLocaleString()}원</b>
               </span>
             </div>
-          </div>
-
-          <div className="fgroup">
-            <span className="flabel">
-              휴대폰 번호 <span style={{ color: "#435BDA" }}>*</span>
-            </span>
-            <input
-              type="tel"
-              inputMode="numeric"
-              required
-              maxLength={13}
-              className="textinput"
-              placeholder="010-1234-5678"
-              value={phone}
-              onChange={(event) => setPhone(formatPhoneNumber(event.target.value))}
-            />
           </div>
         </>
       )}
@@ -308,7 +257,7 @@ function ApplyForm() {
         />
       </div>
 
-      {step === 3 && (
+      {step === 2 && (
         <label className="agree">
           <input
             type="checkbox"
@@ -341,17 +290,17 @@ function ApplyForm() {
             className="back"
             onClick={() => {
               setError("");
-              setStep((currentStep) => (currentStep - 1) as 1 | 2);
+              setStep(1);
             }}
           >
             이전
           </button>
         )}
         <button type="submit" className="submit" disabled={isSubmitting}>
-          {step < 3 ? "다음" : isSubmitting ? "결제창으로 이동 중..." : "결제창으로 이동하기"}
+          {step < 2 ? "다음" : isSubmitting ? "결제창으로 이동 중..." : "결제창으로 이동하기"}
         </button>
       </div>
-      {step === 3 && (
+      {step === 2 && (
         <span style={{ textAlign: "center", fontSize: 12.5, color: "#9CA3AF" }}>
           24시간 내 미제공 시 전액 환불
         </span>
