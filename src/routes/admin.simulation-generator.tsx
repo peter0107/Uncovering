@@ -40,11 +40,11 @@ export const Route = createFileRoute("/admin/simulation-generator")({
 });
 
 const PLATFORMS = [
+  "원티드",
   "잡코리아",
   "사람인",
   "리멤버",
   "인크루트",
-  "원티드",
   "잡플래닛",
   "기업 채용페이지",
   "기타",
