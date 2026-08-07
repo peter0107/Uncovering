@@ -602,6 +602,28 @@ function generateAccessCode(): string {
   return code;
 }
 
+type SupabaseAdminClient = (typeof import("@/integrations/supabase/client.server"))["supabaseAdmin"];
+
+/** 고유코드를 발급해 저장한다 (unique 충돌 시 최대 5회 재시도). */
+async function assignAccessCode(
+  supabaseAdmin: SupabaseAdminClient,
+  orderId: string,
+): Promise<string> {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const accessCode = generateAccessCode();
+    const { error } = await supabaseAdmin
+      .from("landing_trial_orders")
+      .update({ access_code: accessCode })
+      .eq("order_id", orderId);
+    if (!error) return accessCode;
+    if (error.code !== "23505") {
+      console.error("Failed to issue trial access code:", error);
+      throw new Error("코드를 발급하지 못했습니다.");
+    }
+  }
+  throw new Error("코드를 발급하지 못했습니다. 다시 시도해주세요.");
+}
+
 const assignTrialSimulationSchema = z.object({
   orderId: z.string().uuid(),
   simulationId: z.string().uuid(),
@@ -704,20 +726,193 @@ export const issueTrialAccessCode = createServerFn({ method: "POST" })
       throw new Error("현직자 검수 승인 후 코드를 발급할 수 있습니다.");
     }
 
-    // unique 인덱스 충돌은 사실상 없지만, 부딪히면 다시 뽑는다.
-    for (let attempt = 0; attempt < 5; attempt += 1) {
-      const accessCode = generateAccessCode();
-      const { error } = await supabaseAdmin
-        .from("landing_trial_orders")
-        .update({ access_code: accessCode })
-        .eq("order_id", data.orderId);
-      if (!error) return { accessCode };
-      if (error.code !== "23505") {
-        console.error("Failed to issue trial access code:", error);
-        throw new Error("코드를 발급하지 못했습니다.");
-      }
+    return { accessCode: await assignAccessCode(supabaseAdmin, data.orderId) };
+  });
+
+// ── 체험 과제 이메일 자동 발송 (Gmail API) ────────────────────────
+// info@beginner.today는 사용자 Gmail 계정에 "보내는 사람" 별칭으로 이미 등록돼 있어,
+// Cloudflare Workers에서 못 여는 SMTP 소켓 대신 Gmail REST API(fetch)로 그 계정을 통해 보낸다.
+
+async function getGmailAccessToken(): Promise<string> {
+  const clientId = process.env.GMAIL_CLIENT_ID;
+  const clientSecret = process.env.GMAIL_CLIENT_SECRET;
+  const refreshToken = process.env.GMAIL_REFRESH_TOKEN;
+  if (!clientId || !clientSecret || !refreshToken) {
+    throw new Error("Gmail 발송 설정이 완료되지 않았습니다.");
+  }
+  const response = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type: "refresh_token",
+    }),
+  });
+  if (!response.ok) {
+    console.error("Gmail token refresh failed:", response.status, await response.text());
+    throw new Error("이메일 인증에 실패했습니다.");
+  }
+  const json = (await response.json()) as { access_token: string };
+  return json.access_token;
+}
+
+function base64UrlEncode(input: string): string {
+  const bytes = new TextEncoder().encode(input);
+  let binary = "";
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function encodeMimeSubject(subject: string): string {
+  // 제목에 한글이 들어가므로 MIME encoded-word로 인코딩한다.
+  return `=?UTF-8?B?${btoa(unescape(encodeURIComponent(subject)))}?=`;
+}
+
+function buildTrialTaskEmailHtml(params: {
+  jobRole: string;
+  companyType: string;
+  taskLink: string;
+}): string {
+  return `<!doctype html>
+<html lang="ko"><body style="margin:0;padding:0;background:#F5F6F9;font-family:Pretendard,-apple-system,BlinkMacSystemFont,'Malgun Gothic',sans-serif;">
+<div style="max-width:520px;margin:0 auto;padding:40px 20px;">
+  <div style="background:#FFFFFF;border-radius:14px;overflow:hidden;border:1px solid #E7E9EE;">
+    <div style="padding:40px 36px 36px;">
+      <p style="font-size:15px;color:#14181F;line-height:1.7;margin:0 0 22px;">안녕하세요, Beginner예요.<br />신청하신 체험 과제 검수가 끝나서 보내드려요.</p>
+      <div style="border:1px solid #E7E9EE;border-radius:12px;padding:18px 20px;margin:0 0 26px;">
+        <p style="font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#435BDA;margin:0 0 6px;">신청 정보</p>
+        <p style="font-size:16px;font-weight:800;color:#14181F;margin:0;">${params.jobRole}</p>
+        <p style="font-size:13px;color:#6B7280;margin:3px 0 0;">${params.companyType}</p>
+      </div>
+      <a href="${params.taskLink}" style="display:block;text-align:center;background:#435BDA;color:#FFFFFF;text-decoration:none;font-size:15px;font-weight:700;padding:14px 0;border-radius:10px;margin:0 0 24px;">체험 과제 열기 →</a>
+      <p style="font-size:12.5px;color:#9AA2AE;line-height:1.7;margin:0 0 26px;">이 링크는 본인만 사용할 수 있으니 다른 사람과 공유하지 말아주세요.<br />궁금한 점이 있으면 이 메일에 회신해주세요.</p>
+      <p style="font-size:14px;color:#14181F;margin:0;">Beginner 드림</p>
+    </div>
+    <div style="background:#FAFAFB;border-top:1px solid #E7E9EE;padding:16px 36px;font-size:11.5px;color:#9AA2AE;">이 메일은 Beginner 체험 신청자에게 발송되는 안내 메일이에요.</div>
+  </div>
+</div>
+</body></html>`;
+}
+
+async function sendTrialTaskEmail(params: {
+  to: string;
+  jobRole: string;
+  companyType: string;
+  taskLink: string;
+}): Promise<void> {
+  const from = "Beginner <info@beginner.today>";
+  const subject = `[Beginner] ${params.jobRole} 체험 과제가 도착했어요`;
+  const html = buildTrialTaskEmailHtml(params);
+
+  const rawMessage =
+    `From: ${from}\r\n` +
+    `To: ${params.to}\r\n` +
+    `Subject: ${encodeMimeSubject(subject)}\r\n` +
+    `MIME-Version: 1.0\r\n` +
+    `Content-Type: text/html; charset="UTF-8"\r\n\r\n` +
+    html;
+
+  const accessToken = await getGmailAccessToken();
+  const response = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ raw: base64UrlEncode(rawMessage) }),
+  });
+  if (!response.ok) {
+    console.error("Gmail send failed:", response.status, await response.text());
+    throw new Error(`이메일 발송에 실패했습니다 (${response.status}).`);
+  }
+}
+
+/**
+ * 관리자의 "최종 승인" 클릭에서만 호출한다. 현직자 승인(verdict='approved')만으로는
+ * 절대 자동 실행되지 않는다 — 반드시 관리자가 한 번 더 확인하고 눌러야 한다.
+ * 절대 throw하지 않고 결과 객체로 성공/실패를 알린다.
+ */
+async function deliverTrialTaskEmail(
+  orderId: string,
+): Promise<{ ok: true } | { ok: false; reason: string }> {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: order, error } = await supabaseAdmin
+      .from("landing_trial_orders")
+      .select("order_id, status, email, job_role, company_type, access_code, simulation_id")
+      .eq("order_id", orderId)
+      .maybeSingle();
+    if (error || !order) return { ok: false, reason: "order-not-found" };
+    if (order.status !== "paid") return { ok: false, reason: "not-paid" };
+    if (!order.simulation_id) return { ok: false, reason: "no-simulation" };
+
+    // UI 가드를 우회한 호출을 막기 위해 서버에서도 최신 판정을 재확인한다.
+    const { data: latestReview } = await supabaseAdmin
+      .from("expert_simulation_share_feedback")
+      .select("verdict")
+      .eq("simulation_id", order.simulation_id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (latestReview?.verdict !== "approved") return { ok: false, reason: "not-approved" };
+
+    const accessCode = order.access_code ?? (await assignAccessCode(supabaseAdmin, order.order_id));
+    const taskLink = `${siteOrigin()}/lp/trial-task?code=${accessCode}`;
+
+    await sendTrialTaskEmail({
+      to: order.email,
+      jobRole: order.job_role,
+      companyType: order.company_type,
+      taskLink,
+    });
+
+    const { error: updateError } = await supabaseAdmin
+      .from("landing_trial_orders")
+      .update({ delivered_at: new Date().toISOString() })
+      .eq("order_id", order.order_id);
+    if (updateError) {
+      console.error("Trial task email sent but delivered_at update failed:", updateError);
+      return { ok: false, reason: "delivered-flag-not-set" };
     }
-    throw new Error("코드를 발급하지 못했습니다. 다시 시도해주세요.");
+
+    await notifyDiscord("체험 과제 최종 승인 · 발송 완료", [
+      { name: "이메일", value: order.email, inline: true },
+      { name: "직무", value: order.job_role, inline: true },
+      { name: "코드", value: accessCode, inline: true },
+    ]);
+    return { ok: true };
+  } catch (err) {
+    console.error("deliverTrialTaskEmail failed:", err);
+    return { ok: false, reason: "unexpected-error" };
+  }
+}
+
+const finalizeTrialTaskDeliverySchema = z.object({ orderId: z.string().uuid() });
+
+const FINALIZE_ERROR_MESSAGES: Record<string, string> = {
+  "order-not-found": "주문을 찾을 수 없습니다.",
+  "not-paid": "결제 완료된 주문이 아닙니다.",
+  "no-simulation": "배정된 과제가 없습니다.",
+  "not-approved": "현직자 승인이 완료되지 않았습니다.",
+  "delivered-flag-not-set": "메일은 발송됐지만 상태 갱신에 실패했습니다. 다시 시도해주세요.",
+  "unexpected-error": "이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.",
+};
+
+/** 관리자의 "최종 승인 · 발송" 버튼이 호출한다 — 코드 발급(필요 시)과 이메일 발송을 함께 처리. */
+export const finalizeTrialTaskDelivery = createServerFn({ method: "POST" })
+  .inputValidator(finalizeTrialTaskDeliverySchema)
+  .handler(async ({ data }) => {
+    await assertAdmin();
+    const result = await deliverTrialTaskEmail(data.orderId);
+    if (!result.ok) {
+      throw new Error(FINALIZE_ERROR_MESSAGES[result.reason] ?? FINALIZE_ERROR_MESSAGES["unexpected-error"]);
+    }
+    return { ok: true as const };
   });
 
 export type TrialReviewFeedback = {

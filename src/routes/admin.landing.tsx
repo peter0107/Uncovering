@@ -7,6 +7,7 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { useAuth } from "@/hooks/use-auth";
 import {
   deleteTrialOrder,
+  finalizeTrialTaskDelivery,
   getAdminLandingData,
   getTrialOrderDetail,
   issueTrialAccessCode,
@@ -58,7 +59,7 @@ type TrialOrderEditPatch = {
 
 /**
  * 체험 주문의 진행 단계. 관리자가 다음에 뭘 눌러야 하는지 한 줄로 보여주기 위한 것.
- * 과제 배정 → 현직자 검수 → 코드 발급 → 발송(코드 활성화) → 결제자 제출
+ * 과제 배정 → 현직자 검수 → 관리자 최종 승인(코드 발급+발송 자동) → 결제자 제출
  */
 function trialStage(order: TrialOrder): { label: string; tone: "todo" | "wait" | "done" } {
   if (order.status !== "paid") return { label: "결제 전", tone: "wait" };
@@ -67,8 +68,7 @@ function trialStage(order: TrialOrder): { label: string; tone: "todo" | "wait" |
   if (order.reviewVerdict !== "approved") {
     return { label: "과제 생성완료 · 현직자 검수 대기", tone: "wait" };
   }
-  if (!order.accessCode) return { label: "코드 미발급", tone: "todo" };
-  if (!order.deliveredAt) return { label: "발송 대기", tone: "todo" };
+  if (!order.deliveredAt) return { label: "최종 승인 대기", tone: "todo" };
   if (!order.answerSubmittedAt) return { label: "발송 완료 · 미제출", tone: "done" };
   return { label: "제출 완료", tone: "done" };
 }
@@ -133,10 +133,39 @@ function AdminLanding() {
     void load();
   }, [authLoading, userId, navigate, load]);
 
+  const finalizeDelivery = useCallback(
+    async (order: TrialOrder) => {
+      if (busyOrderId) return;
+      const confirmMessage = order.deliveredAt
+        ? "체험 과제 안내 이메일을 다시 보낼까요?"
+        : "현직자 승인을 확인했나요? 지금 코드 발급과 이메일 발송이 자동으로 진행됩니다.";
+      if (!window.confirm(confirmMessage)) return;
+      setBusyOrderId(order.orderId);
+      try {
+        await finalizeTrialTaskDelivery({ data: { orderId: order.orderId } });
+        toast.success(
+          order.deliveredAt ? "이메일을 다시 보냈습니다." : "최종 승인 완료 — 이메일을 발송했습니다.",
+        );
+        await load();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "이메일 발송에 실패했습니다.");
+      } finally {
+        setBusyOrderId(null);
+      }
+    },
+    [busyOrderId, load],
+  );
+
   const markDelivered = useCallback(
     async (orderId: string) => {
       if (busyOrderId) return;
-      if (!window.confirm("이 주문을 발송 완료로 표시할까요?")) return;
+      if (
+        !window.confirm(
+          "이메일을 보내지 않고 코드를 활성화합니다. 코드를 직접 전달했는지 확인하세요. 진행할까요?",
+        )
+      ) {
+        return;
+      }
       setBusyOrderId(orderId);
       try {
         await markTrialOrderDelivered({ data: { orderId } });
@@ -493,12 +522,23 @@ function AdminLanding() {
                             onClick={() =>
                               void copyText(
                                 trialTaskLinkFor(order),
-                                "과제 링크를 복사했습니다. 코드와 함께 보내주세요.",
+                                "과제 링크를 복사했습니다.",
                               )
                             }
                           >
                             과제 링크 복사
                           </ActionButton>
+                        )}
+                        {order.status === "paid" && order.reviewVerdict === "approved" && (
+                          <button
+                            type="button"
+                            onClick={() => void finalizeDelivery(order)}
+                            disabled={busyOrderId !== null}
+                            title="코드 발급(필요 시)과 이메일 발송을 한 번에 처리합니다."
+                            className="inline-flex h-8 items-center justify-center rounded-md border border-neutral-900 bg-neutral-900 px-2.5 text-xs font-medium text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            {order.deliveredAt ? "재발송" : "최종 승인 · 발송"}
+                          </button>
                         )}
                         {order.status === "paid" && !order.deliveredAt && (
                           <button
@@ -507,12 +547,12 @@ function AdminLanding() {
                             disabled={busyOrderId !== null || !order.accessCode}
                             title={
                               order.accessCode
-                                ? "발송 완료로 표시하면 결제자가 코드로 과제를 열 수 있습니다."
+                                ? "이메일 없이 코드만 활성화합니다 (직접 전달한 경우에만 사용)."
                                 : "먼저 코드를 발급해주세요."
                             }
-                            className="inline-flex h-8 items-center justify-center rounded-md border border-neutral-900 bg-neutral-900 px-2.5 text-xs font-medium text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40"
+                            className="inline-flex h-8 items-center px-1 text-xs font-medium text-neutral-400 underline hover:text-neutral-700 disabled:cursor-not-allowed disabled:opacity-40"
                           >
-                            발송 완료
+                            수동으로 완료 처리 (긴급)
                           </button>
                         )}
                         {order.answerSubmittedAt && (
