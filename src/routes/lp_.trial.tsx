@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 
 import { BrandLogo } from "@/components/BrandLogo";
-import { createTrialOrder, TRIAL_PLAN_LABELS, TRIAL_PLAN_PRICES } from "@/lib/landing.functions";
+import { createTrialOrder } from "@/lib/landing.functions";
 
 export const Route = createFileRoute("/lp_/trial")({
   head: () => ({
@@ -34,20 +34,12 @@ const COMPANY_TYPES = ["IT 스타트업", "대기업", "중견기업", "공공�
 const OTHER_JOB_ROLE = "그 외 직무";
 const OTHER_COMPANY_TYPE = "기타";
 
-type Plan = keyof typeof TRIAL_PLAN_PRICES;
-const PLAN_ORDER: Plan[] = ["single", "pack3", "monthly"];
-
-function formatPrice(amount: number): string {
-  return `${amount.toLocaleString()}원`;
-}
-
 function ApplyForm() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [jobRole, setJobRole] = useState(JOB_ROLES[0]);
   const [customJobRole, setCustomJobRole] = useState("");
   const [companyType, setCompanyType] = useState(COMPANY_TYPES[0]);
   const [customCompanyType, setCustomCompanyType] = useState("");
-  const [plan, setPlan] = useState<Plan>("single");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
@@ -92,7 +84,7 @@ function ApplyForm() {
         data: {
           jobRole: selections.effectiveJobRole,
           companyType: selections.effectiveCompanyType,
-          plan,
+          plan: "single",
           email: email.trim(),
           phone: phone.trim(),
           agreedToTerms: true,
@@ -233,27 +225,12 @@ function ApplyForm() {
 
           <div className="fgroup">
             <span className="flabel">결제 옵션</span>
-            <div className="option-list" role="radiogroup" aria-label="결제 옵션">
-              {PLAN_ORDER.map((key) => {
-                const label = TRIAL_PLAN_LABELS[key];
-                const isOn = plan === key;
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    className={isOn ? "opt on" : "opt"}
-                    onClick={() => setPlan(key)}
-                    role="radio"
-                    aria-checked={isOn}
-                  >
-                    <span>
-                      <b>{label.name}</b>
-                      <span className="sub">{label.sub}</span>
-                    </span>
-                    <span className="price">{formatPrice(TRIAL_PLAN_PRICES[key])}</span>
-                  </button>
-                );
-              })}
+            <div className="opt fixed">
+              <span>
+                <b>체험 1회</b>
+                <span className="sub">과제 1건 · 현직자 답안 포함</span>
+              </span>
+              <span className="price">9,900원</span>
             </div>
           </div>
         </>
