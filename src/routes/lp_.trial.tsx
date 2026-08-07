@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 
 import { BrandLogo } from "@/components/BrandLogo";
+import { DOMAIN_CATEGORIES, type DomainCategory } from "@/lib/domain-categories";
 import {
   createTrialOrder,
   TRIAL_PLAN_PRICES,
@@ -23,21 +24,34 @@ export const Route = createFileRoute("/lp_/trial")({
   component: LpTrialPage,
 });
 
-const JOB_ROLES = [
-  "CRM 마케터",
-  "브랜드 디자이너",
-  "서비스 기획자",
-  "UI/UX 디자이너",
-  "데이터 분석가",
-  "콘텐츠 마케터",
-  "공정 엔지니어",
-  "그 외 직무",
-];
-
-const COMPANY_TYPES = ["IT 스타트업", "대기업", "중견기업", "공공기관", "기타"];
-
 const OTHER_JOB_ROLE = "그 외 직무";
 const OTHER_COMPANY_TYPE = "기타";
+
+const JOB_ROLES_BY_CATEGORY: Record<DomainCategory, string[]> = {
+  "기획·전략": ["서비스 기획자", "사업 전략 기획자", "PM/PO", "신사업 기획자", OTHER_JOB_ROLE],
+  "법무·사무·총무": ["법무 담당자", "계약 검토 담당자", "총무 담당자", "사무 지원", OTHER_JOB_ROLE],
+  "인사·HR": ["채용 담당자", "인사 운영 담당자", "조직문화 담당자", "교육/HRD 담당자", OTHER_JOB_ROLE],
+  "회계·세무": ["회계 담당자", "세무 담당자", "재무 분석가", "결산 담당자", OTHER_JOB_ROLE],
+  "마케팅·광고·MD": ["CRM 마케터", "콘텐츠 마케터", "퍼포먼스 마케터", "MD", OTHER_JOB_ROLE],
+  "AI·개발·데이터": ["데이터 분석가", "백엔드 개발자", "프론트엔드 개발자", "AI/ML 엔지니어", OTHER_JOB_ROLE],
+  디자인: ["브랜드 디자이너", "UI/UX 디자이너", "그래픽 디자이너", "프로덕트 디자이너", OTHER_JOB_ROLE],
+  "물류·무역": ["물류 운영 담당자", "무역 사무원", "SCM 담당자", "수출입 담당자", OTHER_JOB_ROLE],
+  "운전·운송·배송": ["배송 기사", "물류센터 운영자", "운송 관리자", OTHER_JOB_ROLE],
+  영업: ["기업영업 담당자", "영업 관리자", "세일즈 매니저", OTHER_JOB_ROLE],
+  "고객상담·TM": ["고객상담원", "텔레마케터", "CS 매니저", OTHER_JOB_ROLE],
+  "금융·보험": ["금융 분석가", "보험 심사역", "자산관리 담당자", OTHER_JOB_ROLE],
+  "식·음료": ["매장 운영자", "메뉴 개발자", "F&B MD", OTHER_JOB_ROLE],
+  "고객서비스·리테일": ["매장 매니저", "리테일 MD", "CS 담당자", OTHER_JOB_ROLE],
+  "엔지니어링·설계": ["공정 엔지니어", "기계 설계 엔지니어", "품질 엔지니어", OTHER_JOB_ROLE],
+  "제조·생산": ["생산관리 담당자", "품질관리 담당자", "공정 개선 담당자", OTHER_JOB_ROLE],
+  교육: ["커리큘럼 기획자", "교육 운영 담당자", "교육 콘텐츠 개발자", OTHER_JOB_ROLE],
+  "건축·시설": ["시설관리 담당자", "건축 설계 보조", "안전관리 담당자", OTHER_JOB_ROLE],
+  "의료·바이오": ["임상시험 코디네이터", "바이오 연구원", "의료데이터 분석가", OTHER_JOB_ROLE],
+  "미디어·문화·스포츠": ["콘텐츠 PD", "미디어 마케터", "이벤트 기획자", OTHER_JOB_ROLE],
+  "공공·복지": ["정책 기획자", "복지 서비스 담당자", "공공사업 운영자", OTHER_JOB_ROLE],
+};
+
+const COMPANY_TYPES = ["IT 스타트업", "대기업", "중견기업", "공공기관", "기타"];
 
 function formatPhoneNumber(value: string): string {
   const digits = value.replace(/\D/g, "").slice(0, 11);
@@ -53,8 +67,15 @@ function formatPhoneNumber(value: string): string {
 
 function ApplyForm() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [jobRole, setJobRole] = useState(JOB_ROLES[0]);
+  const [jobCategory, setJobCategory] = useState<DomainCategory>(DOMAIN_CATEGORIES[0]);
+  const [jobRole, setJobRole] = useState(JOB_ROLES_BY_CATEGORY[DOMAIN_CATEGORIES[0]][0]);
   const [customJobRole, setCustomJobRole] = useState("");
+
+  function handleCategoryChange(category: DomainCategory) {
+    setJobCategory(category);
+    setJobRole(JOB_ROLES_BY_CATEGORY[category][0]);
+    setCustomJobRole("");
+  }
   const [companyType, setCompanyType] = useState(COMPANY_TYPES[0]);
   const [customCompanyType, setCustomCompanyType] = useState("");
   const [email, setEmail] = useState("");
@@ -137,10 +158,27 @@ function ApplyForm() {
       {step === 1 ? (
         <>
           <div className="fgroup">
+            <span className="flabel">직무 분야</span>
+            <div className="select">
+              <select
+                value={jobCategory}
+                onChange={(event) => handleCategoryChange(event.target.value as DomainCategory)}
+              >
+                {DOMAIN_CATEGORIES.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+              <span style={{ color: "#9CA3AF", fontSize: 12 }}>▾</span>
+            </div>
+          </div>
+
+          <div className="fgroup">
             <span className="flabel">체험할 직무</span>
             <div className="select">
               <select value={jobRole} onChange={(event) => setJobRole(event.target.value)}>
-                {JOB_ROLES.map((role) => (
+                {JOB_ROLES_BY_CATEGORY[jobCategory].map((role) => (
                   <option key={role} value={role}>
                     {role}
                   </option>

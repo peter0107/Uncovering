@@ -112,7 +112,7 @@ export const submitLandingLead = createServerFn({ method: "POST" })
 
 // ── 27b: 직무 체험 주문 (PG: 페이앱) ─────────────────────────────
 export const TRIAL_PLAN_PRICES = {
-  single: 10000,
+  single: 9900,
   pack3: 19800,
   monthly: 29000,
 } as const;
