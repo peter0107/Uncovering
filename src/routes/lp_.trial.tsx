@@ -42,6 +42,7 @@ function formatPrice(amount: number): string {
 }
 
 function ApplyForm() {
+  const [step, setStep] = useState<1 | 2>(1);
   const [jobRole, setJobRole] = useState(JOB_ROLES[0]);
   const [customJobRole, setCustomJobRole] = useState("");
   const [companyType, setCompanyType] = useState(COMPANY_TYPES[0]);
@@ -54,19 +55,31 @@ function ApplyForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError("");
-
+  function getSelections() {
     const effectiveJobRole = jobRole === OTHER_JOB_ROLE ? customJobRole.trim() : jobRole;
     const effectiveCompanyType = companyType === OTHER_COMPANY_TYPE ? customCompanyType.trim() : companyType;
 
     if (jobRole === OTHER_JOB_ROLE && !effectiveJobRole) {
       setError("체험하고 싶은 직무를 입력해주세요.");
-      return;
+      return null;
     }
     if (companyType === OTHER_COMPANY_TYPE && !effectiveCompanyType) {
-      setError("기업 유형을 입력해주세요.");
+      setError("기업을 입력해주세요.");
+      return null;
+    }
+    return { effectiveJobRole, effectiveCompanyType };
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+
+    const selections = getSelections();
+    if (!selections) {
+      return;
+    }
+    if (step === 1) {
+      setStep(2);
       return;
     }
     if (!agreedToTerms) {
@@ -77,8 +90,8 @@ function ApplyForm() {
     try {
       const result = await createTrialOrder({
         data: {
-          jobRole: effectiveJobRole,
-          companyType: effectiveCompanyType,
+          jobRole: selections.effectiveJobRole,
+          companyType: selections.effectiveCompanyType,
           plan,
           email: email.trim(),
           phone: phone.trim(),
@@ -99,117 +112,133 @@ function ApplyForm() {
 
   return (
     <form className="apply" onSubmit={handleSubmit}>
-      <h3>체험 신청하기</h3>
-
-      <div className="fgroup">
-        <span className="flabel">체험할 직무</span>
-        <div className="select">
-          <select value={jobRole} onChange={(event) => setJobRole(event.target.value)}>
-            {JOB_ROLES.map((role) => (
-              <option key={role} value={role}>
-                {role}
-              </option>
-            ))}
-          </select>
-          <span style={{ color: "#9CA3AF", fontSize: 12 }}>▾</span>
-        </div>
-        {jobRole === OTHER_JOB_ROLE && (
-          <input
-            type="text"
-            required
-            maxLength={100}
-            className="textinput"
-            placeholder="체험하고 싶은 직무를 입력해주세요"
-            value={customJobRole}
-            onChange={(event) => setCustomJobRole(event.target.value)}
-          />
-        )}
+      <div className="apply-head">
+        <span className="apply-step">Step {step} / 2</span>
+        <h3>{step === 1 ? "직무와 기업을 선택해주세요" : "이메일 주소를 입력해주세요"}</h3>
       </div>
 
-      <div className="fgroup">
-        <span className="flabel">기업 유형</span>
-        <div className="select">
-          <select value={companyType} onChange={(event) => setCompanyType(event.target.value)}>
-            {COMPANY_TYPES.map((type) => (
-              <option key={type} value={type}>
-                {type}
-              </option>
-            ))}
-          </select>
-          <span style={{ color: "#9CA3AF", fontSize: 12 }}>▾</span>
-        </div>
-        {companyType === OTHER_COMPANY_TYPE && (
-          <input
-            type="text"
-            required
-            maxLength={100}
-            className="textinput"
-            placeholder="기업 유형을 입력해주세요"
-            value={customCompanyType}
-            onChange={(event) => setCustomCompanyType(event.target.value)}
-          />
-        )}
-      </div>
+      {step === 1 ? (
+        <>
+          <div className="fgroup">
+            <span className="flabel">체험할 직무</span>
+            <div className="select">
+              <select value={jobRole} onChange={(event) => setJobRole(event.target.value)}>
+                {JOB_ROLES.map((role) => (
+                  <option key={role} value={role}>
+                    {role}
+                  </option>
+                ))}
+              </select>
+              <span style={{ color: "#9CA3AF", fontSize: 12 }}>▾</span>
+            </div>
+            {jobRole === OTHER_JOB_ROLE && (
+              <input
+                type="text"
+                maxLength={100}
+                className="textinput"
+                placeholder="체험하고 싶은 직무를 입력해주세요"
+                value={customJobRole}
+                onChange={(event) => setCustomJobRole(event.target.value)}
+              />
+            )}
+          </div>
 
-      <div className="fgroup">
-        <span className="flabel">결제 옵션</span>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {PLAN_ORDER.map((key) => {
-            const label = TRIAL_PLAN_LABELS[key];
-            const isOn = plan === key;
-            return (
-              <div
-                key={key}
-                className={isOn ? "opt on" : "opt"}
-                onClick={() => setPlan(key)}
-                role="radio"
-                aria-checked={isOn}
-                tabIndex={0}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    setPlan(key);
-                  }
-                }}
-              >
-                <div>
-                  <b>{label.name}</b>
-                  <span className="sub">{label.sub}</span>
-                </div>
-                <span className="price">{formatPrice(TRIAL_PLAN_PRICES[key])}</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+          <div className="fgroup">
+            <span className="flabel">기업</span>
+            <div className="select">
+              <select value={companyType} onChange={(event) => setCompanyType(event.target.value)}>
+                {COMPANY_TYPES.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+              <span style={{ color: "#9CA3AF", fontSize: 12 }}>▾</span>
+            </div>
+            {companyType === OTHER_COMPANY_TYPE && (
+              <input
+                type="text"
+                maxLength={100}
+                className="textinput"
+                placeholder="기업을 입력해주세요"
+                value={customCompanyType}
+                onChange={(event) => setCustomCompanyType(event.target.value)}
+              />
+            )}
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="selection-summary">
+            <span>
+              직무 <b>{jobRole === OTHER_JOB_ROLE ? customJobRole : jobRole}</b>
+            </span>
+            <span>
+              기업 <b>{companyType === OTHER_COMPANY_TYPE ? customCompanyType : companyType}</b>
+            </span>
+          </div>
 
-      <div className="fgroup">
-        <span className="flabel">
-          이메일 <span style={{ color: "#435BDA" }}>*</span>
-        </span>
-        <input
-          type="email"
-          required
-          maxLength={200}
-          className="textinput"
-          placeholder="과제를 받을 이메일 주소"
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-        />
-      </div>
+          <div className="fgroup">
+            <span className="flabel">결제 옵션</span>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {PLAN_ORDER.map((key) => {
+                const label = TRIAL_PLAN_LABELS[key];
+                const isOn = plan === key;
+                return (
+                  <div
+                    key={key}
+                    className={isOn ? "opt on" : "opt"}
+                    onClick={() => setPlan(key)}
+                    role="radio"
+                    aria-checked={isOn}
+                    tabIndex={0}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        setPlan(key);
+                      }
+                    }}
+                  >
+                    <div>
+                      <b>{label.name}</b>
+                      <span className="sub">{label.sub}</span>
+                    </div>
+                    <span className="price">{formatPrice(TRIAL_PLAN_PRICES[key])}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
-      <div className="fgroup">
-        <span className="flabel">휴대폰번호</span>
-        <input
-          type="tel"
-          required
-          maxLength={20}
-          className="textinput"
-          placeholder="010-1234-5678"
-          value={phone}
-          onChange={(event) => setPhone(event.target.value)}
-        />
-      </div>
+          <div className="fgroup">
+            <span className="flabel">
+              이메일 <span style={{ color: "#435BDA" }}>*</span>
+            </span>
+            <input
+              type="email"
+              required
+              maxLength={200}
+              className="textinput"
+              placeholder="과제를 받을 이메일 주소"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+            />
+          </div>
+
+          <div className="fgroup">
+            <span className="flabel">휴대폰번호</span>
+            <input
+              type="tel"
+              required
+              maxLength={20}
+              className="textinput"
+              placeholder="010-1234-5678"
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+            />
+          </div>
+        </>
+      )}
 
       <div style={{ position: "absolute", left: "-9999px", width: 1, height: 1, overflow: "hidden" }} aria-hidden="true">
         <label htmlFor="lp-trial-website">웹사이트</label>
@@ -223,23 +252,25 @@ function ApplyForm() {
         />
       </div>
 
-      <label className="agree">
-        <input
-          type="checkbox"
-          checked={agreedToTerms}
-          onChange={(event) => setAgreedToTerms(event.target.checked)}
-        />
-        <span>
-          <a href="/terms" target="_blank" rel="noreferrer">
-            이용약관
-          </a>{" "}
-          및{" "}
-          <a href="/privacy" target="_blank" rel="noreferrer">
-            개인정보처리방침
-          </a>
-          , 환불 정책에 동의합니다.
-        </span>
-      </label>
+      {step === 2 && (
+        <label className="agree">
+          <input
+            type="checkbox"
+            checked={agreedToTerms}
+            onChange={(event) => setAgreedToTerms(event.target.checked)}
+          />
+          <span>
+            <a href="/terms" target="_blank" rel="noreferrer">
+              이용약관
+            </a>{" "}
+            및{" "}
+            <a href="/privacy" target="_blank" rel="noreferrer">
+              개인정보처리방침
+            </a>
+            , 환불 정책에 동의합니다.
+          </span>
+        </label>
+      )}
 
       {error && (
         <p role="alert" className="formerror">
@@ -247,12 +278,28 @@ function ApplyForm() {
         </p>
       )}
 
-      <button type="submit" className="submit" disabled={isSubmitting}>
-        {isSubmitting ? "결제창으로 이동 중..." : "체험 신청하기 →"}
-      </button>
-      <span style={{ textAlign: "center", fontSize: 12.5, color: "#9CA3AF" }}>
-        24시간 내 미제공 시 전액 환불
-      </span>
+      <div className="apply-actions">
+        {step === 2 && (
+          <button
+            type="button"
+            className="back"
+            onClick={() => {
+              setError("");
+              setStep(1);
+            }}
+          >
+            이전
+          </button>
+        )}
+        <button type="submit" className="submit" disabled={isSubmitting}>
+          {step === 1 ? "다음" : isSubmitting ? "결제창으로 이동 중..." : "결제창으로 이동하기"}
+        </button>
+      </div>
+      {step === 2 && (
+        <span style={{ textAlign: "center", fontSize: 12.5, color: "#9CA3AF" }}>
+          24시간 내 미제공 시 전액 환불
+        </span>
+      )}
     </form>
   );
 }

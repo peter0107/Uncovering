@@ -72,9 +72,13 @@ async function notifyDiscord(title: string, fields: { name: string; value: strin
   }
 }
 
-// ── 27a: 사전예약 리드 ────────────────────────────────────────────
+// ── 업무 의뢰 상담 ────────────────────────────────────────────────
 const landingLeadSchema = z.object({
+  companyName: z.string().trim().min(1).max(100),
+  contactName: z.string().trim().min(1).max(100),
   email: z.string().trim().email().max(200),
+  phone: z.string().trim().min(9).max(20).regex(/^[\d\-+() ]+$/),
+  requestDetail: z.string().trim().min(1).max(2000),
   website: z.string().max(0).optional().default(""), // honeypot
 });
 
@@ -85,13 +89,23 @@ export const submitLandingLead = createServerFn({ method: "POST" })
     const { error } = await supabaseAdmin.from("landing_leads").insert({
       email: data.email,
       source: "outsourcing",
+      payload: {
+        companyName: data.companyName,
+        contactName: data.contactName,
+        phone: data.phone,
+        requestDetail: data.requestDetail,
+      },
     });
     if (error) {
       console.error("Failed to insert landing lead:", error);
       throw new Error("접수하지 못했습니다. 잠시 후 다시 시도해 주세요.");
     }
-    await notifyDiscord("새 사전예약 리드 (외주 플랫폼)", [
+    await notifyDiscord("새 업무 의뢰 상담 신청", [
+      { name: "기업", value: data.companyName, inline: true },
+      { name: "담당자", value: data.contactName, inline: true },
       { name: "이메일", value: data.email, inline: true },
+      { name: "연락처", value: data.phone, inline: true },
+      { name: "의뢰 내용", value: data.requestDetail.slice(0, 1024), inline: false },
     ]);
     return { ok: true as const };
   });
@@ -331,6 +345,10 @@ export async function handlePayappFeedbackRequest(request: Request): Promise<Res
 export type AdminLandingLead = {
   id: string;
   email: string;
+  companyName: string;
+  contactName: string;
+  phone: string;
+  requestDetail: string;
   createdAt: string;
 };
 
@@ -374,11 +392,25 @@ export const getAdminLandingData = createServerFn({ method: "GET" }).handler(
       throw new Error("주문 목록을 불러오지 못했습니다.");
     }
     return {
-      leads: (leadsRes.data ?? []).map((row) => ({
-        id: row.id,
-        email: row.email,
-        createdAt: formatDateTime(row.created_at),
-      })),
+      leads: (leadsRes.data ?? []).map((row) => {
+        const payload: Record<string, unknown> =
+          row.payload && typeof row.payload === "object" && !Array.isArray(row.payload)
+            ? (row.payload as Record<string, unknown>)
+            : {};
+        const value = (key: string): string => {
+          const item = payload[key];
+          return typeof item === "string" ? item : "";
+        };
+        return {
+          id: row.id,
+          email: row.email,
+          companyName: value("companyName"),
+          contactName: value("contactName"),
+          phone: value("phone"),
+          requestDetail: value("requestDetail"),
+          createdAt: formatDateTime(row.created_at),
+        };
+      }),
       orders: (ordersRes.data ?? []).map((row) => ({
         id: row.id,
         orderId: row.order_id,

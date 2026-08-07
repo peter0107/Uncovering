@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Check, Menu, X } from "lucide-react";
-import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type MouseEvent, type PointerEvent, type ReactNode } from "react";
 
 import { AccountMenu } from "@/components/AccountMenu";
 import { GuestProfileMenu } from "@/components/GuestProfileMenu";

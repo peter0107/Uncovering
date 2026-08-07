@@ -7,10 +7,10 @@ import { submitLandingLead } from "@/lib/landing.functions";
 export const Route = createFileRoute("/lp_/outsourcing")({
   head: () => ({
     meta: [
-      { title: "Beginner — 초저가 외주 플랫폼 (사전예약)" },
+      { title: "Beginner — 업무 의뢰 상담" },
       {
         name: "description",
-        content: "간단한 업무를 올리면 검증된 학생들이 결과물을 만들어 드려요. 지금 사전예약하세요.",
+        content: "필요한 업무와 일정, 예산을 남기면 의뢰 방향을 상담해드립니다.",
       },
       { name: "robots", content: "noindex, nofollow" },
     ],
@@ -18,8 +18,12 @@ export const Route = createFileRoute("/lp_/outsourcing")({
   component: LpOutsourcingPage,
 });
 
-function ReserveForm() {
+function ConsultationForm() {
+  const [companyName, setCompanyName] = useState("");
+  const [contactName, setContactName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [requestDetail, setRequestDetail] = useState("");
   const [website, setWebsite] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -30,7 +34,16 @@ function ReserveForm() {
     setError("");
     setIsSubmitting(true);
     try {
-      await submitLandingLead({ data: { email: email.trim(), website } });
+      await submitLandingLead({
+        data: {
+          companyName: companyName.trim(),
+          contactName: contactName.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          requestDetail: requestDetail.trim(),
+          website,
+        },
+      });
       setIsSubmitted(true);
     } catch (submissionError) {
       setError(
@@ -46,24 +59,72 @@ function ReserveForm() {
   if (isSubmitted) {
     return (
       <div style={{ textAlign: "center" }}>
-        <b style={{ fontSize: 16 }}>사전예약이 접수됐어요</b>
+        <b style={{ fontSize: 16 }}>상담 신청이 접수됐어요</b>
         <p style={{ margin: "6px 0 0", fontSize: 14, color: "#D9E0FA" }}>
-          정식 오픈 소식을 이메일로 가장 먼저 보내드릴게요.
+          입력해 주신 연락처로 안내드릴게요.
         </p>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="form">
-      <input
-        type="email"
-        required
-        maxLength={200}
-        placeholder="회사 이메일 주소"
-        value={email}
-        onChange={(event) => setEmail(event.target.value)}
-      />
+    <form onSubmit={handleSubmit} className="consult-form">
+      <div className="consult-grid">
+        <label className="consult-field">
+          <span>기업명</span>
+          <input
+            type="text"
+            required
+            maxLength={100}
+            placeholder="기업명을 입력해주세요"
+            value={companyName}
+            onChange={(event) => setCompanyName(event.target.value)}
+          />
+        </label>
+        <label className="consult-field">
+          <span>담당자명</span>
+          <input
+            type="text"
+            required
+            maxLength={100}
+            placeholder="담당자명을 입력해주세요"
+            value={contactName}
+            onChange={(event) => setContactName(event.target.value)}
+          />
+        </label>
+        <label className="consult-field">
+          <span>이메일</span>
+          <input
+            type="email"
+            required
+            maxLength={200}
+            placeholder="name@company.com"
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+          />
+        </label>
+        <label className="consult-field">
+          <span>연락처</span>
+          <input
+            type="tel"
+            required
+            maxLength={20}
+            placeholder="010-1234-5678"
+            value={phone}
+            onChange={(event) => setPhone(event.target.value)}
+          />
+        </label>
+        <label className="consult-field full">
+          <span>의뢰 내용</span>
+          <textarea
+            required
+            maxLength={2000}
+            placeholder="필요한 업무, 일정, 예산 범위를 적어주세요"
+            value={requestDetail}
+            onChange={(event) => setRequestDetail(event.target.value)}
+          />
+        </label>
+      </div>
       <div style={{ position: "absolute", left: "-9999px", width: 1, height: 1, overflow: "hidden" }} aria-hidden="true">
         <label htmlFor="lp-outsourcing-website">웹사이트</label>
         <input
@@ -76,7 +137,7 @@ function ReserveForm() {
         />
       </div>
       <button type="submit" className="go" disabled={isSubmitting}>
-        {isSubmitting ? "접수 중..." : "사전예약 신청하기"}
+        {isSubmitting ? "접수 중..." : "상담 신청하기"}
       </button>
       {error && (
         <p role="alert" style={{ width: "100%", margin: 0, fontSize: 13, color: "#FFD9D9" }}>
@@ -100,7 +161,7 @@ function LpOutsourcingPage() {
               <a href="#how">이용 방법</a>
               <a href="#price">가격</a>
               <a href="#faq">자주 묻는 질문</a>
-              <a className="btn" href="#reserve">사전예약 신청</a>
+              <a className="btn" href="#reserve">상담 신청</a>
             </div>
             <div className="burger">
               <span></span>
@@ -109,27 +170,22 @@ function LpOutsourcingPage() {
             </div>
           </div>
           <div className="heroin">
-            <span className="pill">사전예약 오픈</span>
+            <span className="pill">업무 의뢰 상담</span>
             <h1>
-              외주 비용, 이제
+              필요한 업무,
               <br />
-              <span style={{ color: "#435BDA" }}>10분의 1로</span>
+              <span style={{ color: "#435BDA" }}>먼저 상담하세요</span>
             </h1>
             <p className="lead">
-              간단한 업무를 올리면 검증된 학생들이 결과물을 만들어 드려요.
+              업무 내용과 일정, 예산 범위를 남겨주세요.
               <br />
-              디자인{" "}시안, 자료{" "}
-              조사, 콘텐츠{" "}초안 — 부담 없는 가격으로.
+              적합한 진행 방식과 다음 단계를 함께 정리해드립니다.
             </p>
             <div className="ctas">
               <a className="btn btn-lg" href="#reserve">
-                사전예약 신청하기 →
-              </a>
-              <a className="btn btn-lg btn-ghost" href="#reserve">
-                기업 소개서 받기
+                상담 신청하기 →
               </a>
             </div>
-            <span className="note">지금 신청하면 정식 오픈 시 첫 의뢰 무료</span>
           </div>
         </div>
       </div>
@@ -319,12 +375,12 @@ function LpOutsourcingPage() {
         <div className="wrap">
           <div className="cta">
             <b style={{ fontSize: "clamp(22px,3.4vw,30px)", letterSpacing: "-.6px" }}>
-              정식 오픈 알림을 받아보세요
+              업무 의뢰 상담을 신청하세요
             </b>
             <span style={{ fontSize: 15, color: "#D9E0FA", lineHeight: 1.6 }}>
-              사전예약 기업에는 첫 의뢰 1건을 무료로 제공해요
+              의뢰 내용을 남기면 확인 후 안내드립니다.
             </span>
-            <ReserveForm />
+            <ConsultationForm />
           </div>
         </div>
       </section>

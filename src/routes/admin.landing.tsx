@@ -15,7 +15,7 @@ import {
 
 export const Route = createFileRoute("/admin/landing")({
   head: () => ({
-    meta: [{ title: "Beginner Admin - 수요조사 랜딩" }],
+    meta: [{ title: "Beginner Admin - 랜딩 신청 관리" }],
   }),
   component: AdminLanding,
 });
@@ -123,9 +123,9 @@ function AdminLanding() {
       <div className="flex flex-col gap-4 border-b border-neutral-200 pb-6 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-xs font-medium text-neutral-500">Beginner Admin</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">수요조사 랜딩</h1>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight">랜딩 신청 관리</h1>
           <p className="mt-2 text-sm text-neutral-500">
-            /lp/outsourcing 사전예약 리드와 /lp/trial 체험 주문을 확인합니다.
+            /lp/outsourcing 업무 의뢰 상담과 /lp/trial 체험 주문을 확인합니다.
           </p>
         </div>
         <button
@@ -141,7 +141,7 @@ function AdminLanding() {
 
       <div className="mt-6 flex gap-6 border-b border-neutral-200">
         <TabButton active={tab === "leads"} onClick={() => setTab("leads")}>
-          사전예약 리드 <TabCount>{leads.length}</TabCount>
+          상담 신청 <TabCount>{leads.length}</TabCount>
         </TabButton>
         <TabButton active={tab === "orders"} onClick={() => setTab("orders")}>
           체험 주문 <TabCount>{orders.length}</TabCount>
@@ -168,12 +168,28 @@ function AdminLanding() {
         ) : (
           <div className="mt-6 space-y-3">
             {leads.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center justify-between rounded-md border border-neutral-200 p-4"
-              >
-                <p className="text-sm font-semibold text-neutral-900">{item.email}</p>
-                <span className="text-xs text-neutral-400">{item.createdAt}</span>
+              <div key={item.id} className="rounded-md border border-neutral-200 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-neutral-900">
+                      {item.companyName || "업무 의뢰 상담"}
+                    </p>
+                    <p className="mt-1 text-sm text-neutral-500">
+                      {[item.contactName, item.email].filter(Boolean).join(" · ") || "연락처 없음"}
+                    </p>
+                  </div>
+                  <span className="text-xs text-neutral-400">{item.createdAt}</span>
+                </div>
+                {(item.phone || item.requestDetail) && (
+                  <div className="mt-3 border-t border-neutral-100 pt-3">
+                    {item.phone && <p className="text-sm text-neutral-600">{item.phone}</p>}
+                    {item.requestDetail && (
+                      <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-neutral-700">
+                        {item.requestDetail}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             ))}
           </div>
