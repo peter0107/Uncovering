@@ -175,9 +175,9 @@ function LpOutsourcingPage() {
           <div className="heroin">
             <span className="pill">업무 의뢰 상담</span>
             <h1>
-              필요한 업무,
+              귀찮은 업무,
               <br />
-              <span style={{ color: "#435BDA" }}>먼저 상담하세요</span>
+              <span style={{ color: "#435BDA" }}>지금 맡겨보세요</span>
             </h1>
             <p className="lead">
               업무 내용과 일정, 예산 범위를 남겨주세요.
