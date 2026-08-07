@@ -674,7 +674,7 @@ function AdminSimulationGenerator() {
               disabled={isSaving}
               className="inline-flex h-9 items-center gap-2 rounded-md bg-neutral-900 px-4 text-sm font-medium text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isSaving ? "저장 중..." : "비공개로 저장"}
+              {isSaving ? "저장 중..." : trialOrderId ? "확인" : "비공개로 저장"}
             </button>
             <button
               type="button"

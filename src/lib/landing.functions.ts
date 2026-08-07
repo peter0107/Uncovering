@@ -688,6 +688,22 @@ export const issueTrialAccessCode = createServerFn({ method: "POST" })
     if (order.status !== "paid") throw new Error("결제 완료된 주문에만 코드를 발급할 수 있습니다.");
     if (!order.simulation_id) throw new Error("먼저 과제를 배정해주세요.");
 
+    // 클라이언트 게이트를 우회해도 서버가 다시 막는다 — 최근 검수의 판정만 본다.
+    const { data: latestReview, error: reviewError } = await supabaseAdmin
+      .from("expert_simulation_share_feedback")
+      .select("verdict")
+      .eq("simulation_id", order.simulation_id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (reviewError) {
+      console.error("Failed to load latest review verdict for code issue:", reviewError);
+      throw new Error("검수 상태를 확인하지 못했습니다.");
+    }
+    if (latestReview?.verdict !== "approved") {
+      throw new Error("현직자 검수 승인 후 코드를 발급할 수 있습니다.");
+    }
+
     // unique 인덱스 충돌은 사실상 없지만, 부딪히면 다시 뽑는다.
     for (let attempt = 0; attempt < 5; attempt += 1) {
       const accessCode = generateAccessCode();
@@ -765,4 +781,58 @@ export const getTrialOrderDetail = createServerFn({ method: "GET" })
         ? formatDateTime(order.answer_submitted_at)
         : "",
     };
+  });
+
+const updateTrialOrderSchema = z.object({
+  orderId: z.string().uuid(),
+  jobRole: z.string().trim().min(1).max(100),
+  companyType: z.string().trim().min(1).max(100),
+  email: z.string().trim().email().max(200),
+  phone: z.string().trim().min(9).max(20).regex(/^[\d\-+() ]+$/),
+  plan: trialPlanSchema,
+  status: z.enum(["pending", "paid", "failed", "canceled", "refunded"]),
+});
+
+/** 관리자가 구매자 정보·결제 상태를 직접 정리한다 (테스트 주문·오타 수정용). */
+export const updateTrialOrder = createServerFn({ method: "POST" })
+  .inputValidator(updateTrialOrderSchema)
+  .handler(async ({ data }) => {
+    await assertAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("landing_trial_orders")
+      .update({
+        job_role: data.jobRole,
+        company_type: data.companyType,
+        email: data.email,
+        phone: data.phone,
+        plan: data.plan,
+        amount: TRIAL_PLAN_PRICES[data.plan],
+        status: data.status,
+      })
+      .eq("order_id", data.orderId);
+    if (error) {
+      console.error("Failed to update trial order:", error);
+      throw new Error("주문을 수정하지 못했습니다.");
+    }
+    return { ok: true as const };
+  });
+
+const deleteTrialOrderSchema = z.object({ orderId: z.string().uuid() });
+
+/** 주문 행만 삭제한다 — 배정된 시뮬레이션·검수 의견은 건드리지 않는다. */
+export const deleteTrialOrder = createServerFn({ method: "POST" })
+  .inputValidator(deleteTrialOrderSchema)
+  .handler(async ({ data }) => {
+    await assertAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("landing_trial_orders")
+      .delete()
+      .eq("order_id", data.orderId);
+    if (error) {
+      console.error("Failed to delete trial order:", error);
+      throw new Error("주문을 삭제하지 못했습니다.");
+    }
+    return { ok: true as const };
   });

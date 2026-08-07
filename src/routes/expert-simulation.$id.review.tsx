@@ -11,7 +11,9 @@ import {
 } from "@/lib/expert-simulations.functions";
 
 export const Route = createFileRoute("/expert-simulation/$id/review")({
-  validateSearch: z.object({ token: z.string().uuid() }),
+  // reviewer는 관리자가 현직자에게 링크를 만들어줄 때 붙이는 선택값 — 이름 입력칸을
+  // 미리 채워주는 용도일 뿐, 인증 경계는 여전히 token+시뮬레이션 하나뿐이다.
+  validateSearch: z.object({ token: z.string().uuid(), reviewer: z.string().optional() }),
   head: () => ({ meta: [{ title: "현직자 시뮬레이션 검토 — Beginner" }] }),
   component: ExpertSimulationReviewPage,
 });
@@ -30,9 +32,9 @@ function ContentBlock({ label, value }: { label: string; value: string }) {
 
 function ExpertSimulationReviewPage() {
   const { id } = Route.useParams();
-  const { token } = Route.useSearch();
+  const { token, reviewer } = Route.useSearch();
   const [simulation, setSimulation] = useState<PublicExpertSimulationReview | null>(null);
-  const [reviewerName, setReviewerName] = useState("");
+  const [reviewerName, setReviewerName] = useState(reviewer ?? "");
   const [feedback, setFeedback] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);

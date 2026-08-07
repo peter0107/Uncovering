@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useRouterState } from "@tanstack/react-router";
+import { stripSensitiveSearchParams } from "@/lib/utils";
 
 declare global {
   interface Window {
@@ -53,7 +54,7 @@ export function GoogleAnalyticsTracker() {
 
     window.gtag("event", "page_view", {
       page_path: pathname,
-      page_location: window.location.origin + href,
+      page_location: stripSensitiveSearchParams(window.location.origin + href),
       send_to: measurementId,
     });
   }, [pathname, href]);

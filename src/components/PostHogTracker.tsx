@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { getPostHogClient } from "@/lib/posthog";
+import { stripSensitiveSearchParams } from "@/lib/utils";
 
 const EXCLUDED_POSTHOG_EMAILS = new Set(["standard1414@g.skku.edu"]);
 const PAGEVIEW_CAPTURED_KEY = "ph_pageview_captured";
@@ -62,7 +63,7 @@ export function PostHogTracker() {
 
       markPageviewCaptured();
       posthog.capture("$pageview", {
-        $current_url: window.location.href,
+        $current_url: stripSensitiveSearchParams(window.location.href),
         route: window.location.pathname,
       });
     });

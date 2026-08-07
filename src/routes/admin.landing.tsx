@@ -6,12 +6,15 @@ import { toast } from "sonner";
 import { BrandLogo } from "@/components/BrandLogo";
 import { useAuth } from "@/hooks/use-auth";
 import {
+  deleteTrialOrder,
   getAdminLandingData,
   getTrialOrderDetail,
   issueTrialAccessCode,
   markTrialOrderDelivered,
   refundTrialOrder,
   TRIAL_PLAN_LABELS,
+  TRIAL_PLAN_PRICES,
+  updateTrialOrder,
   type AdminLandingData,
   type TrialOrderDetail,
 } from "@/lib/landing.functions";
@@ -42,6 +45,17 @@ const VERDICT_LABELS: Record<string, string> = {
 
 type TrialOrder = AdminLandingData["orders"][number];
 
+const TRIAL_ORDER_STATUSES = ["pending", "paid", "failed", "canceled", "refunded"] as const;
+
+type TrialOrderEditPatch = {
+  jobRole: string;
+  companyType: string;
+  email: string;
+  phone: string;
+  plan: keyof typeof TRIAL_PLAN_PRICES;
+  status: (typeof TRIAL_ORDER_STATUSES)[number];
+};
+
 /**
  * 체험 주문의 진행 단계. 관리자가 다음에 뭘 눌러야 하는지 한 줄로 보여주기 위한 것.
  * 과제 배정 → 현직자 검수 → 코드 발급 → 발송(코드 활성화) → 결제자 제출
@@ -50,16 +64,19 @@ function trialStage(order: TrialOrder): { label: string; tone: "todo" | "wait" |
   if (order.status !== "paid") return { label: "결제 전", tone: "wait" };
   if (!order.simulationId) return { label: "과제 미생성", tone: "todo" };
   if (order.reviewVerdict === "revise") return { label: "수정 필요", tone: "todo" };
-  if (order.reviewVerdict !== "approved") return { label: "검수 대기", tone: "wait" };
+  if (order.reviewVerdict !== "approved") {
+    return { label: "과제 생성완료 · 현직자 검수 대기", tone: "wait" };
+  }
   if (!order.accessCode) return { label: "코드 미발급", tone: "todo" };
   if (!order.deliveredAt) return { label: "발송 대기", tone: "todo" };
   if (!order.answerSubmittedAt) return { label: "발송 완료 · 미제출", tone: "done" };
   return { label: "제출 완료", tone: "done" };
 }
 
-function reviewLinkFor(order: TrialOrder): string {
+function reviewLinkFor(order: TrialOrder, reviewerName?: string): string {
   if (!order.simulationId || !order.reviewToken) return "";
-  return `${window.location.origin}/expert-simulation/${order.simulationId}/review?token=${order.reviewToken}`;
+  const base = `${window.location.origin}/expert-simulation/${order.simulationId}/review?token=${order.reviewToken}`;
+  return reviewerName ? `${base}&reviewer=${encodeURIComponent(reviewerName)}` : base;
 }
 
 function trialTaskLinkFor(order: TrialOrder): string {
@@ -87,6 +104,7 @@ function AdminLanding() {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [detail, setDetail] = useState<TrialOrderDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
   const loadedUserIdRef = useRef<string | null>(null);
   const userId = user?.id ?? null;
 
@@ -184,6 +202,7 @@ function AdminLanding() {
 
   const toggleDetail = useCallback(
     async (orderId: string) => {
+      setEditingOrderId(null);
       if (expandedOrderId === orderId) {
         setExpandedOrderId(null);
         setDetail(null);
@@ -204,6 +223,67 @@ function AdminLanding() {
     [expandedOrderId],
   );
 
+  const toggleEdit = useCallback(
+    (orderId: string) => {
+      setExpandedOrderId(null);
+      setEditingOrderId((current) => (current === orderId ? null : orderId));
+    },
+    [],
+  );
+
+  const saveOrderEdit = useCallback(
+    async (order: TrialOrder, patch: TrialOrderEditPatch) => {
+      if (busyOrderId) return;
+      setBusyOrderId(order.orderId);
+      try {
+        await updateTrialOrder({ data: { orderId: order.orderId, ...patch } });
+        toast.success("주문을 수정했습니다.");
+        setEditingOrderId(null);
+        await load();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "주문 수정에 실패했습니다.");
+      } finally {
+        setBusyOrderId(null);
+      }
+    },
+    [busyOrderId, load],
+  );
+
+  const deleteOrder = useCallback(
+    async (orderId: string) => {
+      if (busyOrderId) return;
+      if (!window.confirm("이 주문을 삭제할까요? 되돌릴 수 없습니다.")) return;
+      setBusyOrderId(orderId);
+      try {
+        await deleteTrialOrder({ data: { orderId } });
+        toast.success("주문을 삭제했습니다.");
+        await load();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "주문 삭제에 실패했습니다.");
+      } finally {
+        setBusyOrderId(null);
+      }
+    },
+    [busyOrderId, load],
+  );
+
+  const makeReviewerLink = useCallback(
+    (order: TrialOrder) => {
+      const name = window.prompt("현직자 이름을 입력해주세요 (링크에 포함됩니다).");
+      if (name === null) return;
+      const trimmed = name.trim();
+      if (!trimmed) {
+        toast.error("이름을 입력해주세요.");
+        return;
+      }
+      void copyText(
+        reviewLinkFor(order, trimmed),
+        `${trimmed}님용 검수 링크를 복사했습니다.`,
+      );
+    },
+    [copyText],
+  );
+
   const leads = data.leads;
   const orders = data.orders;
 
@@ -212,9 +292,9 @@ function AdminLanding() {
       <div className="flex flex-col gap-4 border-b border-neutral-200 pb-6 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-xs font-medium text-neutral-500">Beginner Admin</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">랜딩 신청 관리</h1>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight">랜딩페이지 관리</h1>
           <p className="mt-2 text-sm text-neutral-500">
-            /lp/outsourcing 업무 의뢰 상담과 /lp/trial 체험 주문을 확인합니다.
+            B2B(/lp/outsourcing 업무 의뢰 상담)와 B2C(/lp/trial 체험 주문)를 구분해 확인합니다.
           </p>
         </div>
         <button
@@ -230,10 +310,10 @@ function AdminLanding() {
 
       <div className="mt-6 flex gap-6 border-b border-neutral-200">
         <TabButton active={tab === "leads"} onClick={() => setTab("leads")}>
-          상담 신청 <TabCount>{leads.length}</TabCount>
+          <CategoryTag kind="b2b" /> 업무 의뢰 상담 <TabCount>{leads.length}</TabCount>
         </TabButton>
         <TabButton active={tab === "orders"} onClick={() => setTab("orders")}>
-          체험 주문 <TabCount>{orders.length}</TabCount>
+          <CategoryTag kind="b2c" /> 체험 주문 <TabCount>{orders.length}</TabCount>
         </TabButton>
       </div>
 
@@ -377,18 +457,31 @@ function AdminLanding() {
                           </ActionButton>
                         )}
                         {order.reviewToken && (
+                          <a
+                            href={reviewLinkFor(order)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex h-8 items-center justify-center rounded-md border border-neutral-300 px-2.5 text-xs font-medium hover:bg-neutral-50"
+                          >
+                            검수 페이지 열기
+                          </a>
+                        )}
+                        {order.reviewToken && (
                           <ActionButton
                             disabled={busyOrderId !== null}
-                            onClick={() =>
-                              void copyText(reviewLinkFor(order), "검수 링크를 복사했습니다.")
-                            }
+                            onClick={() => makeReviewerLink(order)}
                           >
-                            검수 링크 복사
+                            현직자 링크 만들기
                           </ActionButton>
                         )}
                         {order.status === "paid" && order.simulationId && (
                           <ActionButton
-                            disabled={busyOrderId !== null}
+                            disabled={busyOrderId !== null || order.reviewVerdict !== "approved"}
+                            title={
+                              order.reviewVerdict === "approved"
+                                ? undefined
+                                : "먼저 현직자 검수 승인을 받아주세요."
+                            }
                             onClick={() => void issueCode(order)}
                           >
                             {order.accessCode ? "코드 재발급" : "코드 발급"}
@@ -440,9 +533,35 @@ function AdminLanding() {
                             환불
                           </button>
                         )}
+                        <ActionButton
+                          disabled={busyOrderId !== null}
+                          onClick={() => toggleEdit(order.orderId)}
+                        >
+                          {editingOrderId === order.orderId ? "편집 닫기" : "편집"}
+                        </ActionButton>
+                        <button
+                          type="button"
+                          onClick={() => void deleteOrder(order.orderId)}
+                          disabled={busyOrderId !== null}
+                          className="inline-flex h-8 items-center justify-center rounded-md border border-red-300 px-2.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          삭제
+                        </button>
                       </div>
                     </td>
                   </tr>
+                  {editingOrderId === order.orderId && (
+                    <tr>
+                      <td colSpan={7} className="bg-neutral-50 px-4 py-4">
+                        <OrderEditForm
+                          order={order}
+                          busy={busyOrderId !== null}
+                          onCancel={() => setEditingOrderId(null)}
+                          onSave={(patch) => void saveOrderEdit(order, patch)}
+                        />
+                      </td>
+                    </tr>
+                  )}
                   {expandedOrderId === order.orderId && (
                     <tr>
                       <td colSpan={7} className="bg-neutral-50 px-4 py-4">
@@ -542,16 +661,19 @@ function ActionButton({
   children,
   onClick,
   disabled,
+  title,
 }: {
   children: React.ReactNode;
   onClick: () => void;
   disabled?: boolean;
+  title?: string;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
+      title={title}
       className="inline-flex h-8 items-center justify-center rounded-md border border-neutral-300 px-2.5 text-xs font-medium hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
     >
       {children}
@@ -569,6 +691,126 @@ function StageBadge({ stage }: { stage: ReturnType<typeof trialStage> }) {
   return (
     <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${tone}`}>
       {stage.label}
+    </span>
+  );
+}
+
+function OrderEditForm({
+  order,
+  busy,
+  onSave,
+  onCancel,
+}: {
+  order: TrialOrder;
+  busy: boolean;
+  onSave: (patch: TrialOrderEditPatch) => void;
+  onCancel: () => void;
+}) {
+  const [jobRole, setJobRole] = useState(order.jobRole);
+  const [companyType, setCompanyType] = useState(order.companyType);
+  const [email, setEmail] = useState(order.email);
+  const [phone, setPhone] = useState(order.phone);
+  const [plan, setPlan] = useState<keyof typeof TRIAL_PLAN_PRICES>(order.plan);
+  const [status, setStatus] = useState<(typeof TRIAL_ORDER_STATUSES)[number]>(
+    (TRIAL_ORDER_STATUSES as readonly string[]).includes(order.status)
+      ? (order.status as (typeof TRIAL_ORDER_STATUSES)[number])
+      : "pending",
+  );
+
+  const inputClass =
+    "h-9 w-full rounded-md border border-neutral-300 bg-white px-2.5 text-sm outline-none focus:border-neutral-900";
+
+  return (
+    <form
+      className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSave({ jobRole, companyType, email, phone, plan, status });
+      }}
+    >
+      <label className="flex flex-col gap-1 text-xs font-medium text-neutral-600">
+        직무
+        <input className={inputClass} value={jobRole} onChange={(e) => setJobRole(e.target.value)} />
+      </label>
+      <label className="flex flex-col gap-1 text-xs font-medium text-neutral-600">
+        기업유형
+        <input
+          className={inputClass}
+          value={companyType}
+          onChange={(e) => setCompanyType(e.target.value)}
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-xs font-medium text-neutral-600">
+        이메일
+        <input
+          className={inputClass}
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-xs font-medium text-neutral-600">
+        전화
+        <input className={inputClass} value={phone} onChange={(e) => setPhone(e.target.value)} />
+      </label>
+      <label className="flex flex-col gap-1 text-xs font-medium text-neutral-600">
+        플랜
+        <select
+          className={inputClass}
+          value={plan}
+          onChange={(e) => setPlan(e.target.value as keyof typeof TRIAL_PLAN_PRICES)}
+        >
+          {Object.entries(TRIAL_PLAN_LABELS).map(([key, label]) => (
+            <option key={key} value={key}>
+              {label.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="flex flex-col gap-1 text-xs font-medium text-neutral-600">
+        결제 상태
+        <select
+          className={inputClass}
+          value={status}
+          onChange={(e) => setStatus(e.target.value as (typeof TRIAL_ORDER_STATUSES)[number])}
+        >
+          {TRIAL_ORDER_STATUSES.map((value) => (
+            <option key={value} value={value}>
+              {STATUS_LABELS[value] ?? value}
+            </option>
+          ))}
+        </select>
+      </label>
+      <div className="flex items-end gap-2 sm:col-span-2 lg:col-span-3">
+        <button
+          type="submit"
+          disabled={busy}
+          className="inline-flex h-9 items-center justify-center rounded-md bg-neutral-900 px-4 text-sm font-medium text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          저장
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={busy}
+          className="inline-flex h-9 items-center justify-center rounded-md border border-neutral-300 px-4 text-sm font-medium hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          취소
+        </button>
+      </div>
+    </form>
+  );
+}
+
+/** 랜딩페이지 청중 구분. B2B=기업 담당자(/lp/outsourcing), B2C=개인(/lp/trial). */
+function CategoryTag({ kind }: { kind: "b2b" | "b2c" }) {
+  return (
+    <span
+      className={`rounded px-1.5 py-0.5 text-[10px] font-semibold tracking-wide ${
+        kind === "b2b" ? "bg-neutral-900 text-white" : "bg-neutral-200 text-neutral-700"
+      }`}
+    >
+      {kind.toUpperCase()}
     </span>
   );
 }
