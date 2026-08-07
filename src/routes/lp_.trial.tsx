@@ -42,7 +42,7 @@ function formatPrice(amount: number): string {
 }
 
 function ApplyForm() {
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [jobRole, setJobRole] = useState(JOB_ROLES[0]);
   const [customJobRole, setCustomJobRole] = useState("");
   const [companyType, setCompanyType] = useState(COMPANY_TYPES[0]);
@@ -78,8 +78,8 @@ function ApplyForm() {
     if (!selections) {
       return;
     }
-    if (step === 1) {
-      setStep(2);
+    if (step < 3) {
+      setStep((currentStep) => (currentStep + 1) as 2 | 3);
       return;
     }
     if (!agreedToTerms) {
@@ -113,8 +113,16 @@ function ApplyForm() {
   return (
     <form className="apply" onSubmit={handleSubmit}>
       <div className="apply-head">
-        <span className="apply-step">Step {step} / 2</span>
-        <h3>{step === 1 ? "직무와 기업을 선택해주세요" : "이메일 주소를 입력해주세요"}</h3>
+        <span className="apply-step" aria-live="polite">
+          Step {step} / 3
+        </span>
+        <h3>
+          {step === 1
+            ? "직무와 기업을 선택해주세요"
+            : step === 2
+              ? "이메일 주소를 입력해주세요"
+              : "결제 정보를 확인해주세요"}
+        </h3>
       </div>
 
       {step === 1 ? (
@@ -167,7 +175,7 @@ function ApplyForm() {
             )}
           </div>
         </>
-      ) : (
+      ) : step === 2 ? (
         <>
           <div className="selection-summary">
             <span>
@@ -176,38 +184,6 @@ function ApplyForm() {
             <span>
               기업 <b>{companyType === OTHER_COMPANY_TYPE ? customCompanyType : companyType}</b>
             </span>
-          </div>
-
-          <div className="fgroup">
-            <span className="flabel">결제 옵션</span>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {PLAN_ORDER.map((key) => {
-                const label = TRIAL_PLAN_LABELS[key];
-                const isOn = plan === key;
-                return (
-                  <div
-                    key={key}
-                    className={isOn ? "opt on" : "opt"}
-                    onClick={() => setPlan(key)}
-                    role="radio"
-                    aria-checked={isOn}
-                    tabIndex={0}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault();
-                        setPlan(key);
-                      }
-                    }}
-                  >
-                    <div>
-                      <b>{label.name}</b>
-                      <span className="sub">{label.sub}</span>
-                    </div>
-                    <span className="price">{formatPrice(TRIAL_PLAN_PRICES[key])}</span>
-                  </div>
-                );
-              })}
-            </div>
           </div>
 
           <div className="fgroup">
@@ -238,6 +214,49 @@ function ApplyForm() {
             />
           </div>
         </>
+      ) : (
+        <>
+          <div className="selection-summary">
+            <span>
+              직무 <b>{jobRole === OTHER_JOB_ROLE ? customJobRole : jobRole}</b>
+            </span>
+            <span>
+              기업 <b>{companyType === OTHER_COMPANY_TYPE ? customCompanyType : companyType}</b>
+            </span>
+            <span>
+              이메일 <b>{email}</b>
+            </span>
+            <span>
+              연락처 <b>{phone}</b>
+            </span>
+          </div>
+
+          <div className="fgroup">
+            <span className="flabel">결제 옵션</span>
+            <div className="option-list" role="radiogroup" aria-label="결제 옵션">
+              {PLAN_ORDER.map((key) => {
+                const label = TRIAL_PLAN_LABELS[key];
+                const isOn = plan === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    className={isOn ? "opt on" : "opt"}
+                    onClick={() => setPlan(key)}
+                    role="radio"
+                    aria-checked={isOn}
+                  >
+                    <span>
+                      <b>{label.name}</b>
+                      <span className="sub">{label.sub}</span>
+                    </span>
+                    <span className="price">{formatPrice(TRIAL_PLAN_PRICES[key])}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </>
       )}
 
       <div style={{ position: "absolute", left: "-9999px", width: 1, height: 1, overflow: "hidden" }} aria-hidden="true">
@@ -252,7 +271,7 @@ function ApplyForm() {
         />
       </div>
 
-      {step === 2 && (
+      {step === 3 && (
         <label className="agree">
           <input
             type="checkbox"
@@ -279,23 +298,23 @@ function ApplyForm() {
       )}
 
       <div className="apply-actions">
-        {step === 2 && (
+        {step > 1 && (
           <button
             type="button"
             className="back"
             onClick={() => {
               setError("");
-              setStep(1);
+              setStep((currentStep) => (currentStep - 1) as 1 | 2);
             }}
           >
             이전
           </button>
         )}
         <button type="submit" className="submit" disabled={isSubmitting}>
-          {step === 1 ? "다음" : isSubmitting ? "결제창으로 이동 중..." : "결제창으로 이동하기"}
+          {step < 3 ? "다음" : isSubmitting ? "결제창으로 이동 중..." : "결제창으로 이동하기"}
         </button>
       </div>
-      {step === 2 && (
+      {step === 3 && (
         <span style={{ textAlign: "center", fontSize: 12.5, color: "#9CA3AF" }}>
           24시간 내 미제공 시 전액 환불
         </span>
