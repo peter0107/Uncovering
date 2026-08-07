@@ -193,18 +193,6 @@ function ApplyForm() {
             />
           </div>
 
-          <div className="fgroup">
-            <span className="flabel">휴대폰번호</span>
-            <input
-              type="tel"
-              required
-              maxLength={20}
-              className="textinput"
-              placeholder="010-1234-5678"
-              value={phone}
-              onChange={(event) => setPhone(event.target.value)}
-            />
-          </div>
         </>
       ) : (
         <>
@@ -218,9 +206,6 @@ function ApplyForm() {
             <span>
               이메일 <b>{email}</b>
             </span>
-            <span>
-              연락처 <b>{phone}</b>
-            </span>
           </div>
 
           <div className="fgroup">
@@ -232,6 +217,22 @@ function ApplyForm() {
               </span>
               <span className="price">9,900원</span>
             </div>
+          </div>
+
+          <div className="fgroup">
+            <span className="flabel">
+              휴대폰 번호 <span style={{ color: "#435BDA" }}>*</span>
+            </span>
+            <input
+              type="tel"
+              inputMode="numeric"
+              required
+              maxLength={13}
+              className="textinput"
+              placeholder="010-1234-5678"
+              value={phone}
+              onChange={(event) => setPhone(event.target.value.replace(/[^\d-]/g, "").slice(0, 13))}
+            />
           </div>
         </>
       )}
