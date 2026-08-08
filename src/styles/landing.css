@@ -111,7 +111,11 @@
 .lp-trial a { color: #435BDA; text-decoration: none; }
 .lp-trial a:hover { color: #1B2440; }
 .lp-trial .wrap { max-width: 1160px; margin: 0 auto; padding: 0 24px; }
-.lp-trial .hero { background: #fff; border-bottom: 1px solid #E7EAF0; position: relative; }
+.lp-trial .hero {
+  background: linear-gradient(180deg, #EEF3FE 0%, #F7F9FE 56%, #FFF 100%);
+  border-bottom: 1px solid #E7EAF0;
+  position: relative;
+}
 .lp-trial .nav { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; position: relative; }
 .lp-trial .brand { display: flex; align-items: center; gap: 10px; }
 .lp-trial .navlinks { display: flex; gap: 22px; align-items: center; font-size: 15px; color: #4B5563; }
