@@ -181,6 +181,7 @@ function SimulationDetailPage() {
   const [exitSurveyOtherText, setExitSurveyOtherText] = useState("");
   const [exitSurveySubmitting, setExitSurveySubmitting] = useState(false);
   const [submittedAt, setSubmittedAt] = useState<Date | null>(null);
+  const [submittedSubmissionId, setSubmittedSubmissionId] = useState<string | null>(null);
   const [startedAt] = useState(() => new Date());
   const startCapturedRef = useRef<string | null>(null);
 
@@ -556,6 +557,7 @@ function SimulationDetailPage() {
         // 무시
       }
     }
+    setSubmittedSubmissionId(submission.id);
     setSubmittedAt(now);
     void capturePostHogEvent("simulation_complete", { simulation_id: String(sim.id) });
   };
@@ -586,10 +588,31 @@ function SimulationDetailPage() {
   }
 
   if (submittedAt) {
+    const resultLink =
+      sim.simulation_source === "expert"
+        ? {
+            to: "/expert-simulation/$id/feedback" as const,
+            params: { id: sim.id },
+            search: submittedSubmissionId ? { submission: submittedSubmissionId } : {},
+          }
+        : {
+            to: "/simulation/$id/feedback" as const,
+            params: { id: sim.id },
+            search: submittedSubmissionId ? { submission: submittedSubmissionId } : {},
+          };
+
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#EEF0F3] px-4 text-center">
         <CheckCircle2 className="h-12 w-12 text-zinc-900" />
         <h1 className="text-xl font-bold text-zinc-900">제출이 완료됐어요</h1>
+        <div className="mt-2 flex w-full max-w-sm gap-2">
+          <Button asChild className="h-10 flex-1 rounded-lg bg-zinc-900 text-sm hover:bg-zinc-800">
+            <Link {...resultLink}>결과 화면 보러가기</Link>
+          </Button>
+          <Button asChild variant="outline" className="h-10 flex-1 rounded-lg border-zinc-300 bg-white text-sm shadow-none hover:bg-zinc-100">
+            <Link to="/">홈화면으로 가기</Link>
+          </Button>
+        </div>
       </div>
     );
   }
