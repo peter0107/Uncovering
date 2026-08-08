@@ -996,8 +996,16 @@
   }
 
   .rich-text-content {
+    min-width: 0;
+    max-width: 100%;
     color: color-mix(in oklab, var(--color-foreground) 92%, transparent);
     line-height: 1.7;
+  }
+
+  .rich-text-content :is(img, video, canvas, svg) {
+    display: block;
+    max-width: 100%;
+    height: auto;
   }
 
   .rich-text-content > * + * {
@@ -1143,6 +1151,8 @@
     overflow-x: auto;
     overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior-inline: contain;
+    touch-action: pan-x pan-y;
   }
 
   .rich-text-content .rich-text-table-scroll.rich-text-table-resizable {
@@ -1257,12 +1267,32 @@
 
   .ProseMirror .tableWrapper {
     overflow-x: auto;
+    max-width: 100%;
+    overscroll-behavior-inline: contain;
+    touch-action: pan-x pan-y;
   }
 
   .ProseMirror table {
     table-layout: fixed;
     width: 100%;
     overflow: hidden;
+  }
+
+  @media (max-width: 40rem) {
+    .rich-text-content .rich-text-table-scroll table,
+    .ProseMirror .tableWrapper table {
+      width: max-content;
+      min-width: 100%;
+      max-width: none;
+      table-layout: auto;
+    }
+
+    .rich-text-content .rich-text-table-scroll :is(th, td),
+    .ProseMirror .tableWrapper :is(th, td) {
+      min-width: 7rem;
+      overflow-wrap: normal;
+      word-break: keep-all;
+    }
   }
 
   .ProseMirror td,

@@ -1444,7 +1444,7 @@ export const RichTextContent = memo(function RichTextContent({
         "[&_p:has(>img)+p]:!mt-2",
       ].join(" ")
     : "";
-  const contentClassName = `rich-text-content ${className} ${compactSpacing} [&_code]:rounded-sm [&_code]:bg-neutral-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-neutral-900 [&_pre]:px-3 [&_pre]:py-3 [&_pre]:font-mono [&_pre]:text-neutral-50 [&_pre_code]:!bg-transparent [&_pre_code]:!p-0 [&_pre_code]:!text-neutral-50 [&_table]:border-collapse [&_th]:border [&_th]:border-neutral-300 [&_th]:bg-neutral-50 [&_th]:px-2 [&_th]:py-1 [&_td]:border [&_td]:border-neutral-300 [&_td]:px-2 [&_td]:py-1`;
+  const contentClassName = `rich-text-content min-w-0 max-w-full ${className} ${compactSpacing} [&_code]:rounded-sm [&_code]:bg-neutral-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_pre]:overflow-x-auto [&_pre]:rounded-md [&_pre]:bg-neutral-900 [&_pre]:px-3 [&_pre]:py-3 [&_pre]:font-mono [&_pre]:text-neutral-50 [&_pre_code]:!bg-transparent [&_pre_code]:!p-0 [&_pre_code]:!text-neutral-50 [&_table]:border-collapse [&_th]:border [&_th]:border-neutral-300 [&_th]:bg-neutral-50 [&_th]:px-2 [&_th]:py-1 [&_td]:border [&_td]:border-neutral-300 [&_td]:px-2 [&_td]:py-1`;
 
   return (
     <>
@@ -1480,7 +1480,18 @@ export const RichTextContent = memo(function RichTextContent({
           onPointerUp={endTableResize}
           onPointerCancel={endTableResize}
         >
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{value}</ReactMarkdown>
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{
+              table: ({ node: _node, children, ...props }) => (
+                <div className="rich-text-table-scroll">
+                  <table {...props}>{children}</table>
+                </div>
+              ),
+            }}
+          >
+            {value}
+          </ReactMarkdown>
         </div>
       )}
 
