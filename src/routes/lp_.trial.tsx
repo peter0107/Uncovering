@@ -472,20 +472,20 @@ function LpTrialPage() {
           </div>
 
           <div className="heroin" id="apply">
-            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-              <span className="pill">신청 후 24시간 내 도착</span>
+            <div className="hero-copy">
+              <p className="arrival">신청 후 24시간 내 도착</p>
               <h1>
                 궁금한 직무,
                 <br />
-                <span style={{ color: "#435BDA" }}>내일 직접 해보세요</span>
+                내일 직접 해보세요
               </h1>
               <p className="lead">
                 원하는 직무와 기업 유형을 고르면, 그 분야 현직자가 만든 체험 과제가 24시간 안에 도착해요. 늦으면
                 전액 환불합니다.
               </p>
               <div className="guars">
-                <span className="guar">✓ 24시간 내 미제공 시 전액 환불</span>
-                <span className="guar">✓ 불만족 시 3일 내 환불</span>
+                <span>24시간 내 미제공 시 전액 환불</span>
+                <span>불만족 시 3일 내 환불</span>
               </div>
             </div>
 
