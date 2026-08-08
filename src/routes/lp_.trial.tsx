@@ -309,22 +309,39 @@ function ApplyForm() {
   );
 }
 
+// 실제 현직자 시뮬레이션 "온라인 쇼핑몰 구매 이탈 원인 분석 및 구매 흐름 개선"
+// (job_simulations.id = 9ab768b1-…, 작성자 김*현)의 상황·단계·모범답안을 그대로 옮긴 미리보기.
+// 모범답안은 유료 콘텐츠라 1단계 일부만 노출하고 나머지는 잠금 처리한다.
+const PREVIEW_AUTOPLAY_MS = 2600;
+
+const PREVIEW_STEPS = [
+  { no: 1, title: "핵심 문제 분석", min: 7 },
+  { no: 2, title: "개선된 구매 흐름 설계", min: 8 },
+  { no: 3, title: "핵심 화면 개선안 제작", min: 12 },
+];
+
 const PREVIEW_SLIDES = [
   {
     label: "시뮬레이션 예시 보기",
     content: (
       <>
-        <div className="kv">
-          <span>직무</span>
-          <b>CRM 마케터</b>
+        <div className="pv-head">
+          <b className="pv-title">온라인 쇼핑몰 구매 이탈 원인 분석 및 구매 흐름 개선</b>
+          <span className="pv-tag">UI/UX 디자인 · 약 30분</span>
         </div>
-        <p style={{ margin: 0, fontSize: 13, color: "#4B5563", lineHeight: 1.65 }}>
-          "최근 3개월간 신규 가입자의 리텐션이 계속 떨어지고 있어요. 원인을 데이터로 분석하고,
-          재방문율을 높일 캠페인을 설계해주세요."
+        <p className="pv-quote">
+          "상품 조회와 장바구니 담기는 꾸준히 늘고 있는데, 결제 완료율은 오히려 낮아지고 있습니다.
+          어디서, 왜 이탈이 발생하는지 직접 분석해 개선안을 제안해주세요."
         </p>
-        <span className="bar" style={{ width: "92%" }}></span>
-        <span className="bar" style={{ width: "78%" }}></span>
-        <span className="bar" style={{ width: "55%" }}></span>
+        <div className="pv-steps">
+          {PREVIEW_STEPS.map((step) => (
+            <div className="pv-step" key={step.no}>
+              <span className="pv-stepno">{step.no}</span>
+              <b>{step.title}</b>
+              <span className="pv-stepmin">{step.min}분</span>
+            </div>
+          ))}
+        </div>
       </>
     ),
   },
@@ -332,25 +349,21 @@ const PREVIEW_SLIDES = [
     label: "모범 답안 예시 보기",
     content: (
       <>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <b style={{ fontSize: 12.5 }}>현직자 답안</b>
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 800,
-              color: "#435BDA",
-              background: "#E9EEFC",
-              borderRadius: 6,
-              padding: "4px 9px",
-            }}
-          >
-            모범 답안
-          </span>
+        <div className="pv-head">
+          <b className="pv-title">1단계 · 핵심 문제 분석</b>
+          <span className="pv-tag pv-tag-blue">모범 답안</span>
         </div>
-        <span className="bar" style={{ width: "96%" }}></span>
-        <span className="bar" style={{ width: "84%" }}></span>
-        <span className="bar" style={{ width: "90%" }}></span>
-        <span className="bar" style={{ width: "62%" }}></span>
+        <p className="pv-body">
+          가장 큰 문제는 장바구니에서 주문서로 넘어가는 구간이다. 장바구니에 들어온{" "}
+          <b>3,900명 중 주문서로 이동한 사용자는 1,700명</b>뿐이다. 장바구니에서는 쿠폰 할인,
+          배송비, 최종 결제 금액을 정확히 확인하기 어렵다.
+        </p>
+        <div className="pv-callout">
+          <span className="pv-calloutlbl">핵심 문제</span>
+          사용자가 장바구니에서 실제 결제 금액을 미리 알기 어려워, 구매를 계속해도 되는지 확신하지
+          못하고 이탈하고 있다.
+        </div>
+        <div className="pv-lock">🔒 2·3단계 모범답안은 과제를 제출하면 전체 공개돼요</div>
       </>
     ),
   },
@@ -358,14 +371,17 @@ const PREVIEW_SLIDES = [
     label: "현직자 코멘트",
     content: (
       <>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <b style={{ fontSize: 12.5 }}>현직자 코멘트</b>
-          <span style={{ fontSize: 11, color: "#0F9D58", fontWeight: 700 }}>5년차 CRM 마케터</span>
+        <div className="pv-head">
+          <b className="pv-title">김*현 · UI/UX 디자인</b>
+          <span className="pv-tag pv-tag-green">검수 완료</span>
         </div>
-        <p style={{ margin: 0, fontSize: 13.5, color: "#4B5563", lineHeight: 1.65 }}>
-          "실무에서 정말 자주 마주치는 상황이에요. 데이터 근거를 먼저 제시한 점이 좋았고, 캠페인 실행
-          계획까지 구체적으로 짜면 더 설득력 있을 것 같아요."
+        <div className="pv-meta">라이프스타일 커머스 · 스타트업 · 1~2년차</div>
+        <p className="pv-quote">
+          "실무에서는 '전환율이 떨어진다'는 말만 듣고 시작하는 경우가 많아요. 그래서 이 과제도 정답을
+          정해두지 않았어요. 데이터에서 이탈 구간을 직접 찾고, 왜 그 화면이라고 판단했는지 설명할 수
+          있는지를 봅니다."
         </p>
+        <div className="pv-lock">✓ 모든 과제는 해당 직무 현직자가 만들고 검수해요</div>
       </>
     ),
   },
@@ -377,7 +393,7 @@ function PreviewCarousel() {
   useEffect(() => {
     const timer = setInterval(() => {
       setIndex((i) => (i + 1) % PREVIEW_SLIDES.length);
-    }, 4000);
+    }, PREVIEW_AUTOPLAY_MS);
     return () => clearInterval(timer);
   }, []);
 
