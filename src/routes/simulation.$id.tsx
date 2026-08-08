@@ -1,19 +1,8 @@
 import { createFileRoute, Link, useNavigate, useBlocker } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
-import {
-  Building2,
-  CheckCircle2,
-  ChevronLeft,
-  Clock,
-  Info,
-  Send,
-  X,
-  MessageCircle,
-  UserRound,
-} from "lucide-react";
+import { CheckCircle2, Clock, Info, Send, X, MessageCircle } from "lucide-react";
 import { RichTextContent, RichTextEditor } from "@/components/RichTextEditor";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,6 +15,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { SimulationShell, MaterialTabStrip, MaterialBody } from "@/components/SimulationShell";
 import { cn } from "@/lib/utils";
 import { capturePostHogEvent, consumeSimulationEntry } from "@/lib/posthog";
 import { submitSimulationExitSurvey } from "@/lib/simulation-exit-surveys.functions";
@@ -38,11 +29,14 @@ import {
   allAnswered,
   buildResponseJson,
   buildResponseText,
+  buildSidebarMaterialTabs,
   buildWizardModel,
   getPlainAnswerText,
+  getStepMaterialContext,
   stepAnswered,
+  wrapSingleAsModel,
+  type MaterialTab,
   type WizardModel,
-  type WizardStep,
 } from "@/lib/simulation-steps";
 import { getAdminSimulationPreview } from "@/lib/simulations.functions";
 
@@ -96,6 +90,44 @@ const EXIT_SURVEY_OPTIONS = [
 
 type ExitSurveyReason = (typeof EXIT_SURVEY_OPTIONS)[number]["value"];
 
+// 화면 배열 — 위저드 모델(steps)에서 파생. intro/submit은 model.steps 밖의 고정 화면.
+type Screen =
+  | { kind: "intro" }
+  | { kind: "situation"; stepIndex: number; markdown: string }
+  | { kind: "materials"; stepIndex: number; tabs: MaterialTab[] }
+  | { kind: "question"; stepIndex: number; promptIndex: number }
+  | { kind: "submit" };
+
+function buildScreens(model: WizardModel): Screen[] {
+  const screens: Screen[] = [{ kind: "intro" }];
+  let last: { situation?: string; materials?: string } = {};
+
+  model.steps.forEach((step, stepIndex) => {
+    const ctx = getStepMaterialContext(model, step);
+    if (ctx.situation && ctx.situation !== last.situation) {
+      screens.push({ kind: "situation", stepIndex, markdown: ctx.situation });
+    }
+    if (ctx.materials && ctx.materials !== last.materials) {
+      const tabs = buildSidebarMaterialTabs({ materials: ctx.materials });
+      if (tabs.length > 0) screens.push({ kind: "materials", stepIndex, tabs });
+    }
+    last = ctx;
+    step.prompts.forEach((_, promptIndex) => {
+      screens.push({ kind: "question", stepIndex, promptIndex });
+    });
+  });
+
+  screens.push({ kind: "submit" });
+  return screens;
+}
+
+/** 화면이 속한 상단 진행도(1-indexed). intro는 1단계, submit은 마지막 단계로 계산. */
+function screenProgressStep(screen: Screen, totalSteps: number): number {
+  if (screen.kind === "intro") return 1;
+  if (screen.kind === "submit") return totalSteps;
+  return screen.stepIndex + 1;
+}
+
 function AnswerEditor({
   id,
   value,
@@ -127,44 +159,6 @@ function AnswerEditor({
   );
 }
 
-/** 왼쪽 자료 섹션 (라벨 + 마크다운 카드) */
-function MaterialSection({ label, markdown }: { label: string; markdown: string }) {
-  return (
-    <div>
-      <p className="text-xs font-semibold text-zinc-500">{label}</p>
-      <Card className="mt-1 p-3">
-        <RichTextContent
-          value={markdown.trimStart()}
-          compact
-          className="prose prose-sm prose-zinc max-w-none prose-table:text-sm"
-        />
-      </Card>
-    </div>
-  );
-}
-
-function StepMeta({ step }: { step: WizardStep }) {
-  const hasMeta = step.durationMin != null || step.difficulty != null;
-  if (!hasMeta) return null;
-  return (
-    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-zinc-400">
-      {step.durationMin != null && (
-        <span className="inline-flex items-center gap-1">
-          <Clock className="h-3.5 w-3.5" />약 {step.durationMin}분
-        </span>
-      )}
-      {step.difficulty != null && (
-        <span className="text-zinc-700">
-          {"★".repeat(Math.max(0, Math.min(5, step.difficulty)))}
-          <span className="text-zinc-200">
-            {"★".repeat(Math.max(0, 5 - Math.min(5, step.difficulty)))}
-          </span>
-        </span>
-      )}
-    </div>
-  );
-}
-
 function SimulationDetailPage() {
   const { id } = Route.useParams();
   const { preview } = Route.useSearch();
@@ -175,9 +169,11 @@ function SimulationDetailPage() {
 
   const [sim, setSim] = useState<SimulationDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [responseText, setResponseText] = useState("");
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [stepIdx, setStepIdx] = useState(0);
+  const [screenIdx, setScreenIdx] = useState(0);
+  const [materialTabIdx, setMaterialTabIdx] = useState(0);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [hintOpen, setHintOpen] = useState(false);
   const [consent, setConsent] = useState<boolean | null>(null);
   const [difficultyRating, setDifficultyRating] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -189,6 +185,7 @@ function SimulationDetailPage() {
   const startCapturedRef = useRef<string | null>(null);
 
   // AI 어시스트 대화 (제출 시 함께 저장돼 기업 담당자 화면에도 노출됨)
+  // ponytail: 새 화면 셸에서는 버튼을 숨김 — 되살리려면 아래 {aiPanel}을 렌더에 추가
   type ChatMessage = { role: "user" | "assistant"; content: string; at: string };
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
@@ -216,7 +213,6 @@ function SimulationDetailPage() {
         { role: "assistant", content: reply, at: new Date().toISOString() },
       ]);
     } catch (error) {
-      // 실패 시 방금 추가한 질문을 되돌리고 입력값을 복원해 재시도할 수 있게 한다.
       setChatMessages((prev) => prev.filter((m) => m !== userMsg));
       setChatInput(text);
       toast.error(
@@ -232,14 +228,13 @@ function SimulationDetailPage() {
   // 시뮬레이션 진행 중(제출 전)일 때만 이탈을 차단
   const inProgress = Boolean(sim && !submittedAt && !isPreview);
 
-  // 인앱 라우터 이동 차단 + 브라우저 새로고침/닫기 경고
   const blocker = useBlocker({
     shouldBlockFn: () => inProgress,
     enableBeforeUnload: inProgress,
     withResolver: true,
   });
 
-  const model: WizardModel | null = useMemo(
+  const wizardModel: WizardModel | null = useMemo(
     () =>
       sim?.simulation_format === "selection"
         ? buildWizardModel(sim.task_prompt, sim.steps, {
@@ -257,6 +252,20 @@ function SimulationDetailPage() {
       sim?.shared_materials,
     ],
   );
+  // 저작 스텝이 없거나 형식이 깨진 경우(폴백 포함) 1단계짜리 모델로 감싸 같은 셸을 태운다.
+  const isSingle = !wizardModel;
+  const model: WizardModel | null = useMemo(
+    () =>
+      wizardModel ??
+      (sim
+        ? wrapSingleAsModel({
+            taskPrompt: sim.task_prompt,
+            singleAnswerQuestion: sim.single_answer_question,
+          })
+        : null),
+    [wizardModel, sim],
+  );
+  const screens = useMemo(() => (model ? buildScreens(model) : []), [model]);
   const draftKey = `sim-draft-${id}`;
 
   useEffect(() => {
@@ -397,7 +406,6 @@ function SimulationDetailPage() {
   }, [accessReady, id, isPreview, user, authLoading]);
 
   // simulation_start는 카드 클릭이 아니라 상세 화면 실제 진입 시점에 찍는다.
-  // 로그인·온보딩 리다이렉트를 거쳐 도착한 경우도 여기서 잡힌다 (entry = 출발지)
   useEffect(() => {
     if (isPreview || !accessReady || !sim || (AUTHENTICATION_ENABLED && !user)) return;
     if (startCapturedRef.current === sim.id) return;
@@ -412,61 +420,86 @@ function SimulationDetailPage() {
 
   // 위저드 임시저장 복원 (이탈 방지)
   useEffect(() => {
-    if (!model || typeof window === "undefined" || isPreview) return;
+    if (!model || screens.length === 0 || typeof window === "undefined" || isPreview) return;
     try {
       const raw = window.localStorage.getItem(draftKey);
       if (raw) {
-        const saved = JSON.parse(raw) as { answers?: Record<string, string>; stepIdx?: number };
+        const saved = JSON.parse(raw) as {
+          answers?: Record<string, string>;
+          screenIdx?: number;
+          stepIdx?: number;
+        };
         if (saved.answers) setAnswers(saved.answers);
-        if (typeof saved.stepIdx === "number") {
-          setStepIdx(Math.min(Math.max(saved.stepIdx, 0), model.steps.length - 1));
+        if (typeof saved.screenIdx === "number") {
+          setScreenIdx(Math.min(Math.max(saved.screenIdx, 0), screens.length - 1));
+        } else if (typeof saved.stepIdx === "number") {
+          const idx = screens.findIndex((s) => s.kind === "question" && s.stepIndex === saved.stepIdx);
+          if (idx >= 0) setScreenIdx(idx);
         }
       }
     } catch {
       // 무시
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [model, draftKey, isPreview]);
 
   // 위저드 임시저장
   useEffect(() => {
     if (!model || typeof window === "undefined" || submittedAt || isPreview) return;
     try {
-      window.localStorage.setItem(draftKey, JSON.stringify({ answers, stepIdx }));
+      window.localStorage.setItem(draftKey, JSON.stringify({ answers, screenIdx }));
     } catch {
       // 무시
     }
-  }, [answers, stepIdx, model, draftKey, submittedAt, isPreview]);
+  }, [answers, screenIdx, model, draftKey, submittedAt, isPreview]);
+
+  // 화면 전환 시 자료 탭/힌트/바텀시트 초기화
+  useEffect(() => {
+    setMaterialTabIdx(0);
+    setDrawerOpen(false);
+    setHintOpen(false);
+  }, [screenIdx]);
 
   const setAnswer = (qid: string, value: string) =>
     setAnswers((prev) => ({ ...prev, [qid]: value }));
 
+  const goNext = () => {
+    setScreenIdx((i) => Math.min(i + 1, screens.length - 1));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const goPrev = () => {
+    setScreenIdx((i) => Math.max(i - 1, 0));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const handleSubmit = async () => {
-    if (!sim) return;
+    if (!sim || !model) return;
     if (isPreview) {
       toast("미리보기에서는 답안을 제출할 수 없습니다.");
       return;
     }
 
     let response_text: string;
-    let response_json: ReturnType<typeof buildResponseJson> | null = null;
+    let response_json: ReturnType<typeof buildResponseJson>;
 
-    if (model) {
+    if (isSingle) {
+      const text = getPlainAnswerText(answers.response ?? "");
+      if (!text) {
+        toast.error("답안을 작성해주세요.");
+        return;
+      }
+      response_text = text;
+      response_json = {
+        format: "step_wizard_v1",
+        answers: [{ id: "response", label: "답안", answer: (answers.response ?? "").trim() }],
+      };
+    } else {
       if (!allAnswered(model, answers)) {
         toast.error("모든 항목에 답변을 작성해주세요.");
         return;
       }
       response_text = buildResponseText(model, answers);
       response_json = buildResponseJson(model, answers);
-    } else {
-      if (!getPlainAnswerText(responseText)) {
-        toast.error("답안을 작성해주세요.");
-        return;
-      }
-      response_text = getPlainAnswerText(responseText);
-      response_json = {
-        format: "step_wizard_v1",
-        answers: [{ id: "response", label: "답안", answer: responseText.trim() }],
-      };
     }
 
     if (difficultyRating === null) {
@@ -501,7 +534,7 @@ function SimulationDetailPage() {
         answer_transmission_consent: consent,
         difficulty_rating: difficultyRating,
         ai_chat_log: chatMessages,
-        ...(response_json ? { response_json } : {}),
+        response_json,
       })
       .select("id")
       .single();
@@ -529,22 +562,24 @@ function SimulationDetailPage() {
 
   if (authLoading || (AUTHENTICATION_ENABLED && !user && !isPreview) || loading) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-12">
-        <Skeleton className="h-8 w-2/3" />
-        <Skeleton className="mt-6 h-48 w-full" />
+      <div className="flex min-h-dvh items-center justify-center bg-[#EEF0F3] px-4">
+        <div className="w-full max-w-2xl">
+          <Skeleton className="h-8 w-2/3" />
+          <Skeleton className="mt-6 h-48 w-full" />
+        </div>
       </div>
     );
   }
 
-  if (!sim) {
+  if (!sim || !model) {
     return (
-      <div className="mx-auto max-w-md px-4 py-16 text-center">
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#EEF0F3] px-4 text-center">
         <p className="text-zinc-500">시뮬레이션을 찾을 수 없어요.</p>
         <Link
           to="/simulations"
-          className="mt-4 inline-flex items-center gap-1.5 text-sm text-zinc-500 transition-colors hover:text-zinc-900"
+          className="text-sm text-zinc-500 underline-offset-4 transition-colors hover:text-zinc-900 hover:underline"
         >
-          <ChevronLeft className="h-4 w-4" /> 추천 목록으로 돌아가기
+          추천 목록으로 돌아가기
         </Link>
       </div>
     );
@@ -552,9 +587,9 @@ function SimulationDetailPage() {
 
   if (submittedAt) {
     return (
-      <div className="mx-auto max-w-md px-4 py-20 text-center">
-        <CheckCircle2 className="mx-auto h-12 w-12 text-zinc-900" />
-        <h1 className="mt-4 text-xl font-bold text-zinc-900">제출이 완료됐어요</h1>
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#EEF0F3] px-4 text-center">
+        <CheckCircle2 className="h-12 w-12 text-zinc-900" />
+        <h1 className="text-xl font-bold text-zinc-900">제출이 완료됐어요</h1>
       </div>
     );
   }
@@ -562,41 +597,6 @@ function SimulationDetailPage() {
   const isExpertSimulation = sim.simulation_source === "expert";
   // 미참여(비공식) 기업의 '지원 대비' 시뮬레이션 — 실기업 사칭 방지용 고지·동의 문구 분기.
   const isUnofficial = !isExpertSimulation && !sim.company_is_partner;
-  const header = (
-    <div>
-      <Link
-        to={isExpertSimulation ? "/expert-simulations" : "/simulations"}
-        className="mb-5 inline-flex items-center gap-1 text-sm text-zinc-500 transition-colors hover:text-zinc-900"
-      >
-        <ChevronLeft className="h-4 w-4" />
-        {isExpertSimulation ? "현직자 시뮬레이션 목록" : "기업 시뮬레이션 목록"}
-      </Link>
-      <div className="flex items-center gap-1.5 text-xs text-zinc-400">
-        {isExpertSimulation ? (
-          <UserRound className="h-3.5 w-3.5" />
-        ) : (
-          <Building2 className="h-3.5 w-3.5" />
-        )}
-        {sim.role_label ||
-          (isExpertSimulation ? sim.expert_job_title || sim.company_name : sim.company_name)}
-      </div>
-      <h1 className="mt-1 text-2xl font-bold text-zinc-900">{sim.title}</h1>
-      {sim.estimated_minutes && (
-        <div className="mt-2 flex items-center gap-1 text-xs text-zinc-400">
-          <Clock className="h-3.5 w-3.5" />약 {sim.estimated_minutes}분
-        </div>
-      )}
-      {isUnofficial && (
-        <div className="mt-4 flex items-start gap-2 rounded-md border border-zinc-200 bg-zinc-50 p-3 text-xs leading-5 text-zinc-500">
-          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-400" />
-          <span>
-            이 시뮬레이션은 {sim.company_name}와 무관하며, 공개된 채용공고를 참고해 Beginner가
-            제작한 지원 대비용 콘텐츠예요.
-          </span>
-        </div>
-      )}
-    </div>
-  );
 
   const difficultyBlock = (
     <div className="mt-6 shrink-0 rounded-md border border-zinc-200 p-5">
@@ -686,17 +686,14 @@ function SimulationDetailPage() {
 
     setExitSurveySubmitting(true);
     const selectedOption = EXIT_SURVEY_OPTIONS.find((option) => option.value === exitSurveyReason);
+    const currentScreen = screens[screenIdx];
     const surveyData = {
       simulationId: sim.id,
       reason: exitSurveyReason,
       otherText: exitSurveyReason === "other" ? otherText : "",
-      stepIndex: model ? stepIdx + 1 : 1,
-      totalSteps: model?.steps.length ?? 1,
-      answeredCount: model
-        ? Object.values(answers).filter((answer) => Boolean(answer.trim())).length
-        : getPlainAnswerText(responseText)
-          ? 1
-          : 0,
+      stepIndex: currentScreen ? screenProgressStep(currentScreen, model.steps.length) : 1,
+      totalSteps: model.steps.length,
+      answeredCount: Object.values(answers).filter((answer) => Boolean(answer.trim())).length,
       elapsedSeconds: Math.max(0, Math.round((Date.now() - startedAt.getTime()) / 1000)),
     };
 
@@ -725,6 +722,7 @@ function SimulationDetailPage() {
     setExitSurveySubmitting(false);
     blocker.proceed?.();
   };
+
   const blockerDialog = (
     <AlertDialog open={blocker.status === "blocked"}>
       <AlertDialogContent className="data-[state=closed]:!animate-none data-[state=open]:!animate-none">
@@ -789,6 +787,8 @@ function SimulationDetailPage() {
       </AlertDialogContent>
     </AlertDialog>
   );
+
+  // ponytail: AI 어시스트는 새 화면 셸에서 숨김 — 되살리려면 아래 렌더 트리에 {aiPanel} 추가
   const aiPanel = (
     <>
       {!chatOpen && (
@@ -892,97 +892,180 @@ function SimulationDetailPage() {
       )}
     </>
   );
+  void aiPanel;
 
-  // ---------- 스텝 위저드 ----------
-  if (model) {
-    const step = model.steps[stepIdx];
-    const isLast = stepIdx === model.steps.length - 1;
-    const canAdvance = stepAnswered(step, answers);
-    const showCompletion = canAdvance && step.completionMessage;
+  const screen = screens[screenIdx] ?? screens[0];
+  const nextScreen = screens[screenIdx + 1];
+  const topLabel =
+    screen.kind === "intro"
+      ? "시작"
+      : screen.kind === "situation"
+        ? "상황 안내"
+        : screen.kind === "materials"
+          ? "자료 확인"
+          : screen.kind === "submit"
+            ? "제출"
+            : model.steps[screen.stepIndex].title;
+  const topStep = screenProgressStep(screen, model.steps.length);
 
-    return (
-      <div className="mx-auto max-w-6xl px-4 py-12">
-        {blockerDialog}
-        {aiPanel}
-        {header}
+  // 질문 화면 왼쪽/바텀시트 자료 패널
+  const questionCtx =
+    screen.kind === "question" ? getStepMaterialContext(model, model.steps[screen.stepIndex]) : null;
+  const sidebarTabs = questionCtx ? buildSidebarMaterialTabs(questionCtx) : [];
 
-        <div className="mt-8 grid gap-8 md:grid-cols-2">
-          {/* 왼쪽: 이 단계의 자료 (단계마다 다름) */}
-          <div className="md:sticky md:top-20 md:max-h-[calc(100vh-6rem)] md:self-start md:overflow-y-auto">
-            <div className="flex flex-col gap-3">
-              {model.selectionMode === "common" ? (
-                <>
-                  {model.sharedSituation && (
-                    <MaterialSection label="상황 안내" markdown={model.sharedSituation} />
-                  )}
-                  {model.sharedMaterials && (
-                    <MaterialSection label="제공 자료" markdown={model.sharedMaterials} />
-                  )}
-                </>
-              ) : (
-                <>
-                  {step.situation && (
-                    <MaterialSection label="상황 안내" markdown={step.situation} />
-                  )}
-                  {step.materials && (
-                    <MaterialSection label="제공 자료" markdown={step.materials} />
-                  )}
-                </>
-              )}
-              {/* 자동 분할(폴백): 전 단계 공통 배경 */}
-              {model.sharedBackground && (
-                <MaterialSection label="과제 배경·자료" markdown={model.sharedBackground} />
-              )}
+  let mainContent: React.ReactNode;
+  let primaryLabel: string;
+  let primaryDisabled = false;
+  let onPrimary: () => void;
+
+  if (screen.kind === "intro") {
+    primaryLabel = "시작하기 →";
+    onPrimary = goNext;
+    mainContent = (
+      <div className="flex min-h-[calc(100dvh-4.5rem)] items-center justify-center px-5 py-10">
+        <div className="flex w-full max-w-2xl flex-col items-center gap-5 rounded-2xl border border-zinc-200 bg-white px-8 py-14 text-center sm:px-14">
+          <span className="rounded-full border border-zinc-200 px-4 py-1.5 text-xs text-zinc-500">
+            {[
+              sim.role_label ||
+                (isExpertSimulation ? sim.expert_job_title || sim.company_name : sim.company_name),
+              sim.estimated_minutes ? `약 ${sim.estimated_minutes}분` : null,
+              `${model.steps.length}단계`,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </span>
+          <h1 className="text-2xl font-bold leading-snug tracking-tight text-zinc-900 sm:text-[28px]">
+            {sim.title}
+          </h1>
+          <p className="text-sm leading-relaxed text-zinc-500 sm:text-[15px]">
+            {isExpertSimulation
+              ? "현직자가 실제 업무를 바탕으로 만든 과제예요."
+              : "실제 업무를 바탕으로 만든 과제예요."}
+            <br />
+            자료를 보고 직접 판단하며 풀어보세요.
+          </p>
+          {isUnofficial && (
+            <div className="flex items-start gap-2 rounded-md border border-zinc-200 bg-zinc-50 p-3 text-left text-xs leading-5 text-zinc-500">
+              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-zinc-400" />
+              <span>
+                이 시뮬레이션은 {sim.company_name}와 무관하며, 공개된 채용공고를 참고해 Beginner가
+                제작한 지원 대비용 콘텐츠예요.
+              </span>
             </div>
-          </div>
+          )}
+        </div>
+      </div>
+    );
+  } else if (screen.kind === "situation") {
+    primaryLabel = nextScreen?.kind === "materials" ? "자료 확인하러 가기 →" : "다음 →";
+    onPrimary = goNext;
+    mainContent = (
+      <div className="mx-auto w-full max-w-2xl px-5 py-8 sm:px-12">
+        <p className="text-xs text-zinc-500">상황</p>
+        <div className="mt-2 rounded-xl border border-zinc-200 bg-white p-6">
+          <RichTextContent value={screen.markdown} compact className="prose prose-sm prose-zinc max-w-none" />
+        </div>
+        <div className="mt-4 rounded-xl border border-dashed border-zinc-300 p-5">
+          <p className="text-xs font-semibold text-zinc-500">이번 시뮬레이션에서 할 일</p>
+          <p className="mt-1.5 text-sm text-zinc-700">{model.steps.map((s) => s.title).join(" → ")}</p>
+        </div>
+      </div>
+    );
+  } else if (screen.kind === "materials") {
+    primaryLabel = "다음 →";
+    onPrimary = goNext;
+    const activeTab = screen.tabs[materialTabIdx] ?? screen.tabs[0];
+    mainContent = (
+      <div className="mx-auto w-full max-w-2xl px-5 py-8 sm:px-12">
+        <p className="text-xs text-zinc-500">제공 자료</p>
+        <h2 className="mt-1 text-lg font-bold text-zinc-900">자료를 확인하세요</h2>
+        <MaterialTabStrip
+          tabs={screen.tabs}
+          value={materialTabIdx}
+          onValueChange={setMaterialTabIdx}
+          className="mt-4"
+        />
+        <MaterialBody body={activeTab?.body ?? ""} className="mt-3" />
+        <p className="mt-3 text-xs text-zinc-400">자료는 답안 작성 중에도 계속 볼 수 있어요</p>
+      </div>
+    );
+  } else if (screen.kind === "question") {
+    const step = model.steps[screen.stepIndex];
+    const prompt = step.prompts[screen.promptIndex];
+    const answered = getPlainAnswerText(answers[prompt.id] ?? "").length > 0;
+    const isLastPromptOfStep = screen.promptIndex === step.prompts.length - 1;
+    const showCompletion = isLastPromptOfStep && stepAnswered(step, answers) && step.completionMessage;
 
-          {/* 오른쪽: 현재 스텝 질문 */}
+    primaryDisabled = false;
+    primaryLabel =
+      nextScreen?.kind === "submit"
+        ? "제출하러 가기 →"
+        : nextScreen?.kind === "question" && nextScreen.stepIndex === screen.stepIndex
+          ? "다음 질문 →"
+          : "다음 →";
+    onPrimary = () => {
+      if (!answered) {
+        toast.error("이 질문의 답변을 먼저 작성해주세요.");
+        return;
+      }
+      goNext();
+    };
+
+    mainContent = (
+      <div className="mx-auto w-full max-w-[1100px] px-5 py-8 sm:px-12">
+        <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
+          {sidebarTabs.length > 0 && (
+            <div className="hidden lg:sticky lg:top-[5.5rem] lg:block lg:max-h-[calc(100dvh-8rem)] lg:self-start lg:overflow-y-auto">
+              <MaterialTabStrip tabs={sidebarTabs} value={materialTabIdx} onValueChange={setMaterialTabIdx} />
+              <MaterialBody body={sidebarTabs[materialTabIdx]?.body ?? sidebarTabs[0]?.body ?? ""} className="mt-3" />
+            </div>
+          )}
           <div className="flex flex-col">
-            {/* 진행바 */}
-            <div className="flex gap-1.5">
-              {model.steps.map((s, i) => (
-                <div
-                  key={i}
-                  className={cn(
-                    "h-1.5 flex-1 rounded-sm transition-colors",
-                    i < stepIdx ? "bg-zinc-900" : i === stepIdx ? "bg-zinc-900/50" : "bg-zinc-200",
-                  )}
-                />
-              ))}
-            </div>
-            <p className="mt-2 text-xs text-zinc-400">
-              Step {stepIdx + 1} / {model.steps.length}
+            {sidebarTabs.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setDrawerOpen(true)}
+                className="mb-3 inline-flex w-fit items-center gap-1.5 self-start rounded-full border border-zinc-200 px-3.5 py-2 text-xs font-medium text-zinc-600 lg:hidden"
+              >
+                자료 보기
+              </button>
+            )}
+            <p className="text-xs text-zinc-500">
+              질문 {screen.promptIndex + 1} / {step.prompts.length}
             </p>
-
-            {/* 저작 스텝: 단계 제목 + 메타 */}
-            {model.authored && (
-              <div className="mt-3">
-                <h2 className="text-lg font-bold text-zinc-900">{step.title}</h2>
-                <StepMeta step={step} />
+            {(step.durationMin != null || step.difficulty != null) && (
+              <div className="mt-1 flex items-center gap-2 text-xs text-zinc-400">
+                {step.durationMin != null && (
+                  <span className="inline-flex items-center gap-1">
+                    <Clock className="h-3.5 w-3.5" />약 {step.durationMin}분
+                  </span>
+                )}
+                {step.difficulty != null && (
+                  <span className="text-zinc-700">
+                    {"★".repeat(Math.max(0, Math.min(5, step.difficulty)))}
+                    <span className="text-zinc-200">
+                      {"★".repeat(Math.max(0, 5 - Math.min(5, step.difficulty)))}
+                    </span>
+                  </span>
+                )}
               </div>
             )}
-
-            {/* 질문들 */}
-            <div className="mt-3 flex flex-col gap-6">
-              {step.prompts.map((p) => (
-                <div key={p.id}>
-                  {p.bodyMarkdown && (
-                    <div className="prose prose-sm prose-zinc max-w-none prose-table:text-sm prose-headings:text-sm prose-headings:font-semibold">
-                      <RichTextContent value={p.bodyMarkdown} compact />
-                    </div>
-                  )}
-                  <AnswerEditor
-                    value={answers[p.id] ?? ""}
-                    onChange={(value) => setAnswer(p.id, value)}
-                    containerClassName="mt-2"
-                  />
-                </div>
-              ))}
-            </div>
-
-            {/* 초심자용 힌트 */}
+            {prompt.bodyMarkdown && (
+              <div className="mt-2 prose prose-sm prose-zinc max-w-none prose-table:text-sm prose-headings:text-sm prose-headings:font-semibold">
+                <RichTextContent value={prompt.bodyMarkdown} compact />
+              </div>
+            )}
+            <AnswerEditor
+              value={answers[prompt.id] ?? ""}
+              onChange={(value) => setAnswer(prompt.id, value)}
+              containerClassName="mt-3"
+            />
             {step.hint && (
-              <details className="mt-5 rounded-md border border-zinc-200 bg-zinc-50 p-4">
+              <details
+                className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4"
+                open={hintOpen}
+                onToggle={(e) => setHintOpen((e.target as HTMLDetailsElement).open)}
+              >
                 <summary className="cursor-pointer list-none text-sm font-semibold text-zinc-700">
                   초심자용 힌트 보기
                 </summary>
@@ -991,120 +1074,65 @@ function SimulationDetailPage() {
                 </div>
               </details>
             )}
-
-            {/* 단계 완료 메시지 */}
             {showCompletion && (
-              <div className="mt-5 rounded-md border border-emerald-200 bg-emerald-50 p-4">
+              <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
                 <div className="prose prose-sm prose-emerald max-w-none">
                   <RichTextContent value={step.completionMessage as string} compact />
                 </div>
               </div>
             )}
-
-            {/* 마지막 스텝: 난이도 평가 + 동의 */}
-            {isLast && difficultyBlock}
-            {isLast && consentBlock}
-
-            {/* 네비게이션 */}
-            <div className="mt-8 flex gap-2">
-              {stepIdx > 0 && (
-                <Button
-                  variant="outline"
-                  className="rounded-md"
-                  onClick={() => {
-                    setStepIdx((i) => i - 1);
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
-                >
-                  이전
-                </Button>
-              )}
-              {isLast ? (
-                <Button
-                  onClick={handleSubmit}
-                  disabled={submitting}
-                  size="lg"
-                  className="flex-1 rounded-md bg-zinc-900 text-white hover:bg-zinc-700"
-                >
-                  {submitting ? "제출 중..." : "제출하기"}
-                </Button>
-              ) : (
-                <Button
-                  onClick={() => {
-                    if (!canAdvance) {
-                      toast.error("이 단계의 답변을 먼저 작성해주세요.");
-                      return;
-                    }
-                    setStepIdx((i) => i + 1);
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
-                  disabled={!canAdvance}
-                  size="lg"
-                  className="flex-1 rounded-md bg-zinc-900 text-white hover:bg-zinc-700"
-                >
-                  다음 단계 →
-                </Button>
-              )}
-            </div>
           </div>
         </div>
       </div>
     );
+  } else {
+    primaryLabel = submitting ? "제출 중..." : "제출하기";
+    primaryDisabled = submitting;
+    onPrimary = () => void handleSubmit();
+    mainContent = (
+      <div className="mx-auto w-full max-w-2xl px-5 py-8 sm:px-12">
+        <h2 className="text-lg font-bold text-zinc-900">제출 전에 확인해주세요</h2>
+        {difficultyBlock}
+        {consentBlock}
+      </div>
+    );
   }
 
-  // ---------- 폴백: 단일 화면 (템플릿을 벗어난 과제) ----------
-  return (
-    <div className="mx-auto max-w-6xl px-4 py-12">
-      {blockerDialog}
-      {aiPanel}
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* 왼쪽: 과제 내용 */}
-        <div>
-          {header}
-          <Card className="mt-4 p-4">
-            <div className="prose prose-sm sm:prose-base prose-zinc max-w-none prose-table:text-sm">
-              <RichTextContent value={sim.task_prompt ?? ""} compact />
-            </div>
-          </Card>
-        </div>
-
-        {/* 오른쪽: 제출 관련 */}
-        <div className="flex flex-col">
-          <div className="flex flex-col">
-            <div id="response-question" className="shrink-0">
-              <p className="text-sm font-medium text-zinc-700">제출 질문</p>
-              <Card className="mt-1 p-3">
-                <div className="prose prose-sm prose-zinc max-w-none prose-table:text-sm">
-                  <RichTextContent
-                    value={sim.single_answer_question?.trim() || "답안 작성"}
-                    compact
-                  />
-                </div>
-              </Card>
-            </div>
-            <AnswerEditor
-              id="response"
-              value={responseText}
-              onChange={setResponseText}
-              ariaLabelledby="response-question"
-              containerClassName="mt-2"
-            />
-          </div>
-
-          {difficultyBlock}
-          {consentBlock}
-
-          <Button
-            onClick={handleSubmit}
-            disabled={submitting}
-            size="lg"
-            className="mt-6 w-full shrink-0 rounded-md bg-zinc-900 text-white hover:bg-zinc-700"
-          >
-            {submitting ? "제출 중..." : "제출하기"}
-          </Button>
-        </div>
-      </div>
+  const bottomBar = (
+    <div className="mx-auto flex w-full max-w-[1100px] items-center gap-2 px-5 py-3.5 sm:px-12">
+      {screenIdx > 0 && (
+        <Button variant="outline" className="rounded-xl" onClick={goPrev}>
+          이전
+        </Button>
+      )}
+      <Button
+        onClick={onPrimary}
+        disabled={primaryDisabled}
+        size="lg"
+        className="flex-1 rounded-xl bg-zinc-900 text-white hover:bg-zinc-700"
+      >
+        {primaryLabel}
+      </Button>
     </div>
+  );
+
+  return (
+    <SimulationShell label={topLabel} step={topStep} totalSteps={model.steps.length} bottomBar={bottomBar}>
+      {blockerDialog}
+      {mainContent}
+      {sidebarTabs.length > 0 && (
+        <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
+          <DrawerContent className="max-h-[80dvh]">
+            <DrawerHeader>
+              <DrawerTitle>제공 자료</DrawerTitle>
+            </DrawerHeader>
+            <div className="flex flex-col gap-3 overflow-y-auto px-4 pb-6">
+              <MaterialTabStrip tabs={sidebarTabs} value={materialTabIdx} onValueChange={setMaterialTabIdx} />
+              <MaterialBody body={sidebarTabs[materialTabIdx]?.body ?? sidebarTabs[0]?.body ?? ""} />
+            </div>
+          </DrawerContent>
+        </Drawer>
+      )}
+    </SimulationShell>
   );
 }

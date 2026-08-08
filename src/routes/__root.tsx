@@ -51,7 +51,9 @@ function GlobalNavigationOverlay() {
 function SiteLayout({ children }: { children: React.ReactNode }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isHome = pathname === "/";
-  const isBareFullscreen = isHome || pathname.startsWith("/lp");
+  // 시뮬레이션 수행 화면은 전체화면 셸(SimulationShell)을 쓴다. 피드백 화면은 제외.
+  const isSimulationRun = pathname.startsWith("/simulation/") && !pathname.endsWith("/feedback");
+  const isBareFullscreen = isHome || pathname.startsWith("/lp") || isSimulationRun;
   const usesOwnHeader =
     isBareFullscreen ||
     pathname.startsWith("/login") ||

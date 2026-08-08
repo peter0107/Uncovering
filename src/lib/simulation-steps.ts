@@ -246,3 +246,126 @@ export function allAnswered(model: WizardModel, answers: Record<string, string>)
 export function stepAnswered(step: WizardStep, answers: Record<string, string>): boolean {
   return step.prompts.every((p) => getPlainAnswerText(answers[p.id] ?? "").length > 0);
 }
+
+// ============================================================
+// 단일형(selection 아님) 시뮬레이션을 1단계짜리 WizardModel로 감싸기
+// — 새 화면 셸(SimulationShell)을 selection/single 구분 없이 태우기 위한 어댑터.
+// ============================================================
+export function wrapSingleAsModel(sim: {
+  taskPrompt: string | null;
+  singleAnswerQuestion: string | null;
+}): WizardModel {
+  return {
+    authored: true,
+    selectionMode: "separated",
+    steps: [
+      {
+        title: "답안 작성",
+        materials: sim.taskPrompt?.trim() || undefined,
+        prompts: [
+          {
+            id: "response",
+            label: "답안",
+            bodyMarkdown: sim.singleAnswerQuestion?.trim() || "",
+          },
+        ],
+      },
+    ],
+  };
+}
+
+// ============================================================
+// 왼쪽 자료 패널 — 마크다운/리치텍스트 자료를 ##/### 소제목 기준 탭으로 분할
+// ============================================================
+const RICH_TEXT_PREFIX = "<!-- beginner-rich-text -->";
+
+export type MaterialTab = { label: string; body: string };
+
+function splitMarkdownMaterialTabs(markdown: string, fallbackLabel: string): MaterialTab[] {
+  const lines = markdown.split("\n");
+  // "## 제공 자료" 같은 상위 래퍼 제목 하나 + "### 1) …" 소항목 여러 개인 문서가 흔해서,
+  // ### 이 2개 이상이면 ### 만 탭 경계로 쓴다(그래야 래퍼 제목이 빈 첫 탭이 되지 않는다).
+  const level3Count = lines.filter((line) => /^###\s+/.test(line)).length;
+  const headingRe = level3Count >= 2 ? /^###\s+(.+)$/ : /^#{2,3}\s+(.+)$/;
+  const tabs: MaterialTab[] = [];
+  const lead: string[] = [];
+  let current: MaterialTab | null = null;
+
+  for (const line of lines) {
+    const match = line.match(headingRe);
+    if (match) {
+      if (current) tabs.push({ ...current, body: current.body.trim() });
+      current = { label: match[1].replace(/\*/g, "").trim(), body: "" };
+    } else if (current) {
+      current.body += `${line}\n`;
+    } else {
+      lead.push(line);
+    }
+  }
+  if (current) tabs.push({ ...current, body: current.body.trim() });
+
+  // 제목 줄만 있고 내용이 없는 리드는 버린다(탭 라벨과 중복되는 빈 탭 방지).
+  const leadText = lead
+    .filter((line) => !/^#{1,3}\s+/.test(line))
+    .join("\n")
+    .trim();
+  if (tabs.length === 0) return [{ label: fallbackLabel, body: leadText || markdown }];
+  if (leadText) tabs.unshift({ label: fallbackLabel, body: leadText });
+  return tabs;
+}
+
+function splitHtmlMaterialTabs(html: string, fallbackLabel: string): MaterialTab[] {
+  const h3Count = [...html.matchAll(/<h3[^>]*>/gi)].length;
+  const headingRe =
+    h3Count >= 2 ? /<h3[^>]*>([\s\S]*?)<\/h3>/gi : /<h[23][^>]*>([\s\S]*?)<\/h[23]>/gi;
+  const matches = [...html.matchAll(headingRe)];
+  if (matches.length === 0) return [{ label: fallbackLabel, body: `${RICH_TEXT_PREFIX}${html}` }];
+
+  const tabs: MaterialTab[] = [];
+  const leadEnd = matches[0].index ?? 0;
+  const lead = html.slice(0, leadEnd).trim();
+  if (lead) tabs.push({ label: fallbackLabel, body: `${RICH_TEXT_PREFIX}${lead}` });
+
+  matches.forEach((match, i) => {
+    const start = (match.index ?? 0) + match[0].length;
+    const end = i + 1 < matches.length ? (matches[i + 1].index ?? html.length) : html.length;
+    const body = html.slice(start, end).trim();
+    const label = match[1]
+      .replace(/<[^>]+>/g, "")
+      .replace(/&nbsp;/gi, " ")
+      .trim();
+    tabs.push({ label: label || fallbackLabel, body: `${RICH_TEXT_PREFIX}${body}` });
+  });
+  return tabs;
+}
+
+/** 자료 본문(마크다운 또는 리치텍스트 HTML)을 소제목 기준 탭으로 쪼갠다. 소제목이 없으면 탭 1개. */
+export function splitMaterialTabs(value: string | undefined, fallbackLabel: string): MaterialTab[] {
+  const trimmed = value?.trim();
+  if (!trimmed) return [];
+  return trimmed.startsWith(RICH_TEXT_PREFIX)
+    ? splitHtmlMaterialTabs(trimmed.slice(RICH_TEXT_PREFIX.length), fallbackLabel)
+    : splitMarkdownMaterialTabs(trimmed, fallbackLabel);
+}
+
+/** 스텝이 실제로 참조하는 상황/자료 원문(공용형·자동분할형 포함). */
+export function getStepMaterialContext(
+  model: WizardModel,
+  step: WizardStep,
+): { situation?: string; materials?: string } {
+  if (model.selectionMode === "common") {
+    return { situation: model.sharedSituation, materials: model.sharedMaterials };
+  }
+  if (!model.authored) {
+    return { situation: undefined, materials: model.sharedBackground };
+  }
+  return { situation: step.situation, materials: step.materials };
+}
+
+/** 질문 화면 왼쪽 패널용 탭 — 상황 안내가 있으면 첫 탭으로 얹는다. */
+export function buildSidebarMaterialTabs(ctx: { situation?: string; materials?: string }): MaterialTab[] {
+  const tabs: MaterialTab[] = [];
+  if (ctx.situation) tabs.push({ label: "상황", body: ctx.situation });
+  tabs.push(...splitMaterialTabs(ctx.materials, "자료"));
+  return tabs;
+}
