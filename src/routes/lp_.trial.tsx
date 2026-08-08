@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 
 import { BrandLogo } from "@/components/BrandLogo";
 import { DOMAIN_CATEGORIES, type DomainCategory } from "@/lib/domain-categories";
@@ -309,6 +309,112 @@ function ApplyForm() {
   );
 }
 
+const PREVIEW_SLIDES = [
+  {
+    label: "시뮬레이션 예시 보기",
+    content: (
+      <>
+        <div className="kv">
+          <span>직무</span>
+          <b>CRM 마케터</b>
+        </div>
+        <p style={{ margin: 0, fontSize: 13, color: "#4B5563", lineHeight: 1.65 }}>
+          "최근 3개월간 신규 가입자의 리텐션이 계속 떨어지고 있어요. 원인을 데이터로 분석하고,
+          재방문율을 높일 캠페인을 설계해주세요."
+        </p>
+        <span className="bar" style={{ width: "92%" }}></span>
+        <span className="bar" style={{ width: "78%" }}></span>
+        <span className="bar" style={{ width: "55%" }}></span>
+      </>
+    ),
+  },
+  {
+    label: "모범 답안 예시 보기",
+    content: (
+      <>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <b style={{ fontSize: 12.5 }}>현직자 답안</b>
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 800,
+              color: "#435BDA",
+              background: "#E9EEFC",
+              borderRadius: 6,
+              padding: "4px 9px",
+            }}
+          >
+            모범 답안
+          </span>
+        </div>
+        <span className="bar" style={{ width: "96%" }}></span>
+        <span className="bar" style={{ width: "84%" }}></span>
+        <span className="bar" style={{ width: "90%" }}></span>
+        <span className="bar" style={{ width: "62%" }}></span>
+      </>
+    ),
+  },
+  {
+    label: "현직자 코멘트",
+    content: (
+      <>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <b style={{ fontSize: 12.5 }}>현직자 코멘트</b>
+          <span style={{ fontSize: 11, color: "#0F9D58", fontWeight: 700 }}>5년차 CRM 마케터</span>
+        </div>
+        <p style={{ margin: 0, fontSize: 13.5, color: "#4B5563", lineHeight: 1.65 }}>
+          "실무에서 정말 자주 마주치는 상황이에요. 데이터 근거를 먼저 제시한 점이 좋았고, 캠페인 실행
+          계획까지 구체적으로 짜면 더 설득력 있을 것 같아요."
+        </p>
+      </>
+    ),
+  },
+];
+
+function PreviewCarousel() {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIndex((i) => (i + 1) % PREVIEW_SLIDES.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="carousel">
+      <div className="carousel-track" style={{ transform: `translateX(-${index * 100}%)` }}>
+        {PREVIEW_SLIDES.map((slide, i) => (
+          <div className="carousel-slide" key={i}>
+            <div className="mock">
+              <div className="mockbar">
+                <i></i>
+                <i></i>
+                <i></i>
+              </div>
+              <div className="mockbody">
+                <b style={{ fontSize: 13 }}>{slide.label}</b>
+                {slide.content}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="carousel-dots">
+        {PREVIEW_SLIDES.map((slide, i) => (
+          <button
+            key={i}
+            type="button"
+            className={i === index ? "on" : ""}
+            onClick={() => setIndex(i)}
+            aria-label={slide.label}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function LpTrialPage() {
   return (
     <div className="lp-trial">
@@ -319,7 +425,7 @@ function LpTrialPage() {
               <BrandLogo className="h-[1.9rem] w-auto max-w-[9.75rem] object-contain object-left" />
             </div>
             <div className="navlinks">
-              <a href="#jobs">직무 둘러보기</a>
+              <a href="#preview">미리보기</a>
               <a href="#how">이용 방법</a>
               <a href="#refund">환불 정책</a>
               <a className="btn" href="#apply">
@@ -567,43 +673,13 @@ function LpTrialPage() {
         </div>
       </section>
 
-      <section id="jobs">
+      <section id="preview">
         <div className="wrap">
-          <h2>체험할 수 있는 직무</h2>
-          <div className="grid4">
-            <div className="job">
-              <b>CRM 마케터</b>
-              <span>리텐션 · 코호트 분석</span>
-            </div>
-            <div className="job">
-              <b>브랜드 디자이너</b>
-              <span>브랜드 진단 · 시안</span>
-            </div>
-            <div className="job">
-              <b>서비스 기획자</b>
-              <span>요구사항 · 우선순위</span>
-            </div>
-            <div className="job">
-              <b>UI/UX 디자이너</b>
-              <span>온보딩 개선안</span>
-            </div>
-            <div className="job">
-              <b>데이터 분석가</b>
-              <span>퍼널 · 가설 검증</span>
-            </div>
-            <div className="job">
-              <b>콘텐츠 마케터</b>
-              <span>채널 전략 · 기획</span>
-            </div>
-            <div className="job">
-              <b>공정 엔지니어</b>
-              <span>불량 원인 분석</span>
-            </div>
-            <div className="job" style={{ background: "#F7F8FA" }}>
-              <b style={{ color: "#6B7280" }}>그 외 직무 요청</b>
-              <span>신청 후 매칭</span>
-            </div>
+          <div className="center">
+            <p className="eyebrow">미리보기</p>
+            <h2 style={{ marginTop: 9 }}>체험 과제, 이런 모습이에요</h2>
           </div>
+          <PreviewCarousel />
         </div>
       </section>
 
