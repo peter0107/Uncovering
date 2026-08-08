@@ -24,8 +24,8 @@ export const Route = createFileRoute("/lp_/trial")({
   component: LpTrialPage,
 });
 
-const OTHER_JOB_ROLE = "그 외 직무";
-const OTHER_COMPANY_TYPE = "기타";
+const OTHER_JOB_ROLE = "직접 입력";
+const OTHER_COMPANY_TYPE = "희망 기업 직접 입력";
 
 const JOB_ROLES_BY_CATEGORY: Record<DomainCategory, string[]> = {
   "기획·전략": ["서비스 기획자", "사업 전략 기획자", "PM/PO", "신사업 기획자", OTHER_JOB_ROLE],
@@ -51,7 +51,7 @@ const JOB_ROLES_BY_CATEGORY: Record<DomainCategory, string[]> = {
   "공공·복지": ["정책 기획자", "복지 서비스 담당자", "공공사업 운영자", OTHER_JOB_ROLE],
 };
 
-const COMPANY_TYPES = ["IT 스타트업", "대기업", "중견기업", "공공기관", "기타"];
+const COMPANY_TYPES = ["스타트업", "중소기업", "중견기업", "대기업", OTHER_COMPANY_TYPE];
 
 function ApplyForm() {
   const [step, setStep] = useState<1 | 2>(1);
@@ -379,7 +379,7 @@ function LpTrialPage() {
                   </div>
                   <div className="kv">
                     <span>기업 유형</span>
-                    <b>IT 스타트업</b>
+                    <b>스타트업</b>
                   </div>
                   <div className="kv">
                     <span>결제 옵션</span>
@@ -417,7 +417,7 @@ function LpTrialPage() {
             <div>
               <div className="stepttl">
                 <span className="stepnum">2</span>
-                <b style={{ fontSize: 16, letterSpacing: "-.3px" }}>현직자 매칭 · 과제 준비</b>
+                <b style={{ fontSize: 16, letterSpacing: "-.3px" }}>현직자 검수 · 과제 준비</b>
               </div>
               <div className="mock">
                 <div className="mockbar">
@@ -450,7 +450,7 @@ function LpTrialPage() {
                   </div>
                   <div className="check">
                     <span className="dot done">✓</span>
-                    <span>현직자 매칭 완료</span>
+                    <span>현직자 검수 완료</span>
                   </div>
                   <div className="check">
                     <span className="dot now"></span>
