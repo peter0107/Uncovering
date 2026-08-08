@@ -40,7 +40,9 @@
   --color-brand-foreground: var(--brand-foreground);
   --color-brand-soft: var(--brand-soft);
   --font-sans:
-    "Pretendard Variable", Pretendard, -apple-system, "Noto Sans KR", sans-serif;
+    "Wanted Sans Variable", "Wanted Sans", -apple-system, BlinkMacSystemFont,
+    system-ui, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic",
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
 }
 
 :root {
@@ -148,6 +150,12 @@
     font-feature-settings: "ss01", "ss02";
     -webkit-font-smoothing: antialiased;
     overflow-x: clip;
+  }
+  button,
+  input,
+  select,
+  textarea {
+    font-family: inherit;
   }
 }
 

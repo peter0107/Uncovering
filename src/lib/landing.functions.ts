@@ -776,7 +776,7 @@ function buildTrialTaskEmailHtml(params: {
   taskLink: string;
 }): string {
   return `<!doctype html>
-<html lang="ko"><body style="margin:0;padding:0;background:#F5F6F9;font-family:Pretendard,-apple-system,BlinkMacSystemFont,'Malgun Gothic',sans-serif;">
+<html lang="ko"><body style="margin:0;padding:0;background:#F5F6F9;font-family:'Wanted Sans Variable','Wanted Sans',-apple-system,BlinkMacSystemFont,'Malgun Gothic',sans-serif;">
 <div style="max-width:520px;margin:0 auto;padding:40px 20px;">
   <div style="background:#FFFFFF;border-radius:14px;overflow:hidden;border:1px solid #E7E9EE;">
     <div style="padding:40px 36px 36px;">
