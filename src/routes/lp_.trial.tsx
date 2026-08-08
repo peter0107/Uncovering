@@ -329,10 +329,12 @@ const PREVIEW_SLIDES = [
           <b className="pv-title">온라인 쇼핑몰 구매 이탈 원인 분석 및 구매 흐름 개선</b>
           <span className="pv-tag">UI/UX 디자인 · 약 30분</span>
         </div>
-        <p className="pv-quote">
-          "상품 조회와 장바구니 담기는 꾸준히 늘고 있는데, 결제 완료율은 오히려 낮아지고 있습니다.
-          어디서, 왜 이탈이 발생하는지 직접 분석해 개선안을 제안해주세요."
-        </p>
+        <div className="pv-card">
+          <p className="pv-quote">
+            "상품 조회와 장바구니 담기는 꾸준히 늘고 있는데, 결제 완료율은 오히려 낮아지고 있습니다.
+            어디서, 왜 이탈이 발생하는지 직접 분석해 개선안을 제안해주세요."
+          </p>
+        </div>
         <div className="pv-steps">
           {PREVIEW_STEPS.map((step) => (
             <div className="pv-step" key={step.no}>
@@ -344,6 +346,7 @@ const PREVIEW_SLIDES = [
         </div>
       </>
     ),
+    foot: <span className="pv-btn">1단계 시작하기 →</span>,
   },
   {
     label: "모범 답안 예시 보기",
@@ -353,37 +356,43 @@ const PREVIEW_SLIDES = [
           <b className="pv-title">1단계 · 핵심 문제 분석</b>
           <span className="pv-tag pv-tag-blue">모범 답안</span>
         </div>
-        <p className="pv-body">
-          가장 큰 문제는 장바구니에서 주문서로 넘어가는 구간이다. 장바구니에 들어온{" "}
-          <b>3,900명 중 주문서로 이동한 사용자는 1,700명</b>뿐이다. 장바구니에서는 쿠폰 할인,
-          배송비, 최종 결제 금액을 정확히 확인하기 어렵다.
-        </p>
-        <div className="pv-callout">
-          <span className="pv-calloutlbl">핵심 문제</span>
-          사용자가 장바구니에서 실제 결제 금액을 미리 알기 어려워, 구매를 계속해도 되는지 확신하지
-          못하고 이탈하고 있다.
+        <div className="pv-card">
+          <p className="pv-body">
+            가장 큰 문제는 장바구니에서 주문서로 넘어가는 구간이다. 장바구니에 들어온{" "}
+            <b>3,900명 중 주문서로 이동한 사용자는 1,700명</b>뿐이다. 장바구니에서는 쿠폰 할인,
+            배송비, 최종 결제 금액을 정확히 확인하기 어렵다.
+          </p>
+          <div className="pv-callout">
+            <span className="pv-calloutlbl">핵심 문제</span>
+            사용자가 장바구니에서 실제 결제 금액을 미리 알기 어려워, 구매를 계속해도 되는지 확신하지
+            못하고 이탈하고 있다.
+          </div>
         </div>
         <div className="pv-lock">🔒 2·3단계 모범답안은 과제를 제출하면 전체 공개돼요</div>
       </>
     ),
+    foot: <span className="pv-btn pv-btn-lock">2단계 모범답안 🔒</span>,
   },
   {
     label: "현직자 코멘트",
     content: (
-      <>
-        <div className="pv-head">
-          <b className="pv-title">김*현 · UI/UX 디자인</b>
+      <div className="pv-card">
+        <div className="pv-person">
+          <span className="pv-avatar">김</span>
+          <span className="pv-personinfo">
+            <b>김*현 · UI/UX 디자인</b>
+            <span className="pv-meta">라이프스타일 커머스 · 스타트업 · 1~2년차</span>
+          </span>
           <span className="pv-tag pv-tag-green">검수 완료</span>
         </div>
-        <div className="pv-meta">라이프스타일 커머스 · 스타트업 · 1~2년차</div>
         <p className="pv-quote">
           "실무에서는 '전환율이 떨어진다'는 말만 듣고 시작하는 경우가 많아요. 그래서 이 과제도 정답을
           정해두지 않았어요. 데이터에서 이탈 구간을 직접 찾고, 왜 그 화면이라고 판단했는지 설명할 수
           있는지를 봅니다."
         </p>
-        <div className="pv-lock">✓ 모든 과제는 해당 직무 현직자가 만들고 검수해요</div>
-      </>
+      </div>
     ),
+    foot: <span className="pv-note">✓ 모든 과제는 해당 직무 현직자가 만들고 검수해요</span>,
   },
 ];
 
@@ -402,15 +411,22 @@ function PreviewCarousel() {
       <div className="carousel-track" style={{ transform: `translateX(-${index * 100}%)` }}>
         {PREVIEW_SLIDES.map((slide, i) => (
           <div className="carousel-slide" key={i}>
-            <div className="mock">
-              <div className="mockbar">
-                <i></i>
-                <i></i>
-                <i></i>
-              </div>
-              <div className="mockbody">
-                <b style={{ fontSize: 13 }}>{slide.label}</b>
-                {slide.content}
+            <div className="pv-frame">
+              <b className="pv-label">{slide.label}</b>
+              {/* 실제 수행 화면(SimulationShell)과 같은 구성: 상단 진행바 → 회색 본문 → 하단 액션바 */}
+              <div className="mock mock-app">
+                <div className="appbar">
+                  <span className="appbar-logo">Beginner</span>
+                  <span className="appbar-right">
+                    <span className="appbar-stepname">핵심 문제 분석</span>
+                    <span className="appbar-prog">
+                      <i />
+                    </span>
+                    <span>1/3</span>
+                  </span>
+                </div>
+                <div className="mockbody">{slide.content}</div>
+                <div className="appfoot">{slide.foot}</div>
               </div>
             </div>
           </div>

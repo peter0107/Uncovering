@@ -190,8 +190,39 @@
 .lp-trial .carousel { position: relative; margin-top: 28px; overflow: hidden; }
 .lp-trial .carousel-track { display: flex; align-items: stretch; transition: transform 320ms ease; }
 .lp-trial .carousel-slide { flex: 0 0 100%; min-width: 0; display: flex; }
-.lp-trial .carousel-slide .mock { width: 100%; max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; }
+.lp-trial .carousel-slide .pv-frame { width: 100%; max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; }
+.lp-trial .carousel-slide .mock { width: 100%; display: flex; flex-direction: column; }
 .lp-trial .carousel-slide .mockbody { flex: 1; min-height: 268px; }
+
+/* 캐러셀 슬라이드 제목 — 앱 화면 바깥에 둔다 */
+.lp-trial .pv-label { font-size: 13px; letter-spacing: -.2px; color: #1B2440; }
+
+/* 실제 수행 화면을 모사한 앱 프레임 (브라우저 크롬 대신) */
+.lp-trial .mock-app { margin-top: 10px; }
+.lp-trial .mock-app .appbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 12px; background: #fff; border-bottom: 1px solid #E9ECF2; }
+.lp-trial .mock-app .appbar-logo { font-size: 12px; font-weight: 800; letter-spacing: -.3px; color: #1B2440; }
+.lp-trial .mock-app .appbar-right { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #9CA3AF; white-space: nowrap; }
+.lp-trial .mock-app .appbar-stepname { overflow: hidden; text-overflow: ellipsis; max-width: 96px; }
+.lp-trial .mock-app .appbar-prog { width: 60px; height: 5px; border-radius: 3px; background: #E7EAF0; overflow: hidden; flex: none; }
+.lp-trial .mock-app .appbar-prog i { display: block; width: 33%; height: 100%; border-radius: 3px; background: #1B2440; }
+.lp-trial .mock-app .mockbody { background: #EEF0F3; padding: 14px; gap: 9px; }
+.lp-trial .mock-app .appfoot { display: flex; align-items: center; justify-content: flex-end; padding: 10px 12px; background: #fff; border-top: 1px solid #E9ECF2; }
+.lp-trial .mock-app .pv-btn { font-size: 12px; font-weight: 700; color: #fff; background: #435BDA; border-radius: 7px; padding: 8px 14px; }
+.lp-trial .mock-app .pv-btn-lock { color: #9CA3AF; background: #EDEFF3; }
+.lp-trial .mock-app .pv-note { margin-right: auto; font-size: 11.5px; color: #6B7280; }
+/* 회색 본문 위에 뜨는 흰 카드 */
+.lp-trial .mock-app .pv-card { background: #fff; border: 1px solid #E4E7EE; border-radius: 10px; padding: 12px 13px; display: flex; flex-direction: column; gap: 9px; }
+.lp-trial .mock-app .pv-step { background: #fff; }
+/* 회색 본문에서 배지가 묻히지 않도록 흰 배경으로 */
+.lp-trial .mock-app .pv-tag { background: #fff; border: 1px solid #E4E7EE; }
+.lp-trial .mock-app .pv-tag-blue { background: #E9EEFC; border-color: #D9E2FA; }
+.lp-trial .mock-app .pv-tag-green { background: #E6F4EC; border-color: #D2EADD; }
+.lp-trial .mock-app .pv-lock { border-top: none; padding-top: 0; }
+/* 현직자 프로필 */
+.lp-trial .pv-person { display: flex; align-items: center; gap: 9px; }
+.lp-trial .pv-avatar { width: 30px; height: 30px; border-radius: 50%; background: #E9EEFC; color: #435BDA; display: grid; place-items: center; font-size: 12px; font-weight: 800; flex: none; }
+.lp-trial .pv-personinfo { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.lp-trial .pv-personinfo b { font-size: 12.5px; letter-spacing: -.2px; }
 .lp-trial .carousel-dots { display: flex; justify-content: center; gap: 8px; margin-top: 18px; }
 .lp-trial .carousel-dots button { width: 8px; height: 8px; border-radius: 50%; border: none; background: #D5DAE3; padding: 0; cursor: pointer; }
 .lp-trial .carousel-dots button.on { background: #435BDA; width: 22px; border-radius: 4px; transition: width 200ms ease, background-color 200ms ease; }
