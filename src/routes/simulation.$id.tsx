@@ -47,6 +47,12 @@ export const Route = createFileRoute("/simulation/$id")({
       .union([z.literal("1"), z.literal(1), z.literal(true)])
       .optional()
       .transform((v) => (v == null ? undefined : ("1" as const))),
+    // demo=1: 랜딩에서 넘어온 비로그인 방문자용 공개 열람. 작성은 되고 제출만 막는다.
+    // preview=1(관리자 전용)과 달리 공개 데이터만 읽으므로 별도 권한이 필요 없다.
+    demo: z
+      .union([z.literal("1"), z.literal(1), z.literal(true)])
+      .optional()
+      .transform((v) => (v == null ? undefined : ("1" as const))),
   }),
   component: SimulationDetailPage,
 });
@@ -161,11 +167,14 @@ function AnswerEditor({
 
 function SimulationDetailPage() {
   const { id } = Route.useParams();
-  const { preview } = Route.useSearch();
+  const { preview, demo } = Route.useSearch();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const isPreview = preview === "1";
-  const [accessReady, setAccessReady] = useState(isPreview);
+  const isDemo = demo === "1" && !user;
+  // 로그인 리다이렉트·로딩 가드에서 preview와 demo를 같이 통과시킨다.
+  const isOpenView = isPreview || isDemo;
+  const [accessReady, setAccessReady] = useState(isOpenView);
 
   const [sim, setSim] = useState<SimulationDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -226,8 +235,9 @@ function SimulationDetailPage() {
     }
   };
 
-  // 시뮬레이션 진행 중(제출 전)일 때만 이탈을 차단
-  const inProgress = Boolean(sim && !submittedAt && !isPreview);
+  // 시뮬레이션 진행 중(제출 전)일 때만 이탈을 차단.
+  // 데모는 둘러보러 온 방문자라 이탈 설문 대상이 아니고, 차단하면 CTA 이동도 막힌다.
+  const inProgress = Boolean(sim && !submittedAt && !isOpenView);
 
   const blocker = useBlocker({
     shouldBlockFn: () => inProgress,
@@ -272,7 +282,7 @@ function SimulationDetailPage() {
   useEffect(() => {
     if (authLoading) return;
 
-    if (isPreview || !AUTHENTICATION_ENABLED) {
+    if (isOpenView || !AUTHENTICATION_ENABLED) {
       setAccessReady(true);
       return;
     }
@@ -314,10 +324,10 @@ function SimulationDetailPage() {
     return () => {
       active = false;
     };
-  }, [authLoading, id, isPreview, navigate, user]);
+  }, [authLoading, id, isOpenView, navigate, user]);
 
   useEffect(() => {
-    if (authLoading || !accessReady || (AUTHENTICATION_ENABLED && !user && !isPreview)) return;
+    if (authLoading || !accessReady || (AUTHENTICATION_ENABLED && !user && !isOpenView)) return;
 
     async function loadSimulation() {
       try {
@@ -404,7 +414,7 @@ function SimulationDetailPage() {
     }
 
     void loadSimulation();
-  }, [accessReady, id, isPreview, user, authLoading]);
+  }, [accessReady, id, isPreview, isOpenView, user, authLoading]);
 
   // simulation_start는 카드 클릭이 아니라 상세 화면 실제 진입 시점에 찍는다.
   useEffect(() => {
@@ -434,7 +444,9 @@ function SimulationDetailPage() {
         if (typeof saved.screenIdx === "number") {
           setScreenIdx(Math.min(Math.max(saved.screenIdx, 0), screens.length - 1));
         } else if (typeof saved.stepIdx === "number") {
-          const idx = screens.findIndex((s) => s.kind === "question" && s.stepIndex === saved.stepIdx);
+          const idx = screens.findIndex(
+            (s) => s.kind === "question" && s.stepIndex === saved.stepIdx,
+          );
           if (idx >= 0) setScreenIdx(idx);
         }
       }
@@ -477,6 +489,10 @@ function SimulationDetailPage() {
     if (!sim || !model) return;
     if (isPreview) {
       toast("미리보기에서는 답안을 제출할 수 없습니다.");
+      return;
+    }
+    if (isDemo) {
+      toast("체험판에서는 답안을 제출할 수 없어요. 체험을 신청하면 이용할 수 있어요.");
       return;
     }
 
@@ -562,7 +578,7 @@ function SimulationDetailPage() {
     void capturePostHogEvent("simulation_complete", { simulation_id: String(sim.id) });
   };
 
-  if (authLoading || (AUTHENTICATION_ENABLED && !user && !isPreview) || loading) {
+  if (authLoading || (AUTHENTICATION_ENABLED && !user && !isOpenView) || loading) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-[#EEF0F3] px-4">
         <div className="w-full max-w-2xl">
@@ -609,7 +625,11 @@ function SimulationDetailPage() {
           <Button asChild className="h-10 flex-1 rounded-lg bg-zinc-900 text-sm hover:bg-zinc-800">
             <Link {...resultLink}>결과 화면 보러가기</Link>
           </Button>
-          <Button asChild variant="outline" className="h-10 flex-1 rounded-lg border-zinc-300 bg-white text-sm shadow-none hover:bg-zinc-100">
+          <Button
+            asChild
+            variant="outline"
+            className="h-10 flex-1 rounded-lg border-zinc-300 bg-white text-sm shadow-none hover:bg-zinc-100"
+          >
             <Link to="/">홈화면으로 가기</Link>
           </Button>
         </div>
@@ -933,7 +953,9 @@ function SimulationDetailPage() {
 
   // 질문 화면 왼쪽/바텀시트 자료 패널
   const questionCtx =
-    screen.kind === "question" ? getStepMaterialContext(model, model.steps[screen.stepIndex]) : null;
+    screen.kind === "question"
+      ? getStepMaterialContext(model, model.steps[screen.stepIndex])
+      : null;
   const sidebarTabs = questionCtx ? buildSidebarMaterialTabs(questionCtx) : [];
 
   let mainContent: React.ReactNode;
@@ -986,11 +1008,17 @@ function SimulationDetailPage() {
       <div className="mx-auto w-full max-w-2xl px-5 py-8 sm:px-12">
         <p className="text-xs text-zinc-500">상황</p>
         <div className="mt-2 rounded-xl border border-zinc-200 bg-white p-6">
-          <RichTextContent value={screen.markdown} compact className="prose prose-sm prose-zinc max-w-none" />
+          <RichTextContent
+            value={screen.markdown}
+            compact
+            className="prose prose-sm prose-zinc max-w-none"
+          />
         </div>
         <div className="mt-4 rounded-xl border border-dashed border-zinc-300 p-5">
           <p className="text-xs font-semibold text-zinc-500">이번 시뮬레이션에서 할 일</p>
-          <p className="mt-1.5 text-sm text-zinc-700">{model.steps.map((s) => s.title).join(" → ")}</p>
+          <p className="mt-1.5 text-sm text-zinc-700">
+            {model.steps.map((s) => s.title).join(" → ")}
+          </p>
         </div>
       </div>
     );
@@ -1017,7 +1045,8 @@ function SimulationDetailPage() {
     const prompt = step.prompts[screen.promptIndex];
     const answered = getPlainAnswerText(answers[prompt.id] ?? "").length > 0;
     const isLastPromptOfStep = screen.promptIndex === step.prompts.length - 1;
-    const showCompletion = isLastPromptOfStep && stepAnswered(step, answers) && step.completionMessage;
+    const showCompletion =
+      isLastPromptOfStep && stepAnswered(step, answers) && step.completionMessage;
 
     primaryDisabled = false;
     primaryLabel =
@@ -1039,8 +1068,15 @@ function SimulationDetailPage() {
         <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
           {sidebarTabs.length > 0 && (
             <div className="hidden lg:sticky lg:top-[5.5rem] lg:block lg:max-h-[calc(100dvh-8rem)] lg:self-start lg:overflow-y-auto">
-              <MaterialTabStrip tabs={sidebarTabs} value={materialTabIdx} onValueChange={setMaterialTabIdx} />
-              <MaterialBody body={sidebarTabs[materialTabIdx]?.body ?? sidebarTabs[0]?.body ?? ""} className="mt-3" />
+              <MaterialTabStrip
+                tabs={sidebarTabs}
+                value={materialTabIdx}
+                onValueChange={setMaterialTabIdx}
+              />
+              <MaterialBody
+                body={sidebarTabs[materialTabIdx]?.body ?? sidebarTabs[0]?.body ?? ""}
+                className="mt-3"
+              />
             </div>
           )}
           <div className="flex flex-col">
@@ -1099,6 +1135,20 @@ function SimulationDetailPage() {
         </div>
       </div>
     );
+  } else if (isDemo) {
+    // 데모는 작성까지만 열어둔다. 제출 화면에서는 난이도·동의 대신 신청 안내를 보여준다.
+    primaryLabel = "체험 신청하기";
+    primaryDisabled = false;
+    onPrimary = () => void navigate({ to: "/lp/trial" });
+    mainContent = (
+      <div className="mx-auto w-full max-w-2xl px-5 py-8 sm:px-12">
+        <h2 className="text-lg font-bold text-zinc-900">여기까지가 체험판이에요</h2>
+        <p className="mt-2 text-sm leading-6 text-zinc-600">
+          실제 과제가 어떤 형식인지 확인하셨어요. 답안 제출과 현직자 모범답안 비교는 체험을 신청하면
+          이용할 수 있어요.
+        </p>
+      </div>
+    );
   } else {
     primaryLabel = submitting ? "제출 중..." : "제출하기";
     primaryDisabled = submitting;
@@ -1143,7 +1193,12 @@ function SimulationDetailPage() {
   );
 
   return (
-    <SimulationShell label={topLabel} step={topStep} totalSteps={model.steps.length} bottomBar={bottomBar}>
+    <SimulationShell
+      label={topLabel}
+      step={topStep}
+      totalSteps={model.steps.length}
+      bottomBar={bottomBar}
+    >
       {blockerDialog}
       {mainContent}
       {sidebarTabs.length > 0 && (
@@ -1153,8 +1208,14 @@ function SimulationDetailPage() {
               <DrawerTitle>제공 자료</DrawerTitle>
             </DrawerHeader>
             <div className="flex flex-col gap-3 overflow-y-auto px-4 pb-6">
-              <MaterialTabStrip tabs={sidebarTabs} value={materialTabIdx} onValueChange={setMaterialTabIdx} />
-              <MaterialBody body={sidebarTabs[materialTabIdx]?.body ?? sidebarTabs[0]?.body ?? ""} />
+              <MaterialTabStrip
+                tabs={sidebarTabs}
+                value={materialTabIdx}
+                onValueChange={setMaterialTabIdx}
+              />
+              <MaterialBody
+                body={sidebarTabs[materialTabIdx]?.body ?? sidebarTabs[0]?.body ?? ""}
+              />
             </div>
           </DrawerContent>
         </Drawer>

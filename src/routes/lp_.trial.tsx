@@ -314,6 +314,9 @@ function ApplyForm() {
 // 모범답안은 유료 콘텐츠라 1단계 일부만 노출하고 나머지는 잠금 처리한다.
 const PREVIEW_AUTOPLAY_MS = 2600;
 
+// 미리보기가 옮겨 담은 실제 시뮬레이션. demo=1로 열면 비로그인도 과제 형식을 볼 수 있다.
+const PREVIEW_SIMULATION_ID = "9ab768b1-86a8-4eb5-a0ff-7d59b1ce5165";
+
 const PREVIEW_STEPS = [
   { no: 1, title: "핵심 문제 분석", min: 7 },
   { no: 2, title: "개선된 구매 흐름 설계", min: 8 },
@@ -346,7 +349,11 @@ const PREVIEW_SLIDES = [
         </div>
       </>
     ),
-    foot: <span className="pv-btn">1단계 시작하기 →</span>,
+    foot: (
+      <a className="pv-btn" href={`/simulation/${PREVIEW_SIMULATION_ID}?demo=1`}>
+        실제 과제 형식 보러가기 →
+      </a>
+    ),
   },
   {
     label: "모범 답안 예시 보기",
