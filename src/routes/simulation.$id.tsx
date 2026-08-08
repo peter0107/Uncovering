@@ -1021,15 +1021,6 @@ function SimulationDetailPage() {
             </div>
           )}
           <div className="flex flex-col">
-            {sidebarTabs.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setDrawerOpen(true)}
-                className="mb-3 inline-flex w-fit items-center gap-1.5 self-start rounded-full border border-zinc-200 px-3.5 py-2 text-xs font-medium text-zinc-600 lg:hidden"
-              >
-                자료 보기
-              </button>
-            )}
             <p className="text-xs text-zinc-500">
               질문 {screen.promptIndex + 1} / {step.prompts.length}
             </p>
@@ -1099,20 +1090,32 @@ function SimulationDetailPage() {
   }
 
   const bottomBar = (
-    <div className="mx-auto flex w-full max-w-[1100px] items-center gap-2 px-5 py-3.5 sm:px-12">
-      {screenIdx > 0 && (
-        <Button variant="outline" className="rounded-xl" onClick={goPrev}>
-          이전
-        </Button>
+    <div>
+      {screen.kind === "question" && sidebarTabs.length > 0 && (
+        <button
+          type="button"
+          aria-label="제공 자료 열기"
+          onClick={() => setDrawerOpen(true)}
+          className="flex h-6 w-full items-center justify-center border-b border-zinc-100 bg-white lg:hidden"
+        >
+          <span className="h-1 w-8 rounded-full bg-zinc-300" />
+        </button>
       )}
-      <Button
-        onClick={onPrimary}
-        disabled={primaryDisabled}
-        size="lg"
-        className="flex-1 rounded-xl bg-zinc-900 text-white hover:bg-zinc-700"
-      >
-        {primaryLabel}
-      </Button>
+      <div className="mx-auto flex w-full max-w-[1100px] items-center gap-2 px-5 py-3.5 sm:px-12">
+        {screenIdx > 0 && (
+          <Button variant="outline" className="rounded-xl" onClick={goPrev}>
+            이전
+          </Button>
+        )}
+        <Button
+          onClick={onPrimary}
+          disabled={primaryDisabled}
+          size="lg"
+          className="flex-1 rounded-xl bg-zinc-900 text-white hover:bg-zinc-700"
+        >
+          {primaryLabel}
+        </Button>
+      </div>
     </div>
   );
 
