@@ -739,7 +739,10 @@ async function extractJobPostingImageOcr(html: string, sourceUrl: URL) {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6",
+      model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5",
+      // Sonnet 5는 thinking을 생략하면 adaptive 사고가 켜져 max_tokens를 잠식한다.
+      // 기존 동작(사고 없음)을 유지하려면 명시적으로 끈다.
+      thinking: { type: "disabled" },
       max_tokens: 4000,
       messages: [
         {
@@ -883,7 +886,10 @@ ${getPrompt("company_interview_question_recommendation")}
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5",
+      model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5",
+      // Sonnet 5는 thinking을 생략하면 adaptive 사고가 켜진다. 강제 tool_choice와 함께
+      // 쓰면 사고가 max_tokens를 잠식해 도구 JSON이 잘리므로 명시적으로 끈다.
+      thinking: { type: "disabled" },
       max_tokens: 8000,
       tools: [COMPANY_AI_REVIEW_TOOL],
       tool_choice: { type: "tool", name: COMPANY_AI_REVIEW_TOOL_NAME },

@@ -157,7 +157,10 @@ ${context}`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6",
+        model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5",
+        // Sonnet 5는 thinking을 생략하면 adaptive 사고가 켜져 max_tokens를 잠식한다.
+        // 기존 동작(사고 없음)을 유지하려면 명시적으로 끈다.
+        thinking: { type: "disabled" },
         max_tokens: 1024,
         system: systemPrompt,
         messages: data.messages.map((m) => ({ role: m.role, content: m.content })),

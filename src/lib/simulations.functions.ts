@@ -721,7 +721,10 @@ export const evaluateAdminSubmissionWithAi = createServerFn({ method: "POST" })
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5",
+        model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5",
+        // Sonnet 5는 thinking을 생략하면 adaptive 사고가 켜진다. 강제 tool_choice와 함께
+        // 쓰면 사고가 max_tokens를 잠식해 도구 JSON이 잘리므로 명시적으로 끈다.
+        thinking: { type: "disabled" },
         max_tokens: 8000,
         tools: [COMPANY_AI_REVIEW_TOOL],
         tool_choice: { type: "tool", name: COMPANY_AI_REVIEW_TOOL_NAME },
