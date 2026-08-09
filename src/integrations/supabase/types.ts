@@ -782,6 +782,7 @@ export type Database = {
           email: string
           id: string
           job_role: string
+          last_reviewed_at: string | null
           mul_no: string | null
           order_id: string
           paid_at: string | null
@@ -789,9 +790,11 @@ export type Database = {
           phone: string
           plan: string
           refund_reason: string | null
+          review_required: boolean
           refunded_at: string | null
           simulation_id: string | null
           status: string
+          trial_content_updated_at: string | null
         }
         Insert: {
           access_code?: string | null
@@ -806,6 +809,7 @@ export type Database = {
           email: string
           id?: string
           job_role: string
+          last_reviewed_at?: string | null
           mul_no?: string | null
           order_id: string
           paid_at?: string | null
@@ -813,9 +817,11 @@ export type Database = {
           phone: string
           plan: string
           refund_reason?: string | null
+          review_required?: boolean
           refunded_at?: string | null
           simulation_id?: string | null
           status?: string
+          trial_content_updated_at?: string | null
         }
         Update: {
           access_code?: string | null
@@ -830,6 +836,7 @@ export type Database = {
           email?: string
           id?: string
           job_role?: string
+          last_reviewed_at?: string | null
           mul_no?: string | null
           order_id?: string
           paid_at?: string | null
@@ -837,9 +844,11 @@ export type Database = {
           phone?: string
           plan?: string
           refund_reason?: string | null
+          review_required?: boolean
           refunded_at?: string | null
           simulation_id?: string | null
           status?: string
+          trial_content_updated_at?: string | null
         }
         Relationships: [
           {

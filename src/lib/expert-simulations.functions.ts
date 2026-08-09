@@ -533,6 +533,21 @@ export const submitPublicExpertSimulationFeedback = createServerFn({ method: "PO
         verdict: data.verdict ?? null,
       });
     if (insertError) throw new Error("피드백을 저장하지 못했습니다.");
+
+    // 체험 과제가 수정된 뒤 남긴 최신 검수 의견이면 전달 잠금을 해제한다.
+    // 기존 피드백 이력은 그대로 보존한다.
+    const { error: trialUpdateError } = await supabaseAdmin
+      .from("landing_trial_orders")
+      .update({
+        review_required: false,
+        last_reviewed_at: new Date().toISOString(),
+      })
+      .eq("simulation_id", simulation.id)
+      .is("delivered_at", null);
+    if (trialUpdateError) {
+      console.error("Failed to update trial review state:", trialUpdateError);
+      throw new Error("검수 상태를 갱신하지 못했습니다.");
+    }
     return { ok: true };
   });
 

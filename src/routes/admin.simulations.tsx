@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { z } from "zod";
 import {
   Building2,
   ChevronDown,
@@ -46,10 +47,12 @@ import {
   deleteCompanySimulation,
   getAdminCompanies,
   getAdminCompanySimulations,
+  getAdminTrialOrderSimulation,
   setCompanySimulationVisibility,
   setCompanySimulationCardImage,
   updateCompany,
   updateCompanySimulation,
+  updateTrialOrderSimulation,
   uploadSimulationCardAsset,
   type AdminCompany,
   type AdminCompanySimulation,
@@ -422,6 +425,9 @@ function getAssetEditorImageStyle(editor: AssetEditorState, preset: AssetEditorP
 }
 
 export const Route = createFileRoute("/admin/simulations")({
+  validateSearch: z.object({
+    order: z.string().uuid().optional(),
+  }),
   head: () => ({
     meta: [
       { title: "Beginner - 기업 시뮬레이션 관리자" },
@@ -437,6 +443,7 @@ export const Route = createFileRoute("/admin/simulations")({
 
 function AdminSimulations() {
   const navigate = useNavigate();
+  const { order: trialOrderId } = Route.useSearch();
   const { user, loading: authLoading } = useAuth();
   const [companies, setCompanies] = useState<AdminCompany[]>([]);
   const [simulations, setSimulations] = useState<AdminCompanySimulation[]>([]);
@@ -446,6 +453,8 @@ function AdminSimulations() {
   const [editingCompanyId, setEditingCompanyId] = useState<string | null>(null);
   const [selectedCompanyCode, setSelectedCompanyCode] = useState("");
   const [selectedSimulationId, setSelectedSimulationId] = useState<string | null>(null);
+  const [isTrialOrderEditor, setIsTrialOrderEditor] = useState(false);
+  const [trialReviewRequired, setTrialReviewRequired] = useState(false);
   const [stepEditorPanel, setStepEditorPanel] = useState<StepEditorPanel>("situation");
   const [hasInitializedSelection, setHasInitializedSelection] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -553,26 +562,42 @@ function AdminSimulations() {
   }, []);
 
   const startNewSimulation = useCallback((companyCode: string) => {
+    if (trialOrderId) return;
     setSelectedSimulationId(null);
     setForm(createEmptyForm(companyCode));
     setStepEditorPanel("situation");
-  }, []);
+  }, [trialOrderId]);
 
   const loadSimulations = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [companyData, simulationData] = await Promise.all([
+      const [companyData, simulationData, trialData] = await Promise.all([
         getAdminCompanies(),
         getAdminCompanySimulations(),
+        trialOrderId
+          ? getAdminTrialOrderSimulation({ data: { orderId: trialOrderId } })
+          : Promise.resolve(null),
       ]);
       setCompanies(companyData);
-      setSimulations(simulationData);
+      if (trialData) {
+        setSimulations([trialData.simulation]);
+        setIsTrialOrderEditor(true);
+        setTrialReviewRequired(trialData.reviewRequired);
+        setSelectedCompanyCode(trialData.simulation.companyCode);
+        setSelectedSimulationId(trialData.simulation.id);
+        setForm(formFromSimulation(trialData.simulation));
+        setHasInitializedSelection(true);
+      } else {
+        setSimulations(simulationData);
+        setIsTrialOrderEditor(false);
+        setTrialReviewRequired(false);
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "관리자 목록을 불러오지 못했습니다.");
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [trialOrderId]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -650,6 +675,7 @@ function AdminSimulations() {
   }
 
   function selectCompany(companyCode: string) {
+    if (isTrialOrderEditor) return;
     setSelectedCompanyCode(companyCode);
     const firstSimulation = simulations.find(
       (simulation) => simulation.companyCode === companyCode,
@@ -945,6 +971,19 @@ function AdminSimulations() {
       };
 
       if (selectedSimulationId) {
+        if (trialOrderId) {
+          await updateTrialOrderSimulation({
+            data: {
+              id: selectedSimulationId,
+              orderId: trialOrderId,
+              ...payload,
+            },
+          });
+          setTrialReviewRequired(true);
+          await loadSimulations();
+          toast.success("체험 과제를 수정했습니다.");
+          return;
+        }
         await updateCompanySimulation({
           data: {
             id: selectedSimulationId,
@@ -1045,10 +1084,14 @@ function AdminSimulations() {
         <div>
           <p className="text-xs font-medium text-neutral-500">Beginner Admin</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight text-neutral-900">
-            기업 시뮬레이션 관리
+            {isTrialOrderEditor ? "체험 과제 수정" : "기업 시뮬레이션 관리"}
           </h1>
           <p className="mt-2 text-sm text-neutral-500">
-            기업별 직무 시뮬레이션을 등록하고 관리합니다.
+            {isTrialOrderEditor
+              ? trialReviewRequired
+                ? "수정된 과제는 현직자 재검수가 필요합니다."
+                : "체험 주문에 배정된 과제입니다."
+              : "기업별 직무 시뮬레이션을 등록하고 관리합니다."}
           </p>
         </div>
         <button
@@ -1073,7 +1116,7 @@ function AdminSimulations() {
             <Building2 className="h-4 w-4 text-neutral-400" />
           </div>
 
-          <div className="border-b border-neutral-200 p-3">
+          {!isTrialOrderEditor && <div className="border-b border-neutral-200 p-3">
             <button
               type="button"
               onClick={startCreateCompany}
@@ -1092,7 +1135,7 @@ function AdminSimulations() {
                 onChange={updateCompanyForm}
               />
             )}
-          </div>
+          </div>}
 
           <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
             {companiesWithCounts.map((company) => (
@@ -1101,8 +1144,14 @@ function AdminSimulations() {
                 role="button"
                 tabIndex={0}
                 onClick={() => selectCompany(company.code)}
-                onKeyDown={(event) => activateCard(event, () => selectCompany(company.code))}
-                className={`grid cursor-pointer grid-cols-[auto_1fr_auto] gap-3 rounded-md border p-3 text-left transition-colors ${
+                onKeyDown={(event) => {
+                  if (!isTrialOrderEditor) {
+                    activateCard(event, () => selectCompany(company.code));
+                  }
+                }}
+                className={`grid ${
+                  isTrialOrderEditor ? "cursor-default" : "cursor-pointer"
+                } grid-cols-[auto_1fr_auto] gap-3 rounded-md border p-3 text-left transition-colors ${
                   company.code === selectedCompanyCode
                     ? "border-neutral-900 bg-neutral-50"
                     : "border-neutral-200 hover:bg-neutral-50"
@@ -1115,6 +1164,7 @@ function AdminSimulations() {
                     openAssetFilePicker({ kind: "logo", companyId: company.id });
                   }}
                   disabled={
+                    isTrialOrderEditor ||
                     uploadingAssetKey === getUploadKey({ kind: "logo", companyId: company.id })
                   }
                   aria-label={`${company.name} 로고 변경`}
@@ -1137,7 +1187,7 @@ function AdminSimulations() {
                     시뮬레이션 {company.simulationCount}개
                   </div>
                 </div>
-                <div className="flex shrink-0 flex-col gap-1">
+                {!isTrialOrderEditor && <div className="flex shrink-0 flex-col gap-1">
                   <button
                     type="button"
                     onClick={(event) => {
@@ -1174,8 +1224,8 @@ function AdminSimulations() {
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
-                </div>
-                {editingCompanyId === company.id && (
+                </div>}
+                {!isTrialOrderEditor && editingCompanyId === company.id && (
                   <div
                     className="col-span-3 mt-2 border-t border-neutral-200 pt-3"
                     onClick={(event) => event.stopPropagation()}
@@ -1212,7 +1262,7 @@ function AdminSimulations() {
             <ListChecks className="h-4 w-4 text-neutral-400" />
           </div>
 
-          <div className="border-b border-neutral-200 p-3">
+          {!isTrialOrderEditor && <div className="border-b border-neutral-200 p-3">
             <button
               type="button"
               onClick={() =>
@@ -1223,7 +1273,7 @@ function AdminSimulations() {
             >
               <Plus className="h-3.5 w-3.5" />이 기업에 추가
             </button>
-          </div>
+          </div>}
 
           <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
             {companySimulations.map((simulation) => (
@@ -1251,13 +1301,16 @@ function AdminSimulations() {
                   domain={simulation.domain}
                   estimatedMinutes={simulation.estimatedMinutes}
                   className="h-full shadow-none"
-                  onLogoClick={() =>
-                    openAssetFilePicker({ kind: "logo", companyId: simulation.companyId })
+                  onLogoClick={
+                    isTrialOrderEditor
+                      ? undefined
+                      : () =>
+                          openAssetFilePicker({ kind: "logo", companyId: simulation.companyId })
                   }
                   onImageClick={() =>
                     openAssetFilePicker({ kind: "cardImage", simulationId: simulation.id })
                   }
-                  topRight={
+                  topRight={!isTrialOrderEditor ? (
                     <button
                       type="button"
                       onClick={(event) => {
@@ -1270,8 +1323,8 @@ function AdminSimulations() {
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
-                  }
-                  bottomRight={
+                  ) : undefined}
+                  bottomRight={!isTrialOrderEditor ? (
                     <button
                       type="button"
                       onClick={(event) => {
@@ -1293,7 +1346,7 @@ function AdminSimulations() {
                       />
                       {simulation.isPublic ? "공개" : "비공개"}
                     </button>
-                  }
+                  ) : undefined}
                 />
               </div>
             ))}
@@ -1311,10 +1364,16 @@ function AdminSimulations() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="text-sm font-semibold text-neutral-900">
-                  {isEditing ? "시뮬레이션 수정" : "시뮬레이션 추가"}
+                  {isTrialOrderEditor
+                    ? "체험 과제 수정"
+                    : isEditing
+                      ? "시뮬레이션 수정"
+                      : "시뮬레이션 추가"}
                 </h2>
                 <p className="mt-1 text-xs text-neutral-500">
-                  저장하면 유저 추천 화면과 기업 직무 선택 목록에 반영됩니다.
+                  {isTrialOrderEditor
+                    ? "저장 후 현직자 재검수가 필요합니다."
+                    : "저장하면 유저 추천 화면과 기업 직무 선택 목록에 반영됩니다."}
                 </p>
               </div>
               <button
@@ -1524,7 +1583,13 @@ function AdminSimulations() {
                 className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-neutral-900 px-4 text-sm font-medium text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isEditing ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                {isSaving ? "저장 중..." : isEditing ? "수정 저장" : "시뮬레이션 추가"}
+                {isSaving
+                  ? "저장 중..."
+                  : isTrialOrderEditor
+                    ? "수정 저장"
+                    : isEditing
+                      ? "수정 저장"
+                      : "시뮬레이션 추가"}
               </button>
             </div>
           </form>

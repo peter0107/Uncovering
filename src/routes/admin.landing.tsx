@@ -65,6 +65,7 @@ type TrialOrderEditPatch = {
 function trialStage(order: TrialOrder): { label: string; tone: "todo" | "wait" | "done" } {
   if (order.status !== "paid") return { label: "결제 전", tone: "wait" };
   if (!order.simulationId) return { label: "과제 미생성", tone: "todo" };
+  if (order.reviewRequired) return { label: "과제 수정됨 · 재검수 대기", tone: "wait" };
   if (order.reviewCount === 0) {
     return { label: "과제 생성완료 · 현직자 검수 대기", tone: "wait" };
   }
@@ -482,13 +483,34 @@ function AdminLanding() {
                             검수 페이지 열기
                           </a>
                         )}
+                        {order.status === "paid" &&
+                          order.simulationId &&
+                          !order.deliveredAt && (
+                            <ActionButton
+                              disabled={busyOrderId !== null}
+                              onClick={() =>
+                                navigate({
+                                  to: "/admin/simulations",
+                                  search: { order: order.orderId },
+                                })
+                              }
+                            >
+                              과제 수정
+                            </ActionButton>
+                          )}
                         {order.status === "paid" && order.simulationId && (
                           <ActionButton
-                            disabled={busyOrderId !== null || order.reviewCount === 0}
+                            disabled={
+                              busyOrderId !== null ||
+                              order.reviewCount === 0 ||
+                              order.reviewRequired
+                            }
                             title={
-                              order.reviewCount > 0
-                                ? undefined
-                                : "먼저 현직자 검수 의견을 받아주세요."
+                              order.reviewRequired
+                                ? "수정된 과제는 현직자 재검수 후 코드를 발급할 수 있습니다."
+                                : order.reviewCount > 0
+                                  ? undefined
+                                  : "먼저 현직자 검수 의견을 받아주세요."
                             }
                             onClick={() => void issueCode(order)}
                           >
@@ -508,7 +530,9 @@ function AdminLanding() {
                             과제 링크 복사
                           </ActionButton>
                         )}
-                        {order.status === "paid" && order.reviewCount > 0 && (
+                        {order.status === "paid" &&
+                          order.reviewCount > 0 &&
+                          !order.reviewRequired && (
                           <button
                             type="button"
                             onClick={() => void finalizeDelivery(order)}
@@ -523,11 +547,20 @@ function AdminLanding() {
                           <button
                             type="button"
                             onClick={() => void markDelivered(order.orderId)}
-                            disabled={busyOrderId !== null || !order.accessCode}
+                            disabled={
+                              busyOrderId !== null ||
+                              !order.accessCode ||
+                              order.reviewRequired ||
+                              order.reviewCount === 0
+                            }
                             title={
-                              order.accessCode
-                                ? "이메일 없이 코드만 활성화합니다 (직접 전달한 경우에만 사용)."
-                                : "먼저 코드를 발급해주세요."
+                              order.reviewRequired
+                                ? "수정된 과제는 현직자 재검수 후 완료 처리할 수 있습니다."
+                                : !order.accessCode
+                                  ? "먼저 코드를 발급해주세요."
+                                  : order.reviewCount === 0
+                                    ? "먼저 현직자 검수 의견을 받아주세요."
+                                    : "이메일 없이 코드만 활성화합니다 (직접 전달한 경우에만 사용)."
                             }
                             className="inline-flex h-8 items-center px-1 text-xs font-medium text-neutral-400 underline hover:text-neutral-700 disabled:cursor-not-allowed disabled:opacity-40"
                           >

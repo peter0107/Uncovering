@@ -53,6 +53,12 @@ export type AdminCompanySimulation = {
   createdAt: string;
 };
 
+export type AdminTrialOrderSimulation = {
+  simulation: AdminCompanySimulation;
+  reviewRequired: boolean;
+  deliveredAt: string | null;
+};
+
 export type SimulationFormat = "single" | "selection";
 export type SelectionMode = "separated" | "common";
 
@@ -234,6 +240,14 @@ const updateCompanySimulationInputSchema = createCompanySimulationInputSchema.ex
   id: z.string().uuid(),
 });
 
+const trialOrderIdInputSchema = z.object({
+  orderId: z.string().uuid(),
+});
+
+const updateTrialOrderSimulationInputSchema = updateCompanySimulationInputSchema.extend({
+  orderId: z.string().uuid(),
+});
+
 const simulationIdInputSchema = z.object({
   id: z.string().uuid(),
 });
@@ -393,6 +407,9 @@ function mapAdminSimulation(row: Record<string, unknown>): AdminCompanySimulatio
   };
 }
 
+const ADMIN_SIMULATION_SELECT =
+  "id, company_id, title, role_label, job_family, domain, estimated_minutes, card_image_url, description, simulation_source, expert_nickname, expert_job_title, simulation_format, selection_mode, single_answer_question, task_prompt, shared_situation, shared_materials, steps, is_public, deleted_at, created_at, companies(code, unique_code, name, description, logo_url)";
+
 function mapAdminCompany(row: Record<string, unknown>): AdminCompany {
   const code = String(row.code ?? row.unique_code ?? "");
   const name = String(row.name ?? "");
@@ -510,9 +527,7 @@ export const getAdminCompanySimulations = createServerFn({ method: "GET" }).hand
 
     const { data, error } = await supabaseAdmin
       .from("job_simulations")
-      .select(
-        "id, company_id, title, role_label, job_family, domain, estimated_minutes, card_image_url, description, simulation_source, expert_nickname, expert_job_title, simulation_format, selection_mode, single_answer_question, task_prompt, shared_situation, shared_materials, steps, is_public, deleted_at, created_at, companies(code, unique_code, name, description, logo_url)",
-      )
+      .select(ADMIN_SIMULATION_SELECT)
       .eq("simulation_source", "company")
       .is("deleted_at", null)
       .order("created_at", { ascending: false });
@@ -525,6 +540,40 @@ export const getAdminCompanySimulations = createServerFn({ method: "GET" }).hand
     return ((data ?? []) as Record<string, unknown>[]).map(mapAdminSimulation);
   },
 );
+
+/** 체험 주문에 배정된 전용 과제만 수정 화면에 불러온다. */
+export const getAdminTrialOrderSimulation = createServerFn({ method: "GET" })
+  .inputValidator(trialOrderIdInputSchema)
+  .handler(async ({ data }): Promise<AdminTrialOrderSimulation> => {
+    await assertAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: order, error: orderError } = await supabaseAdmin
+      .from("landing_trial_orders")
+      .select("simulation_id, review_required, delivered_at")
+      .eq("order_id", data.orderId)
+      .maybeSingle();
+    if (orderError || !order?.simulation_id) {
+      throw new Error("배정된 체험 과제를 찾을 수 없습니다.");
+    }
+
+    const { data: row, error } = await supabaseAdmin
+      .from("job_simulations")
+      .select(ADMIN_SIMULATION_SELECT)
+      .eq("id", order.simulation_id)
+      .eq("simulation_source", "trial")
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (error || !row) {
+      throw new Error("체험 과제를 불러오지 못했습니다.");
+    }
+
+    return {
+      simulation: mapAdminSimulation(row as Record<string, unknown>),
+      reviewRequired: order.review_required === true,
+      deliveredAt: order.delivered_at ?? null,
+    };
+  });
 
 export const getAdminSimulationPreview = createServerFn({ method: "GET" })
   .inputValidator(simulationIdInputSchema)
@@ -1144,6 +1193,77 @@ export const updateCompanySimulation = createServerFn({ method: "POST" })
     }
 
     return { ok: true };
+  });
+
+/**
+ * 체험 주문에 연결된 과제만 수정한다. 수정 직후에는 재검수 전까지 코드 발급과 전달이 잠긴다.
+ */
+export const updateTrialOrderSimulation = createServerFn({ method: "POST" })
+  .inputValidator(updateTrialOrderSimulationInputSchema)
+  .handler(async ({ data }) => {
+    await assertAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: order, error: orderError } = await supabaseAdmin
+      .from("landing_trial_orders")
+      .select("simulation_id, delivered_at")
+      .eq("order_id", data.orderId)
+      .maybeSingle();
+    if (orderError || !order || order.simulation_id !== data.id) {
+      throw new Error("주문에 연결된 체험 과제를 찾을 수 없습니다.");
+    }
+    if (order.delivered_at) {
+      throw new Error("발송 완료된 체험 과제는 수정할 수 없습니다.");
+    }
+
+    const { data: company, error: companyError } = await supabaseAdmin
+      .from("companies")
+      .select("id")
+      .eq("code", data.companyCode)
+      .single();
+    if (companyError || !company) throw new Error("Invalid company code");
+
+    const jobFamily = data.jobFamily.trim() || data.roleLabel.trim();
+    const { error: updateError } = await supabaseAdmin
+      .from("job_simulations")
+      .update({
+        company_id: company.id,
+        title: data.title,
+        role_label: data.roleLabel,
+        description: data.description,
+        card_image_url: data.cardImageUrl.trim() || null,
+        job_family: jobFamily,
+        domain: data.domain,
+        estimated_minutes: data.estimatedMinutes,
+        simulation_format: data.simulationFormat,
+        selection_mode: data.selectionMode,
+        single_answer_question: data.singleAnswerQuestion.trim() || null,
+        task_prompt: data.taskPrompt,
+        shared_situation: data.sharedSituation.trim(),
+        shared_materials: data.sharedMaterials.trim(),
+        steps: data.steps,
+      })
+      .eq("id", data.id)
+      .eq("simulation_source", "trial");
+    if (updateError) {
+      console.error("Failed to update trial simulation:", updateError);
+      throw new Error("체험 과제를 수정하지 못했습니다.");
+    }
+
+    const { error: gateError } = await supabaseAdmin
+      .from("landing_trial_orders")
+      .update({
+        review_required: true,
+        trial_content_updated_at: new Date().toISOString(),
+        last_reviewed_at: null,
+      })
+      .eq("order_id", data.orderId);
+    if (gateError) {
+      console.error("Failed to require trial re-review:", gateError);
+      throw new Error("재검수 상태를 저장하지 못했습니다.");
+    }
+
+    return { ok: true as const };
   });
 
 export const setCompanySimulationVisibility = createServerFn({ method: "POST" })

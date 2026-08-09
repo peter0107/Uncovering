@@ -398,6 +398,8 @@ export type AdminLandingTrialOrder = {
   reviewCount: number;
   /** 가장 최근 검수 판정. approved | revise | "" */
   reviewVerdict: string;
+  /** 과제 수정 후 새 현직자 검수가 필요한지 여부 */
+  reviewRequired: boolean;
   accessCode: string;
   answerSubmittedAt: string;
 };
@@ -512,6 +514,7 @@ export const getAdminLandingData = createServerFn({ method: "GET" }).handler(
           reviewToken: simulation?.token ?? "",
           reviewCount: review?.count ?? 0,
           reviewVerdict: review?.verdict ?? "",
+          reviewRequired: row.review_required === true,
           accessCode: row.access_code ?? "",
           answerSubmittedAt: row.answer_submitted_at
             ? formatDateTime(row.answer_submitted_at)
@@ -529,6 +532,25 @@ export const markTrialOrderDelivered = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     await assertAdmin();
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: order, error: orderError } = await supabaseAdmin
+      .from("landing_trial_orders")
+      .select("order_id, status, simulation_id, review_required")
+      .eq("order_id", data.orderId)
+      .maybeSingle();
+    if (orderError || !order) throw new Error("주문을 찾을 수 없습니다.");
+    if (order.status !== "paid" || !order.simulation_id) {
+      throw new Error("결제 완료된 배정 과제만 완료 처리할 수 있습니다.");
+    }
+    if (order.review_required) {
+      throw new Error("수정된 과제는 현직자 재검수 후 완료 처리할 수 있습니다.");
+    }
+    const { count: reviewCount, error: reviewError } = await supabaseAdmin
+      .from("expert_simulation_share_feedback")
+      .select("id", { count: "exact", head: true })
+      .eq("simulation_id", order.simulation_id);
+    if (reviewError || !reviewCount) {
+      throw new Error("현직자 검수 의견을 받은 후 완료 처리할 수 있습니다.");
+    }
     const { error } = await supabaseAdmin
       .from("landing_trial_orders")
       .update({ delivered_at: new Date().toISOString() })
@@ -694,7 +716,12 @@ export const assignTrialSimulation = createServerFn({ method: "POST" })
 
     const { error: linkError } = await supabaseAdmin
       .from("landing_trial_orders")
-      .update({ simulation_id: data.simulationId })
+      .update({
+        simulation_id: data.simulationId,
+        review_required: true,
+        trial_content_updated_at: new Date().toISOString(),
+        last_reviewed_at: null,
+      })
       .eq("order_id", data.orderId);
     if (linkError) {
       console.error("Failed to link trial simulation to order:", linkError);
@@ -715,7 +742,7 @@ export const issueTrialAccessCode = createServerFn({ method: "POST" })
 
     const { data: order, error: orderError } = await supabaseAdmin
       .from("landing_trial_orders")
-      .select("order_id, status, simulation_id")
+      .select("order_id, status, simulation_id, review_required")
       .eq("order_id", data.orderId)
       .maybeSingle();
     if (orderError) {
@@ -725,6 +752,9 @@ export const issueTrialAccessCode = createServerFn({ method: "POST" })
     if (!order) throw new Error("주문을 찾을 수 없습니다.");
     if (order.status !== "paid") throw new Error("결제 완료된 주문에만 코드를 발급할 수 있습니다.");
     if (!order.simulation_id) throw new Error("먼저 과제를 배정해주세요.");
+    if (order.review_required) {
+      throw new Error("수정된 과제는 현직자 재검수 후 코드를 발급할 수 있습니다.");
+    }
 
     // 클라이언트 게이트를 우회해도 서버가 다시 막는다 — 검수 의견이 하나라도 있어야 한다.
     // 승인/수정 구분은 없다 — 현직자는 의견만 남기고, 관리자가 내용을 보고 최종 승인한다.
@@ -887,12 +917,13 @@ async function deliverTrialTaskEmail(
 
     const { data: order, error } = await supabaseAdmin
       .from("landing_trial_orders")
-      .select("order_id, status, email, job_role, company_type, access_code, simulation_id")
+      .select("order_id, status, email, job_role, company_type, access_code, simulation_id, review_required")
       .eq("order_id", orderId)
       .maybeSingle();
     if (error || !order) return { ok: false, reason: "order-not-found" };
     if (order.status !== "paid") return { ok: false, reason: "not-paid" };
     if (!order.simulation_id) return { ok: false, reason: "no-simulation" };
+    if (order.review_required) return { ok: false, reason: "needs-review" };
 
     // UI 가드를 우회한 호출을 막기 위해 서버에서도 재확인한다 — 승인/수정 구분 없이
     // 검수 의견이 하나라도 있으면 된다. 그 내용을 관리자가 직접 읽고 이 버튼으로 승인한다.
@@ -939,6 +970,7 @@ const FINALIZE_ERROR_MESSAGES: Record<string, string> = {
   "order-not-found": "주문을 찾을 수 없습니다.",
   "not-paid": "결제 완료된 주문이 아닙니다.",
   "no-simulation": "배정된 과제가 없습니다.",
+  "needs-review": "수정된 과제는 현직자 재검수 후 발송할 수 있습니다.",
   "not-approved": "현직자 검수 의견이 아직 없습니다.",
   "delivered-flag-not-set": "메일은 발송됐지만 상태 갱신에 실패했습니다. 다시 시도해주세요.",
   "unexpected-error": "이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.",
