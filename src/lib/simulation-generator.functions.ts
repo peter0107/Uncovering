@@ -743,7 +743,9 @@ async function generateSimulationDraftFromInput(
   }
   const instruction =
     savedPrompt?.prompt?.trim() || COMPANY_AI_PROMPT_DEFAULTS[GENERATOR_PROMPT_KEY].prompt;
-  const model = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5";
+  // 새 API 키에서도 안정적으로 사용할 수 있는 Anthropic의 공식 Sonnet 4 모델 ID를 기본값으로 둡니다.
+  // 배포 환경에 ANTHROPIC_MODEL이 있으면 그 값을 우선합니다.
+  const model = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-20250514";
 
   // 어느 구간에서 시간을 쓰는지 로그로 남긴다 (wrangler tail에서 확인).
   const startedAt = Date.now();
