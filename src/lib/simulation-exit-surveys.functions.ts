@@ -77,11 +77,12 @@ export type AdminExitSurvey = {
 export const submitSimulationExitSurvey = createServerFn({ method: "POST" })
   .inputValidator(submitExitSurveySchema)
   .handler(async ({ data }) => {
+    // 로그인 없이도 시뮬레이션을 수행할 수 있으므로(AUTHENTICATION_ENABLED=false) 비로그인
+    // 이탈도 기록한다. job_seeker_id는 nullable이라 익명은 null로 남는다.
     const user = await getRequestUser();
-    if (!user) throw new Error("로그인이 필요합니다.");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.from("simulation_exit_surveys").insert({
-      job_seeker_id: user.id,
+      job_seeker_id: user?.id ?? null,
       job_simulation_id: data.simulationId,
       reason: data.reason,
       other_text: data.reason === "other" ? data.otherText : null,
@@ -104,7 +105,7 @@ export const getAdminSimulationExitSurveys = createServerFn({ method: "GET" }).h
     const { data, error } = await supabaseAdmin
       .from("simulation_exit_surveys")
       .select(
-        "id, reason, other_text, job_simulation_id, step_index, total_steps, answered_count, elapsed_seconds, created_at, job_simulations(title), job_seekers(display_name)",
+        "id, reason, other_text, job_simulation_id, job_seeker_id, step_index, total_steps, answered_count, elapsed_seconds, created_at, job_simulations(title), job_seekers(display_name)",
       )
       .order("created_at", { ascending: false })
       .limit(500);
@@ -122,7 +123,10 @@ export const getAdminSimulationExitSurveys = createServerFn({ method: "GET" }).h
         otherText: row.other_text ?? "",
         simulationId: row.job_simulation_id,
         simulationTitle: simulation?.title ?? "삭제된 시뮬레이션",
-        applicantName: seeker?.display_name ?? "알 수 없음",
+        // 비로그인 이탈은 job_seeker_id 자체가 없다. 이름 미입력 회원과 구분해서 보여준다.
+        applicantName: row.job_seeker_id
+          ? (seeker?.display_name ?? "이름 미입력")
+          : "비로그인 방문자",
         stepIndex: row.step_index,
         totalSteps: row.total_steps,
         answeredCount: row.answered_count,
