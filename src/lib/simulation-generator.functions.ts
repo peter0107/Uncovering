@@ -57,6 +57,47 @@ const generateInputSchema = z.object({
 
 export type GenerateSimulationInput = z.infer<typeof generateInputSchema>;
 
+type GeneratorRequestTrace = {
+  requestId: string;
+  inputFingerprint: string;
+  incomingCfRay: string | null;
+  workerColo: string | null;
+};
+
+function logGeneratorTrace(
+  trace: GeneratorRequestTrace,
+  stage: string,
+  details: Record<string, unknown> = {},
+) {
+  // 사용자 입력 원문과 키는 기록하지 않고, 같은 요청인지 확인할 지문만 남긴다.
+  console.info(
+    "[simulation-generator]",
+    JSON.stringify({
+      requestId: trace.requestId,
+      inputFingerprint: trace.inputFingerprint,
+      incomingCfRay: trace.incomingCfRay,
+      workerColo: trace.workerColo,
+      stage,
+      ...details,
+    }),
+  );
+}
+
+async function createInputFingerprint(data: GenerateSimulationInput): Promise<string> {
+  const normalized = JSON.stringify({
+    companyName: data.companyName,
+    roleName: data.roleName,
+    domain: data.domain,
+    sources: data.sources,
+    note: data.note,
+  });
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(normalized));
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("")
+    .slice(0, 16);
+}
+
 export type GeneratedCriterion = {
   title: string;
   sources: Array<{ platform: string; quote: string }>;
@@ -524,6 +565,8 @@ async function requestAnthropic(
   apiKey: string,
   body: Record<string, unknown>,
   timeoutMs: number,
+  trace?: GeneratorRequestTrace,
+  stage = "research",
 ): Promise<{ response: Response; payload: AnthropicPayload }> {
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -549,6 +592,15 @@ async function requestAnthropic(
     );
   }
 
+  if (!response.ok && trace) {
+    logGeneratorTrace(trace, stage, {
+      upstreamStatus: response.status,
+      upstreamRequestId: response.headers.get("request-id") ?? response.headers.get("x-request-id"),
+      upstreamCfRay: response.headers.get("cf-ray"),
+      upstreamError: getAnthropicErrorMessage(payload),
+    });
+  }
+
   return { response, payload };
 }
 
@@ -562,6 +614,7 @@ async function streamAnthropicToolCall(
   apiKey: string,
   body: Record<string, unknown>,
   timeoutMs: number,
+  trace: GeneratorRequestTrace,
 ): Promise<{ toolInput: unknown; stopReason: string | null }> {
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -576,6 +629,12 @@ async function streamAnthropicToolCall(
 
   if (!response.ok || !response.body) {
     const text = (await response.text()).replace(/\s+/g, " ").trim().slice(0, 240);
+    logGeneratorTrace(trace, "generation", {
+      upstreamStatus: response.status,
+      upstreamRequestId: response.headers.get("request-id") ?? response.headers.get("x-request-id"),
+      upstreamCfRay: response.headers.get("cf-ray"),
+      upstreamError: text,
+    });
     throw new Error(`Anthropic API 오류 (HTTP ${response.status})${text ? ` - ${text}` : ""}`);
   }
 
@@ -656,6 +715,8 @@ async function collectWebResearchForFocus(
   apiKey: string,
   model: string,
   prompt: string,
+  trace: GeneratorRequestTrace,
+  focus: string,
 ): Promise<string | null> {
   const messages: AnthropicMessage[] = [{ role: "user", content: prompt }];
 
@@ -670,6 +731,8 @@ async function collectWebResearchForFocus(
         messages,
       },
       ANTHROPIC_RESEARCH_TIMEOUT_MS,
+      trace,
+      `research:${focus}`,
     );
 
     for (let attempt = 0; attempt <= MAX_WEB_SEARCH_CONTINUATIONS; attempt += 1) {
@@ -701,6 +764,8 @@ async function collectWebResearchForFocus(
           messages,
         },
         ANTHROPIC_RESEARCH_TIMEOUT_MS,
+        trace,
+        `research:${focus}`,
       );
     }
   } catch (error) {
@@ -715,11 +780,12 @@ async function collectWebResearch(
   apiKey: string,
   model: string,
   input: GenerateSimulationInput,
+  trace: GeneratorRequestTrace,
 ): Promise<string | null> {
   // 세 검색 초점은 서로 의존하지 않습니다. 병렬 실행해 전체 생성 대기 시간을 줄입니다.
   const results = await Promise.all(
-    buildWebResearchPrompts(input).map((prompt) =>
-      collectWebResearchForFocus(apiKey, model, prompt),
+    buildWebResearchPrompts(input).map((prompt, index) =>
+      collectWebResearchForFocus(apiKey, model, prompt, trace, String(index + 1)),
     ),
   );
   const summaries = results.filter((summary): summary is string => Boolean(summary));
@@ -728,6 +794,7 @@ async function collectWebResearch(
 
 async function generateSimulationDraftFromInput(
   data: GenerateSimulationInput,
+  trace: GeneratorRequestTrace,
 ): Promise<GeneratedSimulationDraft> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY 환경변수를 서버 환경에 설정해주세요.");
@@ -751,11 +818,13 @@ async function generateSimulationDraftFromInput(
 
   // 어느 구간에서 시간을 쓰는지 로그로 남긴다 (wrangler tail에서 확인).
   const startedAt = Date.now();
-  const researchSummary = await collectWebResearch(apiKey, model, data);
+  const researchSummary = await collectWebResearch(apiKey, model, data, trace);
   const researchMs = Date.now() - startedAt;
-  console.log(
-    `[generator] model=${model} research=${researchMs}ms summary=${researchSummary?.length ?? 0}chars`,
-  );
+  logGeneratorTrace(trace, "research:complete", {
+    model,
+    durationMs: researchMs,
+    summaryLength: researchSummary?.length ?? 0,
+  });
   const generationMessages: AnthropicMessage[] = [
     {
       role: "user",
@@ -782,6 +851,7 @@ async function generateSimulationDraftFromInput(
         messages: generationMessages,
       },
       ANTHROPIC_GENERATION_TIMEOUT_MS,
+      trace,
     );
   } catch (error) {
     // 타임아웃과 그 외 전송 오류를 구분해서 알린다. 한 문구로 뭉뚱그리면 원인을 알 수 없다.
@@ -795,9 +865,11 @@ async function generateSimulationDraftFromInput(
     );
   }
 
-  console.log(
-    `[generator] generation=${Date.now() - startedAt - researchMs}ms stop=${String(generated.stopReason)}`,
-  );
+  logGeneratorTrace(trace, "generation:complete", {
+    model,
+    durationMs: Date.now() - startedAt - researchMs,
+    stopReason: String(generated.stopReason),
+  });
 
   if (generated.stopReason === "max_tokens") {
     throw new Error("생성 결과가 너무 길어요. JD를 줄이거나 다시 시도해주세요.");
@@ -884,6 +956,7 @@ export type GenerateSimulationStreamPayload =
 
 export function handleGenerateSimulationRequest(request: Request): Response {
   const encoder = new TextEncoder();
+  const requestId = crypto.randomUUID();
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -905,19 +978,29 @@ export function handleGenerateSimulationRequest(request: Request): Response {
       try {
         await assertAdminToken(readBearerToken(request.headers.get("authorization") ?? ""));
         const input = generateInputSchema.parse(await request.json());
-        const draft = await generateSimulationDraftFromInput(input);
+        const workerRequest = request as Request & { cf?: { colo?: unknown } };
+        const trace: GeneratorRequestTrace = {
+          requestId,
+          inputFingerprint: await createInputFingerprint(input),
+          incomingCfRay: request.headers.get("cf-ray"),
+          workerColo:
+            typeof workerRequest.cf?.colo === "string" ? workerRequest.cf.colo : null,
+        };
+        logGeneratorTrace(trace, "received", { sourceCount: input.sources.length });
+        const draft = await generateSimulationDraftFromInput(input, trace);
         send({ ok: true, draft });
       } catch (error) {
         // 첫 바이트가 이미 나갔으므로 상태 코드를 바꿀 수 없습니다. 오류도 본문으로 보냅니다.
         console.error("Simulation generation failed:", error);
+        const message =
+          error instanceof z.ZodError
+            ? "입력값이 올바르지 않습니다."
+            : error instanceof Error
+              ? error.message
+              : "AI 생성에 실패했어요.";
         send({
           ok: false,
-          message:
-            error instanceof z.ZodError
-              ? "입력값이 올바르지 않습니다."
-              : error instanceof Error
-                ? error.message
-                : "AI 생성에 실패했어요.",
+          message: `${message} (요청 ID: ${requestId})`,
         });
       } finally {
         clearInterval(heartbeat);
