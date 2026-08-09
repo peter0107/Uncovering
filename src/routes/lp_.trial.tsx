@@ -690,6 +690,16 @@ function LpTrialPage() {
         </div>
       </section>
 
+      <section id="preview">
+        <div className="wrap">
+          <div className="center">
+            <p className="eyebrow">미리보기</p>
+            <h2 style={{ marginTop: 9 }}>체험 과제, 이런 모습이에요</h2>
+          </div>
+          <PreviewCarousel />
+        </div>
+      </section>
+
       <section className="sect-gray" id="refund">
         <div className="wrap">
           <div className="center">
@@ -710,16 +720,6 @@ function LpTrialPage() {
               <p>체험을 마친 뒤 3일 안에 환불을 요청하면, 사유를 묻지 않고 처리해 드려요.</p>
             </div>
           </div>
-        </div>
-      </section>
-
-      <section id="preview">
-        <div className="wrap">
-          <div className="center">
-            <p className="eyebrow">미리보기</p>
-            <h2 style={{ marginTop: 9 }}>체험 과제, 이런 모습이에요</h2>
-          </div>
-          <PreviewCarousel />
         </div>
       </section>
 
