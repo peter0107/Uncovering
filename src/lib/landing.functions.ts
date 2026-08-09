@@ -292,7 +292,7 @@ export async function handlePayappFeedbackRequest(request: Request): Promise<Res
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: order, error: fetchError } = await supabaseAdmin
     .from("landing_trial_orders")
-    .select("order_id, amount, status, mul_no")
+    .select("order_id, amount, status, mul_no, email, job_role, company_type")
     .eq("order_id", orderId)
     .maybeSingle();
 
@@ -338,6 +338,22 @@ export async function handlePayappFeedbackRequest(request: Request): Promise<Res
   }
 
   if (nextStatus === "paid") {
+    // 위 멱등 가드(mul_no 일치 + status != pending)가 페이앱 재시도를 걸러내므로 메일도 1회만 나간다.
+    try {
+      await sendGmail({
+        to: order.email,
+        subject: `[Beginner] 결제가 완료됐어요 · ${order.job_role} 체험 과제를 준비하고 있어요`,
+        html: buildTrialPaidEmailHtml({
+          jobRole: order.job_role,
+          companyType: order.company_type,
+          amount: order.amount,
+        }),
+      });
+    } catch (err) {
+      // 메일 실패로 웹훅을 실패시키지 않는다 — 결제 상태 갱신이 더 중요하다.
+      console.error("Trial paid confirmation email failed:", orderId, err);
+    }
+
     await notifyDiscord("결제 완료 (직무 체험)", [
       { name: "주문", value: orderId, inline: true },
       { name: "금액", value: `${order.amount.toLocaleString()}원`, inline: true },
@@ -796,19 +812,13 @@ function buildTrialTaskEmailHtml(params: {
 </body></html>`;
 }
 
-async function sendTrialTaskEmail(params: {
-  to: string;
-  jobRole: string;
-  companyType: string;
-  taskLink: string;
-}): Promise<void> {
+async function sendGmail(params: { to: string; subject: string; html: string }): Promise<void> {
   const from = "Beginner <info@beginner.today>";
-  const subject = `[Beginner] ${params.jobRole} 체험 과제가 도착했어요`;
-  const html = buildTrialTaskEmailHtml(params);
+  const { to, subject, html } = params;
 
   const rawMessage =
     `From: ${from}\r\n` +
-    `To: ${params.to}\r\n` +
+    `To: ${to}\r\n` +
     `Subject: ${encodeMimeSubject(subject)}\r\n` +
     `MIME-Version: 1.0\r\n` +
     `Content-Type: text/html; charset="UTF-8"\r\n\r\n` +
@@ -827,6 +837,41 @@ async function sendTrialTaskEmail(params: {
     console.error("Gmail send failed:", response.status, await response.text());
     throw new Error(`이메일 발송에 실패했습니다 (${response.status}).`);
   }
+}
+
+async function sendTrialTaskEmail(params: {
+  to: string;
+  jobRole: string;
+  companyType: string;
+  taskLink: string;
+}): Promise<void> {
+  await sendGmail({
+    to: params.to,
+    subject: `[Beginner] ${params.jobRole} 체험 과제가 도착했어요`,
+    html: buildTrialTaskEmailHtml(params),
+  });
+}
+
+function buildTrialPaidEmailHtml(params: { jobRole: string; companyType: string; amount: number }): string {
+  return `<!doctype html>
+<html lang="ko"><body style="margin:0;padding:0;background:#F5F6F9;font-family:'Wanted Sans Variable','Wanted Sans',-apple-system,BlinkMacSystemFont,'Malgun Gothic',sans-serif;">
+<div style="max-width:520px;margin:0 auto;padding:40px 20px;">
+  <div style="background:#FFFFFF;border-radius:14px;overflow:hidden;border:1px solid #E7E9EE;">
+    <div style="padding:40px 36px 36px;">
+      <p style="font-size:15px;color:#14181F;line-height:1.7;margin:0 0 22px;">안녕하세요, Beginner예요.<br />결제가 정상적으로 완료됐어요. 신청하신 직무에 맞는 체험 과제를 지금 만들기 시작했어요.</p>
+      <div style="border:1px solid #E7E9EE;border-radius:12px;padding:18px 20px;margin:0 0 26px;">
+        <p style="font-size:11.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#435BDA;margin:0 0 6px;">신청 정보</p>
+        <p style="font-size:16px;font-weight:800;color:#14181F;margin:0;">${params.jobRole}</p>
+        <p style="font-size:13px;color:#6B7280;margin:3px 0 0;">${params.companyType} · 결제금액 ${params.amount.toLocaleString()}원</p>
+      </div>
+      <p style="font-size:15px;color:#14181F;line-height:1.7;margin:0 0 26px;">과제는 현직자 검수를 거쳐 <strong>24시간 안에</strong> 이 메일 주소로 보내드릴게요.<br />조금만 기다려주세요.</p>
+      <p style="font-size:12.5px;color:#9AA2AE;line-height:1.7;margin:0 0 26px;">궁금한 점이 있으면 이 메일에 회신해주세요.</p>
+      <p style="font-size:14px;color:#14181F;margin:0;">Beginner 드림</p>
+    </div>
+    <div style="background:#FAFAFB;border-top:1px solid #E7E9EE;padding:16px 36px;font-size:11.5px;color:#9AA2AE;">이 메일은 Beginner 체험 신청자에게 발송되는 안내 메일이에요.</div>
+  </div>
+</div>
+</body></html>`;
 }
 
 /**
