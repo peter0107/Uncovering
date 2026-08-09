@@ -106,6 +106,24 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   return brandedErrorResponse();
 }
 
+// HTML 문서에 Cache-Control이 없으면 브라우저가 자체 판단으로 캐시한다. 그러면 배포 후에도
+// 옛 HTML이 재사용되고, 그 안에 박힌 옛 자산 해시(/assets/xxx-HASH.js)를 계속 불러와서
+// 하드 리프레시를 해야 새 코드가 뜬다. 해시가 붙은 자산은 불변이라 그대로 캐시해 두고,
+// 문서만 매번 새로 받게 한다.
+function withHtmlNoStore(response: Response): Response {
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("text/html")) return response;
+  if (response.headers.has("cache-control")) return response;
+
+  const headers = new Headers(response.headers);
+  headers.set("cache-control", "no-store");
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
@@ -150,7 +168,7 @@ export default {
 
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      return withHtmlNoStore(await normalizeCatastrophicSsrResponse(response));
     } catch (error) {
       console.error(error);
       return brandedErrorResponse();
