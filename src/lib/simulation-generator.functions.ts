@@ -664,7 +664,7 @@ async function collectWebResearchForFocus(
       apiKey,
       {
         model,
-        max_tokens: 1_200,
+        max_tokens: 4_000,
         tools: [WEB_SEARCH_TOOL],
         tool_choice: { type: "tool", name: "web_search" },
         messages,
@@ -696,7 +696,7 @@ async function collectWebResearchForFocus(
         apiKey,
         {
           model,
-          max_tokens: 1_200,
+          max_tokens: 4_000,
           tools: [WEB_SEARCH_TOOL],
           messages,
         },
@@ -745,7 +745,9 @@ async function generateSimulationDraftFromInput(
     savedPrompt?.prompt?.trim() || COMPANY_AI_PROMPT_DEFAULTS[GENERATOR_PROMPT_KEY].prompt;
   // 새 API 키에서도 안정적으로 사용할 수 있는 Anthropic의 공식 Sonnet 4 모델 ID를 기본값으로 둡니다.
   // 배포 환경에 ANTHROPIC_MODEL이 있으면 그 값을 우선합니다.
-  const model = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-20250514";
+  // claude-sonnet-4-20250514는 이미 지원이 끝난 구형 ID라 키 권한에 따라 403이 난다.
+  // 현행 모델로 올린다. 다른 모델을 쓰려면 배포에 ANTHROPIC_MODEL을 넣으면 된다.
+  const model = process.env.ANTHROPIC_MODEL || "claude-opus-5";
 
   // 어느 구간에서 시간을 쓰는지 로그로 남긴다 (wrangler tail에서 확인).
   const startedAt = Date.now();
@@ -772,7 +774,9 @@ async function generateSimulationDraftFromInput(
       apiKey,
       {
         model,
-        max_tokens: 12_000,
+        // Opus 5는 사고(thinking)가 기본으로 켜져 있고 max_tokens가 사고+본문을 함께
+        // 제한한다. 12,000이면 도구 JSON이 중간에 잘릴 수 있어 여유를 둔다.
+        max_tokens: 24_000,
         tools: [GENERATE_TOOL],
         tool_choice: { type: "tool", name: GENERATE_TOOL_NAME },
         messages: generationMessages,
