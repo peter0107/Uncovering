@@ -105,6 +105,7 @@ function AdminLanding() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
   const loadedUserIdRef = useRef<string | null>(null);
+  const initialTabResolvedRef = useRef(false);
   const userId = user?.id ?? null;
 
   const load = useCallback(async () => {
@@ -113,6 +114,10 @@ function AdminLanding() {
     try {
       const result = await getAdminLandingData();
       setData(result);
+      if (!initialTabResolvedRef.current) {
+        initialTabResolvedRef.current = true;
+        setTab(result.leads.length > 0 || result.orders.length === 0 ? "leads" : "orders");
+      }
     } catch (error) {
       setLoadError(true);
       toast.error(error instanceof Error ? error.message : "데이터를 불러오지 못했습니다.");
