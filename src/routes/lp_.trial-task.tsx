@@ -1,10 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { CheckCircle2, ChevronLeft, Clock, Lock, Send } from "lucide-react";
+import { CheckCircle2, Clock, Lock } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
 
 import { RichTextContent, RichTextEditor } from "@/components/RichTextEditor";
+import { SimulationShell, MaterialBody, MaterialTabStrip } from "@/components/SimulationShell";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,8 +18,16 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Skeleton } from "@/components/ui/skeleton";
-import { allAnswered, stepAnswered, type WizardStep } from "@/lib/simulation-steps";
+import {
+  allAnswered,
+  buildSidebarMaterialTabs,
+  getPlainAnswerText,
+  getStepMaterialContext,
+  type MaterialTab,
+  type WizardModel,
+} from "@/lib/simulation-steps";
 import {
   getTrialTaskByCode,
   submitTrialAnswer,
@@ -29,6 +38,42 @@ import {
 // 계정이 없으므로 코드가 유일한 인증 수단이고, 코드는 URL 검색 파라미터로만 흐른다(/biz 패턴).
 
 const MAX_ANSWER_LENGTH = 20000;
+
+type TrialScreen =
+  | { kind: "intro" }
+  | { kind: "situation"; stepIndex: number; markdown: string }
+  | { kind: "materials"; stepIndex: number; tabs: MaterialTab[] }
+  | { kind: "question"; stepIndex: number; promptIndex: number }
+  | { kind: "submit" };
+
+function buildTrialScreens(model: WizardModel): TrialScreen[] {
+  const screens: TrialScreen[] = [{ kind: "intro" }];
+  let last: { situation?: string; materials?: string } = {};
+
+  model.steps.forEach((step, stepIndex) => {
+    const context = getStepMaterialContext(model, step);
+    if (context.situation && context.situation !== last.situation) {
+      screens.push({ kind: "situation", stepIndex, markdown: context.situation });
+    }
+    if (context.materials && context.materials !== last.materials) {
+      const tabs = buildSidebarMaterialTabs({ materials: context.materials });
+      if (tabs.length > 0) screens.push({ kind: "materials", stepIndex, tabs });
+    }
+    last = context;
+    step.prompts.forEach((_, promptIndex) => {
+      screens.push({ kind: "question", stepIndex, promptIndex });
+    });
+  });
+
+  screens.push({ kind: "submit" });
+  return screens;
+}
+
+function trialProgressStep(screen: TrialScreen, totalSteps: number): number {
+  if (screen.kind === "intro") return 1;
+  if (screen.kind === "submit") return totalSteps;
+  return screen.stepIndex + 1;
+}
 
 export const Route = createFileRoute("/lp_/trial-task")({
   validateSearch: z.object({ code: z.string().catch("") }),
@@ -183,9 +228,13 @@ function TaskWizard({
   task: TrialTaskView;
   onSubmitted: (task: TrialTaskView) => void;
 }) {
-  const steps = task.model.steps;
-  const [stepIndex, setStepIndex] = useState(0);
+  const model = task.model;
+  const screens = useMemo(() => buildTrialScreens(model), [model]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [screenIndex, setScreenIndex] = useState(0);
+  const [materialTabIndex, setMaterialTabIndex] = useState(0);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [hintOpen, setHintOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const restoredRef = useRef(false);
@@ -211,14 +260,24 @@ function TaskWizard({
     }
   }, [code, answers]);
 
-  const step = steps[stepIndex];
-  const isLast = stepIndex === steps.length - 1;
-  const canAdvance = step ? stepAnswered(step, answers) : false;
-  const canSubmit = allAnswered(task.model, answers);
-
   const setAnswer = useCallback((promptId: string, value: string) => {
     setAnswers((current) => ({ ...current, [promptId]: value }));
   }, []);
+
+  const goToScreen = useCallback((nextIndex: number) => {
+    setScreenIndex(nextIndex);
+    setMaterialTabIndex(0);
+    setHintOpen(false);
+    window.scrollTo({ top: 0 });
+  }, []);
+
+  const goNext = useCallback(() => {
+    goToScreen(Math.min(screens.length - 1, screenIndex + 1));
+  }, [goToScreen, screenIndex, screens.length]);
+
+  const goPrev = useCallback(() => {
+    goToScreen(Math.max(0, screenIndex - 1));
+  }, [goToScreen, screenIndex]);
 
   const submit = useCallback(async () => {
     setIsSubmitting(true);
@@ -239,7 +298,8 @@ function TaskWizard({
     }
   }, [code, answers, onSubmitted]);
 
-  if (!step) {
+  const screen = screens[screenIndex] ?? screens[0];
+  if (!screen) {
     return (
       <Shell>
         <p className="text-sm text-zinc-500">표시할 단계가 없어요. 담당자에게 문의해주세요.</p>
@@ -247,129 +307,239 @@ function TaskWizard({
     );
   }
 
-  const situation = task.model.selectionMode === "common" ? task.model.sharedSituation : step.situation;
-  const materials = task.model.selectionMode === "common" ? task.model.sharedMaterials : step.materials;
+  const nextScreen = screens[screenIndex + 1];
+  const topLabel =
+    screen.kind === "intro"
+      ? "시작"
+      : screen.kind === "situation"
+        ? "상황 안내"
+        : screen.kind === "materials"
+          ? "자료 확인"
+          : screen.kind === "submit"
+            ? "제출"
+            : model.steps[screen.stepIndex].title;
+  const questionContext =
+    screen.kind === "question" ? getStepMaterialContext(model, model.steps[screen.stepIndex]) : null;
+  const sidebarTabs = questionContext ? buildSidebarMaterialTabs(questionContext) : [];
 
-  return (
-    <Shell>
-      <TaskHeader task={task} />
+  let mainContent: React.ReactNode;
+  let primaryLabel: string;
+  let primaryDisabled = false;
+  let onPrimary: () => void;
 
-      {/* 진행 표시 */}
-      <div className="mt-6">
-        <div className="flex items-center justify-between text-xs text-zinc-500">
-          <span>
-            {stepIndex + 1} / {steps.length} 단계
+  if (screen.kind === "intro") {
+    primaryLabel = "시작하기 →";
+    onPrimary = goNext;
+    mainContent = (
+      <div className="flex min-h-[calc(100dvh-4.5rem)] items-center justify-center px-5 py-10">
+        <div className="flex w-full max-w-2xl flex-col items-center gap-5 rounded-xl border border-zinc-200 bg-white px-8 py-14 text-center sm:px-14">
+          <span className="rounded-full border border-zinc-200 px-4 py-1.5 text-xs text-zinc-500">
+            {[task.roleLabel, task.estimatedMinutes ? `약 ${task.estimatedMinutes}분` : null, `${model.steps.length}단계`]
+              .filter(Boolean)
+              .join(" · ")}
           </span>
-          <span>{step.title}</span>
-        </div>
-        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-zinc-100">
-          <div
-            className="h-full rounded-full bg-zinc-900 transition-all"
-            style={{ width: `${((stepIndex + 1) / steps.length) * 100}%` }}
-          />
+          <h1 className="text-2xl font-bold leading-snug tracking-tight text-zinc-900 sm:text-[28px]">
+            {task.title}
+          </h1>
+          {task.description && (
+            <p className="text-sm leading-relaxed text-zinc-500 sm:text-[15px]">{task.description}</p>
+          )}
         </div>
       </div>
-
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        {/* 왼쪽: 상황·자료 */}
-        <div className="space-y-4 lg:sticky lg:top-6 lg:self-start">
-          <StepMeta step={step} />
-          {task.model.sharedBackground && (
-            <MaterialSection label="배경" markdown={task.model.sharedBackground} />
-          )}
-          {step.prevSummary && <MaterialSection label="이전 단계 요약" markdown={step.prevSummary} />}
-          {situation && <MaterialSection label="상황 안내" markdown={situation} />}
-          {materials && <MaterialSection label="제공 자료" markdown={materials} />}
-          {step.hint && (
-            <details className="rounded-xl border border-zinc-200 p-3">
-              <summary className="cursor-pointer text-xs font-semibold text-zinc-500">
-                막혔다면 힌트 보기
-              </summary>
-              <RichTextContent
-                value={step.hint.trimStart()}
-                compact
-                className="prose prose-sm prose-zinc mt-2 max-w-none"
-              />
-            </details>
-          )}
+    );
+  } else if (screen.kind === "situation") {
+    primaryLabel = nextScreen?.kind === "materials" ? "자료 확인하러 가기 →" : "다음 →";
+    onPrimary = goNext;
+    mainContent = (
+      <div className="mx-auto w-full max-w-2xl px-5 py-8 sm:px-12">
+        <p className="text-xs text-zinc-500">상황</p>
+        <div className="mt-2 rounded-xl border border-zinc-200 bg-white p-6">
+          <RichTextContent value={screen.markdown} compact className="prose prose-sm prose-zinc max-w-none" />
         </div>
+      </div>
+    );
+  } else if (screen.kind === "materials") {
+    primaryLabel = "다음 →";
+    onPrimary = goNext;
+    const activeTab = screen.tabs[materialTabIndex] ?? screen.tabs[0];
+    mainContent = (
+      <div className="mx-auto w-full max-w-2xl px-5 py-8 sm:px-12">
+        <p className="text-xs text-zinc-500">제공 자료</p>
+        <MaterialTabStrip
+          tabs={screen.tabs}
+          value={materialTabIndex}
+          onValueChange={setMaterialTabIndex}
+          className="mt-4"
+        />
+        <MaterialBody body={activeTab?.body ?? ""} className="mt-3" />
+      </div>
+    );
+  } else if (screen.kind === "question") {
+    const step = model.steps[screen.stepIndex];
+    const prompt = step.prompts[screen.promptIndex];
+    const answered = getPlainAnswerText(answers[prompt.id] ?? "").length > 0;
+    const isLastPromptOfStep = screen.promptIndex === step.prompts.length - 1;
+    const showCompletion = isLastPromptOfStep && step.completionMessage && model.steps
+      .slice(0, screen.stepIndex + 1)
+      .every((currentStep) => currentStep.prompts.every((currentPrompt) => getPlainAnswerText(answers[currentPrompt.id] ?? "").length > 0));
 
-        {/* 오른쪽: 질문 + 답안 */}
-        <div className="space-y-6">
-          {step.prompts.map((prompt) => (
-            <div key={prompt.id}>
-              <p id={`prompt-${prompt.id}`} className="text-sm font-semibold text-zinc-900">
-                {prompt.label}
-              </p>
-              {prompt.bodyMarkdown && (
-                <RichTextContent
-                  value={prompt.bodyMarkdown.trimStart()}
-                  compact
-                  className="prose prose-sm prose-zinc mt-2 max-w-none"
-                />
-              )}
-              <div className="mt-3">
-                <RichTextEditor
-                  ariaLabelledby={`prompt-${prompt.id}`}
-                  label=""
-                  value={answers[prompt.id] ?? ""}
-                  onChange={(value) => setAnswer(prompt.id, value)}
-                  placeholder="여기에 답안을 작성해주세요"
-                  minHeight="16rem"
-                  maxLength={MAX_ANSWER_LENGTH}
-                />
-              </div>
+    primaryLabel =
+      nextScreen?.kind === "submit"
+        ? "제출하러 가기 →"
+        : nextScreen?.kind === "question" && nextScreen.stepIndex === screen.stepIndex
+          ? "다음 질문 →"
+          : "다음 →";
+    onPrimary = () => {
+      if (!answered) {
+        toast.error("이 질문의 답변을 먼저 작성해주세요.");
+        return;
+      }
+      goNext();
+    };
+    mainContent = (
+      <div className="mx-auto w-full max-w-[1100px] px-5 py-8 sm:px-12">
+        <div className="grid gap-6 lg:grid-cols-2 lg:gap-8">
+          {sidebarTabs.length > 0 && (
+            <div className="hidden lg:sticky lg:top-[5.5rem] lg:block lg:max-h-[calc(100dvh-8rem)] lg:self-start lg:overflow-y-auto">
+              <MaterialTabStrip
+                tabs={sidebarTabs}
+                value={materialTabIndex}
+                onValueChange={setMaterialTabIndex}
+              />
+              <MaterialBody
+                body={sidebarTabs[materialTabIndex]?.body ?? sidebarTabs[0]?.body ?? ""}
+                className="mt-3"
+              />
             </div>
-          ))}
-
-          <div className="flex items-center justify-between gap-3 border-t border-zinc-200 pt-4">
-            <Button
-              type="button"
-              variant="ghost"
-              className="rounded-xl"
-              disabled={stepIndex === 0}
-              onClick={() => {
-                setStepIndex((index) => Math.max(0, index - 1));
-                window.scrollTo({ top: 0 });
-              }}
-            >
-              <ChevronLeft className="mr-1 h-4 w-4" />
-              이전
-            </Button>
-
-            {isLast ? (
-              <Button
-                type="button"
-                className="rounded-xl bg-zinc-900 hover:bg-zinc-800"
-                disabled={!canSubmit || isSubmitting}
-                onClick={() => setConfirmOpen(true)}
+          )}
+          <div className="flex flex-col">
+            <p className="text-xs text-zinc-500">
+              질문 {screen.promptIndex + 1} / {step.prompts.length}
+            </p>
+            {(step.durationMin != null || step.difficulty != null) && (
+              <div className="mt-1 flex items-center gap-2 text-xs text-zinc-400">
+                {step.durationMin != null && (
+                  <span className="inline-flex items-center gap-1">
+                    <Clock className="h-3.5 w-3.5" />약 {step.durationMin}분
+                  </span>
+                )}
+                {step.difficulty != null && (
+                  <span className="text-zinc-700">
+                    {"★".repeat(Math.max(0, Math.min(5, step.difficulty)))}
+                    <span className="text-zinc-200">
+                      {"★".repeat(Math.max(0, 5 - Math.min(5, step.difficulty)))}
+                    </span>
+                  </span>
+                )}
+              </div>
+            )}
+            {prompt.bodyMarkdown && (
+              <div className="mt-2 prose prose-sm prose-zinc max-w-none prose-table:text-sm prose-headings:text-sm prose-headings:font-semibold">
+                <RichTextContent value={prompt.bodyMarkdown} compact />
+              </div>
+            )}
+            <div className="mt-3">
+              <RichTextEditor
+                ariaLabelledby={`trial-prompt-${prompt.id}`}
+                label=""
+                value={answers[prompt.id] ?? ""}
+                onChange={(value) => setAnswer(prompt.id, value)}
+                placeholder="여기에 답안을 작성해주세요"
+                minHeight="16rem"
+                maxLength={MAX_ANSWER_LENGTH}
+              />
+            </div>
+            {step.hint && (
+              <details
+                className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4"
+                open={hintOpen}
+                onToggle={(event) => setHintOpen((event.target as HTMLDetailsElement).open)}
               >
-                <Send className="mr-1.5 h-4 w-4" />
-                제출하고 모범답안 보기
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                className="rounded-xl bg-zinc-900 hover:bg-zinc-800"
-                disabled={!canAdvance}
-                onClick={() => {
-                  setStepIndex((index) => Math.min(steps.length - 1, index + 1));
-                  window.scrollTo({ top: 0 });
-                }}
-              >
-                다음 단계
-              </Button>
+                <summary className="cursor-pointer list-none text-sm font-semibold text-zinc-700">
+                  초심자용 힌트 보기
+                </summary>
+                <div className="prose prose-sm prose-zinc mt-2 max-w-none prose-table:text-sm">
+                  <RichTextContent value={step.hint} compact />
+                </div>
+              </details>
+            )}
+            {showCompletion && (
+              <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                <div className="prose prose-sm prose-emerald max-w-none">
+                  <RichTextContent value={step.completionMessage as string} compact />
+                </div>
+              </div>
             )}
           </div>
-
-          {isLast && !canSubmit && (
-            <p className="text-xs text-zinc-400">
-              모든 단계의 답변을 채우면 제출할 수 있어요.
-            </p>
-          )}
         </div>
       </div>
+    );
+  } else {
+    primaryLabel = isSubmitting ? "제출 중..." : "제출하고 모범답안 보기";
+    primaryDisabled = !allAnswered(model, answers) || isSubmitting;
+    onPrimary = () => setConfirmOpen(true);
+    mainContent = (
+      <div className="mx-auto w-full max-w-2xl px-5 py-8 sm:px-12">
+        <h2 className="text-lg font-bold text-zinc-900">제출하기</h2>
+      </div>
+    );
+  }
 
+  const bottomBar = (
+    <div>
+      {screen.kind === "question" && sidebarTabs.length > 0 && (
+        <button
+          type="button"
+          aria-label="제공 자료 열기"
+          onClick={() => setDrawerOpen(true)}
+          className="flex h-6 w-full items-center justify-center border-b border-zinc-100 bg-white lg:hidden"
+        >
+          <span className="h-1 w-8 rounded-full bg-zinc-300" />
+        </button>
+      )}
+      <div className="mx-auto flex w-full max-w-[1100px] items-center gap-2 px-5 py-3.5 sm:px-12">
+        {screenIndex > 0 && (
+          <Button variant="outline" className="rounded-xl" onClick={goPrev}>
+            이전
+          </Button>
+        )}
+        <Button
+          onClick={onPrimary}
+          disabled={primaryDisabled}
+          size="lg"
+          className="flex-1 rounded-xl bg-zinc-900 text-white hover:bg-zinc-700"
+        >
+          {primaryLabel}
+        </Button>
+      </div>
+    </div>
+  );
+
+  return (
+    <SimulationShell
+      label={topLabel}
+      step={trialProgressStep(screen, model.steps.length)}
+      totalSteps={model.steps.length}
+      bottomBar={bottomBar}
+    >
+      {mainContent}
+      {sidebarTabs.length > 0 && (
+        <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
+          <DrawerContent className="max-h-[80dvh]">
+            <DrawerHeader>
+              <DrawerTitle>제공 자료</DrawerTitle>
+            </DrawerHeader>
+            <div className="flex flex-col gap-3 overflow-y-auto px-4 pb-6">
+              <MaterialTabStrip
+                tabs={sidebarTabs}
+                value={materialTabIndex}
+                onValueChange={setMaterialTabIndex}
+              />
+              <MaterialBody body={sidebarTabs[materialTabIndex]?.body ?? sidebarTabs[0]?.body ?? ""} />
+            </div>
+          </DrawerContent>
+        </Drawer>
+      )}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -392,7 +562,7 @@ function TaskWizard({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Shell>
+    </SimulationShell>
   );
 }
 
@@ -491,35 +661,6 @@ function TaskHeader({ task }: { task: TrialTaskView }) {
         </p>
       )}
     </header>
-  );
-}
-
-function StepMeta({ step }: { step: WizardStep }) {
-  if (step.durationMin == null && step.difficulty == null) return null;
-  return (
-    <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-400">
-      {step.durationMin != null && (
-        <span className="inline-flex items-center gap-1">
-          <Clock className="h-3.5 w-3.5" />약 {step.durationMin}분
-        </span>
-      )}
-      {step.difficulty != null && <span>난이도 {"★".repeat(step.difficulty)}</span>}
-    </div>
-  );
-}
-
-function MaterialSection({ label, markdown }: { label: string; markdown: string }) {
-  return (
-    <div>
-      <p className="text-xs font-semibold text-zinc-500">{label}</p>
-      <Card className="mt-1 p-3">
-        <RichTextContent
-          value={markdown.trimStart()}
-          compact
-          className="prose prose-sm prose-zinc max-w-none prose-table:text-sm"
-        />
-      </Card>
-    </div>
   );
 }
 
