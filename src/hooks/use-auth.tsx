@@ -30,7 +30,22 @@ export function useAuth() {
     const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => apply(s));
 
     if (!authInitialized) {
-      supabase.auth.getSession().then(({ data }) => apply(data.session));
+      // getSession()은 localStorage만 읽고 서버에 유효성을 묻지 않는다. 그래서 서버에서
+      // 이미 폐기된 세션(session_not_found)도 유효한 것처럼 통과하고, 화면은 정상인데
+      // 서버 호출만 조용히 전부 실패한다. 부팅 때 한 번 검증해 죽은 세션이면 버린다.
+      void (async () => {
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          const { error } = await supabase.auth.getUser();
+          // 네트워크 장애로 로그아웃시키면 안 된다. 서버가 명확히 거절한 경우만 버린다.
+          if (error && (error.status === 401 || error.status === 403)) {
+            await supabase.auth.signOut({ scope: "local" });
+            apply(null);
+            return;
+          }
+        }
+        apply(data.session);
+      })();
     } else {
       setLoading(false);
     }
