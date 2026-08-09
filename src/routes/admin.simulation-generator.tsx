@@ -106,6 +106,14 @@ async function requestGeneration(body: GenerateRequestBody): Promise<GeneratedSi
   let buffer = "";
   let payload: GenerateSimulationStreamPayload | null = null;
 
+  const readPayload = (frame: string): GenerateSimulationStreamPayload | null => {
+    const data = frame
+      .split("\n")
+      .find((line) => line.startsWith("data: "));
+
+    return data ? (JSON.parse(data.slice(6)) as GenerateSimulationStreamPayload) : null;
+  };
+
   try {
     while (!payload) {
       const { done, value } = await reader.read();
@@ -116,11 +124,15 @@ async function requestGeneration(body: GenerateRequestBody): Promise<GeneratedSi
       while (boundary !== -1) {
         const frame = buffer.slice(0, boundary);
         buffer = buffer.slice(boundary + 2);
-        if (frame.startsWith("data: ")) {
-          payload = JSON.parse(frame.slice(6)) as GenerateSimulationStreamPayload;
-        }
+        payload = readPayload(frame) ?? payload;
         boundary = buffer.indexOf("\n\n");
       }
+    }
+
+    // Worker 종료 직전에 마지막 SSE 구분자("\n\n")가 잘려도 결과 본문은 읽습니다.
+    buffer += decoder.decode();
+    if (!payload && buffer.trim()) {
+      payload = readPayload(buffer);
     }
   } finally {
     await reader.cancel().catch(() => {});
