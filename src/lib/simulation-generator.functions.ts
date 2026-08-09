@@ -747,7 +747,7 @@ async function generateSimulationDraftFromInput(
   // 배포 환경에 ANTHROPIC_MODEL이 있으면 그 값을 우선합니다.
   // claude-sonnet-4-20250514는 이미 지원이 끝난 구형 ID라 키 권한에 따라 403이 난다.
   // 현행 모델로 올린다. 다른 모델을 쓰려면 배포에 ANTHROPIC_MODEL을 넣으면 된다.
-  const model = process.env.ANTHROPIC_MODEL || "claude-opus-5";
+  const model = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
 
   // 어느 구간에서 시간을 쓰는지 로그로 남긴다 (wrangler tail에서 확인).
   const startedAt = Date.now();
