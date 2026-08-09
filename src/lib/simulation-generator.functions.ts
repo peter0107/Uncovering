@@ -153,12 +153,12 @@ const toolStepSchema = z.object({
   title: z.string().trim().min(1).max(200),
   durationMin: z.number().int().min(1).max(120).nullable().optional(),
   difficulty: z.number().int().min(1).max(5).nullable().optional(),
-  situation: z.string().max(8000).optional().default(""),
-  materials: z.string().max(12000).optional().default(""),
-  question: z.string().trim().min(1).max(8000),
-  hint: z.string().max(4000).optional().default(""),
-  completionMessage: z.string().max(2000).optional().default(""),
-  modelAnswer: z.string().max(12000).optional().default(""),
+  situation: z.string().max(1200).optional().default(""),
+  materials: z.string().max(3000).optional().default(""),
+  question: z.string().trim().min(1).max(1000),
+  hint: z.string().max(600).optional().default(""),
+  completionMessage: z.string().max(300).optional().default(""),
+  modelAnswer: z.string().max(2000).optional().default(""),
 });
 
 const toolOutputSchema = z.object({
@@ -167,7 +167,7 @@ const toolOutputSchema = z.object({
     roleLabel: z.string().trim().min(1).max(120),
     description: z.string().max(1000).optional().default(""),
     estimatedMinutes: z.number().int().min(5).max(240).nullable().optional().default(null),
-    steps: z.array(toolStepSchema).min(2).max(6),
+    steps: z.array(toolStepSchema).min(2).max(4),
   }),
   rationale: z.object({
     photoPlan: z
@@ -182,7 +182,7 @@ const toolOutputSchema = z.object({
               purpose: z.string().max(500).optional().default(""),
             }),
           )
-          .max(6)
+          .max(3)
           .optional()
           .default([]),
       })
@@ -213,13 +213,13 @@ const toolOutputSchema = z.object({
                 quote: z.string().max(1200).optional().default(""),
               }),
             )
-            .max(10)
+            .max(2)
             .optional()
             .default([]),
           reflectedIn: z.string().max(600).optional().default(""),
         }),
       )
-      .max(15)
+      .max(6)
       .optional()
       .default([]),
     unreflected: z
@@ -229,7 +229,7 @@ const toolOutputSchema = z.object({
           reason: z.string().max(600).optional().default(""),
         }),
       )
-      .max(15)
+      .max(4)
       .optional()
       .default([]),
   }),
@@ -282,7 +282,7 @@ const GENERATE_TOOL = {
           steps: {
             type: "array",
             minItems: 2,
-            maxItems: 6,
+            maxItems: 4,
             items: {
               type: "object",
               additionalProperties: false,
@@ -339,7 +339,7 @@ const GENERATE_TOOL = {
               },
               items: {
                 type: "array",
-                maxItems: 6,
+                maxItems: 3,
                 description:
                   "필요한 이미지 목록. needed가 false면 빈 배열. 본문에 이미지 설명을 넣은 단계마다 한 항목씩 기록. 실사 사진뿐 아니라 화면 캡처, 광고 크리에이티브, 일러스트, 도표 이미지도 포함한다.",
                 items: {
@@ -385,7 +385,7 @@ const GENERATE_TOOL = {
           },
           criteria: {
             type: "array",
-            maxItems: 15,
+            maxItems: 6,
             description: "JD에서 추출한 평가 기준과 그 근거",
             items: {
               type: "object",
@@ -395,7 +395,7 @@ const GENERATE_TOOL = {
                 title: { type: "string", description: "평가 기준 이름" },
                 sources: {
                   type: "array",
-                  maxItems: 10,
+                  maxItems: 2,
                   items: {
                     type: "object",
                     additionalProperties: false,
@@ -415,7 +415,7 @@ const GENERATE_TOOL = {
           },
           unreflected: {
             type: "array",
-            maxItems: 15,
+            maxItems: 4,
             description: "시뮬레이션에 반영하지 못한 JD 요건과 그 이유",
             items: {
               type: "object",
@@ -458,6 +458,12 @@ function buildPrompt(input: GenerateSimulationInput, instruction: string): strin
 - 확인되지 않은 사업, 제품, 타깃 고객, 조직 구조, 최근 이슈는 작성하지 마세요.
 - 검색 결과가 부족하거나 기업을 특정할 수 없으면 기업 정보를 추정하지 말고, 아래 직무와 채용공고 정보 중심의 일반적인 시뮬레이션을 만드세요.
 - 웹 검색을 사용한 경우, record_simulation_draft의 rationale.webResearchFacts에 생성에 활용한 확인 사실을 최대 4개까지 짧게 기록하세요. 실제 사업(business), 주요 서비스·제품(product), 고객(customer), 최근 공개 이슈(recent_issue)를 검색으로 확인한 범위에서 우선 기록하고, 각 항목에 출처명 또는 도메인을 함께 쓰세요. 확인되지 않은 범주는 만들지 말고, 검색 결과 또는 출처가 불명확하면 빈 배열로 두세요.
+
+## 응답 분량 규칙
+- 시뮬레이션은 기본 3단계로 만들고, 꼭 필요한 경우에만 최대 4단계까지 만드세요.
+- 단계별 상황 안내는 600자 이내, 제공 자료는 1,500자 이내, 질문은 500자 이내, 힌트는 300자 이내, 완료 메시지는 150자 이내, 모범답안은 1,200자 이내로 작성하세요.
+- rationale.criteria는 최대 6개, 각 기준의 sources는 최대 2개만 기록하세요. unreflected는 최대 4개, photoPlan.items는 최대 3개만 기록하세요.
+- 긴 서론, 동일한 설명의 반복, 불필요한 표 확장은 금지합니다. 제공 자료는 과제를 수행하는 데 필요한 정보만 남기세요.
 
 ## 대상
 - 기업명: ${input.companyName}
@@ -706,8 +712,15 @@ async function streamAnthropicToolCall(
   try {
     return { toolInput: JSON.parse(toolJson), stopReason };
   } catch {
-    // 스트림이 중간에 끊기면 JSON이 불완전하다. max_tokens 초과가 가장 흔한 원인.
-    throw new Error("생성 결과가 완성되지 않았어요. 다시 시도해주세요.");
+    logGeneratorTrace(trace, "generation:incomplete", {
+      stopReason: String(stopReason),
+      toolJsonLength: toolJson.length,
+    });
+    throw new Error(
+      stopReason === "max_tokens"
+        ? "생성 결과가 너무 길어요. JD를 줄이거나 다시 시도해주세요."
+        : "생성 결과가 완성되지 않았어요. 다시 시도해주세요.",
+    );
   }
 }
 
