@@ -122,6 +122,7 @@ function ApplyForm() {
       job_category: jobCategory,
       job_role: selections.effectiveJobRole,
       company_type: selections.effectiveCompanyType,
+      email: email.trim(),
       plan: "single",
     });
     setIsSubmitting(true);
