@@ -476,11 +476,30 @@ function SimulationDetailPage() {
   const setAnswer = (qid: string, value: string) =>
     setAnswers((prev) => ({ ...prev, [qid]: value }));
 
+  const trackSimulationAction = (event: string, properties: Record<string, unknown> = {}) => {
+    if (!sim || !model) return;
+    const currentScreen = screens[screenIdx];
+    void capturePostHogEvent(event, {
+      simulation_id: sim.id,
+      simulation_name: sim.title,
+      simulation_source: sim.simulation_source,
+      simulation_format: sim.simulation_format,
+      simulation_context: "standard",
+      screen_kind: currentScreen?.kind ?? "unknown",
+      screen_index: screenIdx,
+      step_index: currentScreen ? screenProgressStep(currentScreen, model.steps.length) : null,
+      total_steps: model.steps.length,
+      ...properties,
+    });
+  };
+
   const goNext = () => {
+    trackSimulationAction("simulation_next_clicked");
     setScreenIdx((i) => Math.min(i + 1, screens.length - 1));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
   const goPrev = () => {
+    trackSimulationAction("simulation_previous_clicked");
     setScreenIdx((i) => Math.max(i - 1, 0));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -565,7 +584,13 @@ function SimulationDetailPage() {
       toast.error("제출 확인 중 오류가 발생했어요. 다시 시도해 주세요.");
       return;
     }
-    void capturePostHogEvent("simulation_submit", { simulation_id: String(sim.id) });
+    void capturePostHogEvent("simulation_submit", {
+      simulation_id: String(sim.id),
+      simulation_source: sim.simulation_source,
+      simulation_context: "standard",
+      answer_transmission_consent: consent,
+      difficulty_rating: difficultyRating,
+    });
     if (typeof window !== "undefined") {
       try {
         window.localStorage.removeItem(draftKey);
@@ -575,7 +600,11 @@ function SimulationDetailPage() {
     }
     setSubmittedSubmissionId(submission.id);
     setSubmittedAt(now);
-    void capturePostHogEvent("simulation_complete", { simulation_id: String(sim.id) });
+    void capturePostHogEvent("simulation_complete", {
+      simulation_id: String(sim.id),
+      simulation_source: sim.simulation_source,
+      simulation_context: "standard",
+    });
   };
 
   if (authLoading || (AUTHENTICATION_ENABLED && !user && !isOpenView) || loading) {
@@ -623,14 +652,18 @@ function SimulationDetailPage() {
         <h1 className="text-xl font-bold text-zinc-900">제출이 완료됐어요</h1>
         <div className="mt-2 flex w-full max-w-sm gap-2">
           <Button asChild className="h-10 flex-1 rounded-lg bg-zinc-900 text-sm hover:bg-zinc-800">
-            <Link {...resultLink}>결과 화면 보러가기</Link>
+            <Link {...resultLink} onClick={() => trackSimulationAction("simulation_result_view_clicked")}>
+              결과 화면 보러가기
+            </Link>
           </Button>
           <Button
             asChild
             variant="outline"
             className="h-10 flex-1 rounded-lg border-zinc-300 bg-white text-sm shadow-none hover:bg-zinc-100"
           >
-            <Link to="/">홈화면으로 가기</Link>
+            <Link to="/" onClick={() => trackSimulationAction("simulation_home_return_clicked")}>
+              홈화면으로 가기
+            </Link>
           </Button>
         </div>
       </div>
@@ -649,7 +682,10 @@ function SimulationDetailPage() {
           <button
             key={option.value}
             type="button"
-            onClick={() => setDifficultyRating(option.value)}
+            onClick={() => {
+              setDifficultyRating(option.value);
+              trackSimulationAction("simulation_difficulty_selected", { difficulty_rating: option.value });
+            }}
             className={cn(
               "flex-1 rounded-md border-2 px-2 py-3 text-center text-sm transition-colors",
               difficultyRating === option.value
@@ -689,7 +725,10 @@ function SimulationDetailPage() {
       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
         <button
           type="button"
-          onClick={() => setConsent(true)}
+          onClick={() => {
+            setConsent(true);
+            trackSimulationAction("simulation_submission_consent_selected", { consent: true });
+          }}
           className={cn(
             "flex-1 rounded-md border-2 px-4 py-3 text-left text-sm transition-colors",
             consent === true
@@ -701,7 +740,10 @@ function SimulationDetailPage() {
         </button>
         <button
           type="button"
-          onClick={() => setConsent(false)}
+          onClick={() => {
+            setConsent(false);
+            trackSimulationAction("simulation_submission_consent_selected", { consent: false });
+          }}
           className={cn(
             "flex-1 rounded-md border-2 px-4 py-3 text-left text-sm transition-colors",
             consent === false
@@ -716,6 +758,7 @@ function SimulationDetailPage() {
   );
 
   const resetExitFlow = () => {
+    trackSimulationAction("simulation_exit_cancelled");
     setExitSurveyReason(null);
     setExitSurveyOtherText("");
     blocker.reset?.();
@@ -782,7 +825,10 @@ function SimulationDetailPage() {
               type="button"
               role="radio"
               aria-checked={exitSurveyReason === option.value}
-              onClick={() => setExitSurveyReason(option.value)}
+              onClick={() => {
+                setExitSurveyReason(option.value);
+                trackSimulationAction("simulation_exit_reason_selected", { exit_reason: option.value });
+              }}
               className={cn(
                 "rounded-md border px-4 py-3 text-left text-sm transition-colors",
                 exitSurveyReason === option.value
@@ -821,7 +867,10 @@ function SimulationDetailPage() {
               (exitSurveyReason === "other" && !exitSurveyOtherText.trim()) ||
               exitSurveySubmitting
             }
-            onClick={() => void submitExitSurvey()}
+            onClick={() => {
+              trackSimulationAction("simulation_exit_submit_clicked");
+              void submitExitSurvey();
+            }}
             className="bg-zinc-900 text-white hover:bg-zinc-700"
           >
             {exitSurveySubmitting ? "저장 중..." : "선택하고 나가기"}
@@ -1034,6 +1083,13 @@ function SimulationDetailPage() {
           tabs={screen.tabs}
           value={materialTabIdx}
           onValueChange={setMaterialTabIdx}
+          onTabChange={(tabIndex, tabLabel) =>
+            trackSimulationAction("simulation_material_tab_selected", {
+              material_area: "materials",
+              tab_index: tabIndex,
+              tab_label: tabLabel,
+            })
+          }
           className="mt-4"
         />
         <MaterialBody body={activeTab?.body ?? ""} className="mt-3" />
@@ -1072,6 +1128,13 @@ function SimulationDetailPage() {
                 tabs={sidebarTabs}
                 value={materialTabIdx}
                 onValueChange={setMaterialTabIdx}
+                onTabChange={(tabIndex, tabLabel) =>
+                  trackSimulationAction("simulation_material_tab_selected", {
+                    material_area: "sidebar",
+                    tab_index: tabIndex,
+                    tab_label: tabLabel,
+                  })
+                }
               />
               <MaterialBody
                 body={sidebarTabs[materialTabIdx]?.body ?? sidebarTabs[0]?.body ?? ""}
@@ -1114,7 +1177,11 @@ function SimulationDetailPage() {
               <details
                 className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4"
                 open={hintOpen}
-                onToggle={(e) => setHintOpen((e.target as HTMLDetailsElement).open)}
+                onToggle={(e) => {
+                  const isOpen = (e.target as HTMLDetailsElement).open;
+                  setHintOpen(isOpen);
+                  trackSimulationAction(isOpen ? "simulation_hint_opened" : "simulation_hint_closed");
+                }}
               >
                 <summary className="cursor-pointer list-none text-sm font-semibold text-zinc-700">
                   초심자용 힌트 보기
@@ -1139,7 +1206,10 @@ function SimulationDetailPage() {
     // 데모는 작성까지만 열어둔다. 제출 화면에서는 난이도·동의 대신 신청 안내를 보여준다.
     primaryLabel = "체험 신청하기";
     primaryDisabled = false;
-    onPrimary = () => void navigate({ to: "/lp/trial" });
+    onPrimary = () => {
+      trackSimulationAction("simulation_trial_application_clicked");
+      void navigate({ to: "/lp/trial" });
+    };
     mainContent = (
       <div className="mx-auto w-full max-w-2xl px-5 py-8 sm:px-12">
         <h2 className="text-lg font-bold text-zinc-900">여기까지가 체험판이에요</h2>
@@ -1152,7 +1222,10 @@ function SimulationDetailPage() {
   } else {
     primaryLabel = submitting ? "제출 중..." : "제출하기";
     primaryDisabled = submitting;
-    onPrimary = () => void handleSubmit();
+    onPrimary = () => {
+      trackSimulationAction("simulation_submit_clicked");
+      void handleSubmit();
+    };
     mainContent = (
       <div className="mx-auto w-full max-w-2xl px-5 py-8 sm:px-12">
         <h2 className="text-lg font-bold text-zinc-900">제출 전에 확인해주세요</h2>
@@ -1168,7 +1241,10 @@ function SimulationDetailPage() {
         <button
           type="button"
           aria-label="제공 자료 열기"
-          onClick={() => setDrawerOpen(true)}
+          onClick={() => {
+            setDrawerOpen(true);
+            trackSimulationAction("simulation_material_drawer_opened");
+          }}
           className="flex h-6 w-full items-center justify-center border-b border-zinc-100 bg-white lg:hidden"
         >
           <span className="h-1 w-8 rounded-full bg-zinc-300" />
@@ -1198,11 +1274,18 @@ function SimulationDetailPage() {
       step={topStep}
       totalSteps={model.steps.length}
       bottomBar={bottomBar}
+      onHomeClick={() => trackSimulationAction("simulation_home_clicked")}
     >
       {blockerDialog}
       {mainContent}
       {sidebarTabs.length > 0 && (
-        <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
+        <Drawer
+          open={drawerOpen}
+          onOpenChange={(isOpen) => {
+            setDrawerOpen(isOpen);
+            if (!isOpen) trackSimulationAction("simulation_material_drawer_closed");
+          }}
+        >
           <DrawerContent className="max-h-[80dvh]">
             <DrawerHeader>
               <DrawerTitle>제공 자료</DrawerTitle>
@@ -1212,6 +1295,13 @@ function SimulationDetailPage() {
                 tabs={sidebarTabs}
                 value={materialTabIdx}
                 onValueChange={setMaterialTabIdx}
+                onTabChange={(tabIndex, tabLabel) =>
+                  trackSimulationAction("simulation_material_tab_selected", {
+                    material_area: "drawer",
+                    tab_index: tabIndex,
+                    tab_label: tabLabel,
+                  })
+                }
               />
               <MaterialBody
                 body={sidebarTabs[materialTabIdx]?.body ?? sidebarTabs[0]?.body ?? ""}

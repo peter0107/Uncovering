@@ -11,18 +11,20 @@ export function SimulationShell({
   totalSteps,
   bottomBar,
   children,
+  onHomeClick,
 }: {
   label: string;
   step: number;
   totalSteps: number;
   bottomBar?: ReactNode;
   children: ReactNode;
+  onHomeClick?: () => void;
 }) {
   const progress = totalSteps > 0 ? Math.round((Math.min(step, totalSteps) / totalSteps) * 100) : 0;
   return (
     <div className="flex min-h-dvh flex-col bg-[#EEF0F3]">
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-200 bg-white px-5 py-3.5 sm:px-10">
-        <Link to="/" className="flex items-center">
+        <Link to="/" onClick={onHomeClick} className="flex items-center">
           <BrandLogo className="h-6 w-auto" />
         </Link>
         <div className="flex items-center gap-2.5 text-xs text-zinc-500 sm:gap-3.5">
@@ -50,11 +52,13 @@ export function MaterialTabStrip({
   tabs,
   value,
   onValueChange,
+  onTabChange,
   className = "",
 }: {
   tabs: { label: string }[];
   value: number;
   onValueChange: (index: number) => void;
+  onTabChange?: (index: number, label: string) => void;
   className?: string;
 }) {
   if (tabs.length <= 1) return null;
@@ -64,7 +68,10 @@ export function MaterialTabStrip({
         <button
           key={i}
           type="button"
-          onClick={() => onValueChange(i)}
+          onClick={() => {
+            onValueChange(i);
+            onTabChange?.(i, tab.label);
+          }}
           className={cn(
             "shrink-0 rounded-full px-3.5 py-2 text-xs font-medium transition-colors",
             i === value

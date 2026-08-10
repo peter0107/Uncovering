@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Skeleton } from "@/components/ui/skeleton";
+import { capturePostHogEvent } from "@/lib/posthog";
 import {
   allAnswered,
   buildSidebarMaterialTabs,
@@ -156,7 +157,10 @@ function TrialTaskPage() {
           <Button
             variant="outline"
             className="mt-5 rounded-xl"
-            onClick={() => void navigate({ to: "/lp/trial-task", search: { code: "" } })}
+            onClick={() => {
+              void capturePostHogEvent("trial_task_code_retry_clicked", { simulation_context: "trial" });
+              void navigate({ to: "/lp/trial-task", search: { code: "" } });
+            }}
           >
             코드 다시 입력하기
           </Button>
@@ -191,6 +195,10 @@ function CodeGate() {
               toast.error("코드를 정확히 입력해주세요.");
               return;
             }
+            void capturePostHogEvent("trial_task_code_submitted", {
+              simulation_context: "trial",
+              code_length: trimmed.length,
+            });
             void navigate({ to: "/lp/trial-task", search: { code: trimmed } });
           }}
         >
@@ -264,6 +272,23 @@ function TaskWizard({
     setAnswers((current) => ({ ...current, [promptId]: value }));
   }, []);
 
+  const trackTrialAction = useCallback(
+    (event: string, properties: Record<string, unknown> = {}) => {
+      const currentScreen = screens[screenIndex];
+      void capturePostHogEvent(event, {
+        simulation_context: "trial",
+        simulation_title: task.title,
+        role_label: task.roleLabel ?? null,
+        screen_kind: currentScreen?.kind ?? "unknown",
+        screen_index: screenIndex,
+        step_index: currentScreen ? trialProgressStep(currentScreen, model.steps.length) : null,
+        total_steps: model.steps.length,
+        ...properties,
+      });
+    },
+    [model.steps.length, screenIndex, screens, task.roleLabel, task.title],
+  );
+
   const goToScreen = useCallback((nextIndex: number) => {
     setScreenIndex(nextIndex);
     setMaterialTabIndex(0);
@@ -272,14 +297,17 @@ function TaskWizard({
   }, []);
 
   const goNext = useCallback(() => {
+    trackTrialAction("simulation_next_clicked");
     goToScreen(Math.min(screens.length - 1, screenIndex + 1));
-  }, [goToScreen, screenIndex, screens.length]);
+  }, [goToScreen, screenIndex, screens.length, trackTrialAction]);
 
   const goPrev = useCallback(() => {
+    trackTrialAction("simulation_previous_clicked");
     goToScreen(Math.max(0, screenIndex - 1));
-  }, [goToScreen, screenIndex]);
+  }, [goToScreen, screenIndex, trackTrialAction]);
 
   const submit = useCallback(async () => {
+    trackTrialAction("simulation_submission_confirmed");
     setIsSubmitting(true);
     try {
       const startedAt = localStorage.getItem(startedAtKey(code)) ?? undefined;
@@ -289,6 +317,15 @@ function TaskWizard({
       localStorage.removeItem(draftKey(code));
       onSubmitted(result);
       window.scrollTo({ top: 0 });
+      void capturePostHogEvent("simulation_submit", {
+        simulation_context: "trial",
+        simulation_title: task.title,
+        role_label: task.roleLabel ?? null,
+      });
+      void capturePostHogEvent("simulation_complete", {
+        simulation_context: "trial",
+        simulation_title: task.title,
+      });
       toast.success("제출이 완료됐어요. 모범답안을 확인해보세요.");
     } catch (reason) {
       toast.error(reason instanceof Error ? reason.message : "제출하지 못했어요.");
@@ -296,7 +333,7 @@ function TaskWizard({
       setIsSubmitting(false);
       setConfirmOpen(false);
     }
-  }, [code, answers, onSubmitted]);
+  }, [code, answers, onSubmitted, task.roleLabel, task.title, trackTrialAction]);
 
   const screen = screens[screenIndex] ?? screens[0];
   if (!screen) {
@@ -369,6 +406,13 @@ function TaskWizard({
           tabs={screen.tabs}
           value={materialTabIndex}
           onValueChange={setMaterialTabIndex}
+          onTabChange={(tabIndex, tabLabel) =>
+            trackTrialAction("simulation_material_tab_selected", {
+              material_area: "materials",
+              tab_index: tabIndex,
+              tab_label: tabLabel,
+            })
+          }
           className="mt-4"
         />
         <MaterialBody body={activeTab?.body ?? ""} className="mt-3" />
@@ -405,6 +449,13 @@ function TaskWizard({
                 tabs={sidebarTabs}
                 value={materialTabIndex}
                 onValueChange={setMaterialTabIndex}
+                onTabChange={(tabIndex, tabLabel) =>
+                  trackTrialAction("simulation_material_tab_selected", {
+                    material_area: "sidebar",
+                    tab_index: tabIndex,
+                    tab_label: tabLabel,
+                  })
+                }
               />
               <MaterialBody
                 body={sidebarTabs[materialTabIndex]?.body ?? sidebarTabs[0]?.body ?? ""}
@@ -453,7 +504,11 @@ function TaskWizard({
               <details
                 className="mt-4 rounded-xl border border-zinc-200 bg-zinc-50 p-4"
                 open={hintOpen}
-                onToggle={(event) => setHintOpen((event.target as HTMLDetailsElement).open)}
+                onToggle={(event) => {
+                  const isOpen = (event.target as HTMLDetailsElement).open;
+                  setHintOpen(isOpen);
+                  trackTrialAction(isOpen ? "simulation_hint_opened" : "simulation_hint_closed");
+                }}
               >
                 <summary className="cursor-pointer list-none text-sm font-semibold text-zinc-700">
                   초심자용 힌트 보기
@@ -477,7 +532,10 @@ function TaskWizard({
   } else {
     primaryLabel = isSubmitting ? "제출 중..." : "제출하고 모범답안 보기";
     primaryDisabled = !allAnswered(model, answers) || isSubmitting;
-    onPrimary = () => setConfirmOpen(true);
+    onPrimary = () => {
+      trackTrialAction("simulation_submit_clicked");
+      setConfirmOpen(true);
+    };
     mainContent = (
       <div className="mx-auto w-full max-w-2xl px-5 py-8 sm:px-12">
         <h2 className="text-lg font-bold text-zinc-900">제출하기</h2>
@@ -491,7 +549,10 @@ function TaskWizard({
         <button
           type="button"
           aria-label="제공 자료 열기"
-          onClick={() => setDrawerOpen(true)}
+          onClick={() => {
+            setDrawerOpen(true);
+            trackTrialAction("simulation_material_drawer_opened");
+          }}
           className="flex h-6 w-full items-center justify-center border-b border-zinc-100 bg-white lg:hidden"
         >
           <span className="h-1 w-8 rounded-full bg-zinc-300" />
@@ -521,10 +582,17 @@ function TaskWizard({
       step={trialProgressStep(screen, model.steps.length)}
       totalSteps={model.steps.length}
       bottomBar={bottomBar}
+      onHomeClick={() => trackTrialAction("simulation_home_clicked")}
     >
       {mainContent}
       {sidebarTabs.length > 0 && (
-        <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
+        <Drawer
+          open={drawerOpen}
+          onOpenChange={(isOpen) => {
+            setDrawerOpen(isOpen);
+            if (!isOpen) trackTrialAction("simulation_material_drawer_closed");
+          }}
+        >
           <DrawerContent className="max-h-[80dvh]">
             <DrawerHeader>
               <DrawerTitle>제공 자료</DrawerTitle>
@@ -534,6 +602,13 @@ function TaskWizard({
                 tabs={sidebarTabs}
                 value={materialTabIndex}
                 onValueChange={setMaterialTabIndex}
+                onTabChange={(tabIndex, tabLabel) =>
+                  trackTrialAction("simulation_material_tab_selected", {
+                    material_area: "drawer",
+                    tab_index: tabIndex,
+                    tab_label: tabLabel,
+                  })
+                }
               />
               <MaterialBody body={sidebarTabs[materialTabIndex]?.body ?? sidebarTabs[0]?.body ?? ""} />
             </div>
@@ -549,7 +624,12 @@ function TaskWizard({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSubmitting}>더 작성할게요</AlertDialogCancel>
+            <AlertDialogCancel
+              disabled={isSubmitting}
+              onClick={() => trackTrialAction("simulation_submission_cancelled")}
+            >
+              더 작성할게요
+            </AlertDialogCancel>
             <AlertDialogAction
               disabled={isSubmitting}
               onClick={(event) => {
