@@ -9,6 +9,7 @@ import {
   TRIAL_SINGLE_DISCOUNT_PERCENT,
   TRIAL_SINGLE_ORIGINAL_PRICE,
 } from "@/lib/landing.functions";
+import { capturePostHogEvent } from "@/lib/posthog";
 
 export const Route = createFileRoute("/lp_/trial")({
   head: () => ({
@@ -26,6 +27,10 @@ export const Route = createFileRoute("/lp_/trial")({
 
 const OTHER_JOB_ROLE = "직접 입력";
 const OTHER_COMPANY_TYPE = "희망 기업 직접 입력";
+
+function trackTrialEvent(event: string, properties?: Record<string, unknown>) {
+  void capturePostHogEvent(event, { landing_page: "trial", ...properties });
+}
 
 const JOB_ROLES_BY_CATEGORY: Record<DomainCategory, string[]> = {
   "기획·전략": ["서비스 기획자", "사업 전략 기획자", "PM/PO", "신사업 기획자", OTHER_JOB_ROLE],
@@ -96,6 +101,7 @@ function ApplyForm() {
       return;
     }
     if (step < 2) {
+      trackTrialEvent("trial_apply_next_clicked", { step: 1 });
       setStep(2);
       return;
     }
@@ -103,6 +109,12 @@ function ApplyForm() {
       setError("환불 정책과 이용약관에 동의해주세요.");
       return;
     }
+    trackTrialEvent("trial_checkout_started", {
+      job_category: jobCategory,
+      job_role: selections.effectiveJobRole,
+      company_type: selections.effectiveCompanyType,
+      plan: "single",
+    });
     setIsSubmitting(true);
     try {
       const result = await createTrialOrder({
@@ -262,14 +274,27 @@ function ApplyForm() {
           <input
             type="checkbox"
             checked={agreedToTerms}
-            onChange={(event) => setAgreedToTerms(event.target.checked)}
+            onChange={(event) => {
+              setAgreedToTerms(event.target.checked);
+              trackTrialEvent("trial_terms_consent_changed", { agreed: event.target.checked });
+            }}
           />
           <span>
-            <a href="/terms" target="_blank" rel="noreferrer">
+            <a
+              href="/terms"
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => trackTrialEvent("trial_policy_link_clicked", { policy: "terms", placement: "form" })}
+            >
               이용약관
             </a>{" "}
             및{" "}
-            <a href="/privacy" target="_blank" rel="noreferrer">
+            <a
+              href="/privacy"
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => trackTrialEvent("trial_policy_link_clicked", { policy: "privacy", placement: "form" })}
+            >
               개인정보처리방침
             </a>
             , 환불 정책에 동의합니다.
@@ -289,6 +314,7 @@ function ApplyForm() {
             type="button"
             className="back"
             onClick={() => {
+              trackTrialEvent("trial_apply_back_clicked", { step: 2 });
               setError("");
               setStep(1);
             }}
@@ -296,7 +322,12 @@ function ApplyForm() {
             이전
           </button>
         )}
-        <button type="submit" className="submit" disabled={isSubmitting}>
+        <button
+          type="submit"
+          className="submit"
+          disabled={isSubmitting}
+          onClick={() => trackTrialEvent("trial_apply_primary_button_clicked", { step })}
+        >
           {step < 2 ? "다음" : isSubmitting ? "결제창으로 이동 중..." : "결제창으로 이동하기"}
         </button>
       </div>
@@ -350,7 +381,11 @@ const PREVIEW_SLIDES = [
       </>
     ),
     foot: (
-      <a className="pv-btn" href={`/simulation/${PREVIEW_SIMULATION_ID}?demo=1`}>
+      <a
+        className="pv-btn"
+        href={`/simulation/${PREVIEW_SIMULATION_ID}?demo=1`}
+        onClick={() => trackTrialEvent("trial_preview_simulation_clicked", { placement: "preview_slide_1" })}
+      >
         실제 과제 형식 보러가기 →
       </a>
     ),
@@ -426,7 +461,11 @@ const PREVIEW_SLIDES = [
       </>
     ),
     foot: (
-      <a className="pv-btn" href={`/simulation/${PREVIEW_SIMULATION_ID}?demo=1`}>
+      <a
+        className="pv-btn"
+        href={`/simulation/${PREVIEW_SIMULATION_ID}?demo=1`}
+        onClick={() => trackTrialEvent("trial_preview_simulation_clicked", { placement: "preview_slide_4" })}
+      >
         시뮬레이션 미리보기 →
       </a>
     ),
@@ -475,7 +514,10 @@ function PreviewCarousel() {
             key={i}
             type="button"
             className={i === index ? "on" : ""}
-            onClick={() => setIndex(i)}
+            onClick={() => {
+              trackTrialEvent("trial_preview_slide_selected", { slide_index: i + 1, slide_label: slide.label });
+              setIndex(i);
+            }}
             aria-label={slide.label}
           />
         ))}
@@ -486,7 +528,7 @@ function PreviewCarousel() {
 
 function LpTrialPage() {
   return (
-    <div className="lp-trial">
+    <div className="lp-trial ph-no-capture">
       <div className="hero">
         <div className="wrap">
           <div className="nav">
@@ -494,10 +536,16 @@ function LpTrialPage() {
               <BrandLogo className="h-[1.9rem] w-auto max-w-[9.75rem] object-contain object-left" />
             </div>
             <div className="navlinks">
-              <a href="#preview">미리보기</a>
-              <a href="#how">이용 방법</a>
-              <a href="#refund">환불 정책</a>
-              <a className="btn" href="#apply">
+              <a href="#preview" onClick={() => trackTrialEvent("trial_navigation_clicked", { destination: "preview" })}>
+                미리보기
+              </a>
+              <a href="#how" onClick={() => trackTrialEvent("trial_navigation_clicked", { destination: "how" })}>
+                이용 방법
+              </a>
+              <a href="#refund" onClick={() => trackTrialEvent("trial_navigation_clicked", { destination: "refund" })}>
+                환불 정책
+              </a>
+              <a className="btn" href="#apply" onClick={() => trackTrialEvent("trial_navigation_clicked", { destination: "apply" })}>
                 체험 신청하기
               </a>
             </div>
@@ -762,7 +810,7 @@ function LpTrialPage() {
             <span style={{ fontSize: 15, color: "#D9E0FA", lineHeight: 1.6 }}>
               24시간 내 미제공 시 전액 환불 · 불만족 시 3일 내 환불
             </span>
-            <a className="go" href="#apply">
+            <a className="go" href="#apply" onClick={() => trackTrialEvent("trial_cta_clicked", { placement: "bottom" })}>
               체험 신청하기 →
             </a>
           </div>
@@ -773,9 +821,15 @@ function LpTrialPage() {
         <footer>
           <span>© 2026 Beginner</span>
           <div>
-            <a href="#refund">환불 정책</a>
-            <a href="/terms">이용약관</a>
-            <a href="/privacy">개인정보처리방침</a>
+            <a href="#refund" onClick={() => trackTrialEvent("trial_policy_link_clicked", { policy: "refund", placement: "footer" })}>
+              환불 정책
+            </a>
+            <a href="/terms" onClick={() => trackTrialEvent("trial_policy_link_clicked", { policy: "terms", placement: "footer" })}>
+              이용약관
+            </a>
+            <a href="/privacy" onClick={() => trackTrialEvent("trial_policy_link_clicked", { policy: "privacy", placement: "footer" })}>
+              개인정보처리방침
+            </a>
           </div>
         </footer>
         <div className="bizinfo">
