@@ -463,7 +463,7 @@ const PREVIEW_SLIDES = [
         <div className="pv-lock">🔒 2·3단계 모범답안은 과제를 제출하면 전체 공개돼요</div>
       </>
     ),
-    foot: <span className="pv-btn pv-btn-lock">2단계 모범답안 🔒</span>,
+    foot: null,
   },
   {
     label: "현직자 코멘트",
