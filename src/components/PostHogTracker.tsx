@@ -11,7 +11,7 @@ let pageviewCapturePending = false;
 
 function hasCapturedPageview() {
   try {
-    return window.localStorage.getItem(PAGEVIEW_CAPTURED_KEY) === "1";
+    return window.sessionStorage.getItem(PAGEVIEW_CAPTURED_KEY) === "1";
   } catch {
     return false;
   }
@@ -19,7 +19,7 @@ function hasCapturedPageview() {
 
 function markPageviewCaptured() {
   try {
-    window.localStorage.setItem(PAGEVIEW_CAPTURED_KEY, "1");
+    window.sessionStorage.setItem(PAGEVIEW_CAPTURED_KEY, "1");
   } catch {
     // The in-memory guard still prevents duplicates during this page load.
   }
