@@ -595,7 +595,7 @@ function LpTrialPage() {
 
           <div className="heroin" id="apply">
             <div className="hero-copy">
-              <p className="arrival">신청 후 24시간 내 도착</p>
+              <p className="arrival">24시간 내 미제공 시 전액 환불 | 불만족 시 3일 내 환불</p>
               <h1>
                 궁금한 직무,
                 <br />
@@ -606,10 +606,6 @@ function LpTrialPage() {
                 <br />
                 그 분야 현직자가 만든 체험 과제가 24시간 안에 도착해요.
               </p>
-              <div className="guars">
-                <span>24시간 내 미제공 시 전액 환불</span>
-                <span>불만족 시 3일 내 환불</span>
-              </div>
             </div>
 
             <ApplyForm />
