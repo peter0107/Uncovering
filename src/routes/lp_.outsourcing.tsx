@@ -438,7 +438,10 @@ function LpOutsourcingPage() {
 
       <div className="wrap">
         <footer id="faq">
-          <span>© 2026 Beginner</span>
+          <div className="footer-contact">
+            <span>© 2026 Beginner. All rights reserved.</span>
+            <a href="mailto:info@beginner.today">Contact: info@beginner.today</a>
+          </div>
           <div>
             <a
               href="#faq"

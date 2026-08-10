@@ -829,7 +829,10 @@ function LpTrialPage() {
 
       <div className="wrap">
         <footer>
-          <span>© 2026 Beginner</span>
+          <div className="footer-contact">
+            <span>© 2026 Beginner. All rights reserved.</span>
+            <a href="mailto:info@beginner.today">Contact: info@beginner.today</a>
+          </div>
           <div>
             <a href="#refund" onClick={() => trackTrialEvent("trial_policy_link_clicked", { policy: "refund", placement: "footer" })}>
               환불 정책

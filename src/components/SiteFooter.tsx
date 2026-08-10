@@ -4,7 +4,12 @@ export function SiteFooter() {
   return (
     <footer className="mt-24 border-t border-[#EEF0F4]">
       <div className="mx-auto flex max-w-6xl flex-col gap-5 px-4 py-7 text-xs text-zinc-400 sm:flex-row sm:items-center sm:justify-between">
-        <span>© 2026 Beginner. All rights reserved.</span>
+        <div className="flex flex-col gap-1">
+          <span>© 2026 Beginner. All rights reserved.</span>
+          <a href="mailto:info@beginner.today" className="w-fit transition-colors hover:text-zinc-600">
+            Contact: info@beginner.today
+          </a>
+        </div>
         <nav className="flex flex-wrap items-center gap-x-5 gap-y-2">
           <Link to="/faq" className="transition-colors hover:text-zinc-600">
             자주 묻는 질문

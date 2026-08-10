@@ -594,7 +594,10 @@ function Index() {
 
       <footer className="reference-footer">
         <div className="reference-shell">
-          <span>© 2026 Beginner. All rights reserved.</span>
+          <div className="reference-footer-contact">
+            <span>© 2026 Beginner. All rights reserved.</span>
+            <a href="mailto:info@beginner.today">Contact: info@beginner.today</a>
+          </div>
           <nav aria-label="하단 메뉴">
             <Link to="/faq">자주 묻는 질문</Link>
             <Link to="/terms">이용약관</Link>

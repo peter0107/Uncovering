@@ -51,7 +51,12 @@ function AboutPage() {
           <Link to="/terms" className="hover:text-zinc-950">
             이용약관
           </Link>
-          <span>© 2026 Beginner</span>
+          <div className="flex flex-col gap-1">
+            <span>© 2026 Beginner. All rights reserved.</span>
+            <a href="mailto:info@beginner.today" className="hover:text-zinc-950">
+              Contact: info@beginner.today
+            </a>
+          </div>
         </footer>
       </article>
     </main>
