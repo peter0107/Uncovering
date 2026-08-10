@@ -595,7 +595,10 @@ function LpTrialPage() {
 
           <div className="heroin" id="apply">
             <div className="hero-copy">
-              <p className="arrival">24시간 내 미제공 시 전액 환불 | 불만족 시 3일 내 환불</p>
+            <div className="arrival" aria-label="환불 정책">
+              <span>24시간 내 미제공 시 전액 환불</span>
+              <span>불만족 시 3일 내 환불</span>
+            </div>
               <h1>
                 궁금한 직무,
                 <br />
