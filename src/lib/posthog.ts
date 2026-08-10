@@ -53,6 +53,8 @@ function getPostHogConfig() {
       defaults: "2025-05-24" as const,
       capture_exceptions: true,
       capture_pageview: false,
+      // Buttons use named events so PostHog does not also create $autocapture duplicates.
+      autocapture: false,
       opt_out_capturing_by_default: consentDirective === "opt-out",
       opt_out_capturing_persistence_type: "localStorage" as const,
       disable_session_recording: false,
