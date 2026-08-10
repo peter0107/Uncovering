@@ -484,7 +484,7 @@ function LpTrialPage() {
               <h1>
                 궁금한 직무,
                 <br />
-                내일 직접 해보세요
+                직접 해보고 판단하세요!
               </h1>
               <p className="lead">
                 원하는 직무와 기업 유형을 고르면,
