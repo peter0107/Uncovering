@@ -17,7 +17,6 @@ import { Route as PasswordResetRouteImport } from './routes/password-reset'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as MyRouteImport } from './routes/my'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as FormRouteImport } from './routes/form'
 import { Route as FaqRouteImport } from './routes/faq'
 import { Route as ExpertSimulationsRouteImport } from './routes/expert-simulations'
 import { Route as BizRouteImport } from './routes/biz'
@@ -84,11 +83,6 @@ const MyRoute = MyRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FormRoute = FormRouteImport.update({
-  id: '/form',
-  path: '/form',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FaqRoute = FaqRouteImport.update({
@@ -237,7 +231,6 @@ export interface FileRoutesByFullPath {
   '/biz': typeof BizRoute
   '/expert-simulations': typeof ExpertSimulationsRoute
   '/faq': typeof FaqRoute
-  '/form': typeof FormRoute
   '/login': typeof LoginRoute
   '/my': typeof MyRoute
   '/onboarding': typeof OnboardingRoute
@@ -275,7 +268,6 @@ export interface FileRoutesByTo {
   '/biz': typeof BizRoute
   '/expert-simulations': typeof ExpertSimulationsRoute
   '/faq': typeof FaqRoute
-  '/form': typeof FormRoute
   '/login': typeof LoginRoute
   '/my': typeof MyRoute
   '/onboarding': typeof OnboardingRoute
@@ -314,7 +306,6 @@ export interface FileRoutesById {
   '/biz': typeof BizRoute
   '/expert-simulations': typeof ExpertSimulationsRoute
   '/faq': typeof FaqRoute
-  '/form': typeof FormRoute
   '/login': typeof LoginRoute
   '/my': typeof MyRoute
   '/onboarding': typeof OnboardingRoute
@@ -354,7 +345,6 @@ export interface FileRouteTypes {
     | '/biz'
     | '/expert-simulations'
     | '/faq'
-    | '/form'
     | '/login'
     | '/my'
     | '/onboarding'
@@ -392,7 +382,6 @@ export interface FileRouteTypes {
     | '/biz'
     | '/expert-simulations'
     | '/faq'
-    | '/form'
     | '/login'
     | '/my'
     | '/onboarding'
@@ -430,7 +419,6 @@ export interface FileRouteTypes {
     | '/biz'
     | '/expert-simulations'
     | '/faq'
-    | '/form'
     | '/login'
     | '/my'
     | '/onboarding'
@@ -469,7 +457,6 @@ export interface RootRouteChildren {
   BizRoute: typeof BizRoute
   ExpertSimulationsRoute: typeof ExpertSimulationsRoute
   FaqRoute: typeof FaqRoute
-  FormRoute: typeof FormRoute
   LoginRoute: typeof LoginRoute
   MyRoute: typeof MyRoute
   OnboardingRoute: typeof OnboardingRoute
@@ -548,13 +535,6 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/form': {
-      id: '/form'
-      path: '/form'
-      fullPath: '/form'
-      preLoaderRoute: typeof FormRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/faq': {
@@ -792,7 +772,6 @@ const rootRouteChildren: RootRouteChildren = {
   BizRoute: BizRoute,
   ExpertSimulationsRoute: ExpertSimulationsRoute,
   FaqRoute: FaqRoute,
-  FormRoute: FormRoute,
   LoginRoute: LoginRoute,
   MyRoute: MyRoute,
   OnboardingRoute: OnboardingRoute,

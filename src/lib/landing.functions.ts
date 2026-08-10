@@ -50,7 +50,7 @@ function formatDateTime(iso: string): string {
   return `${get("year")}-${get("month")}-${get("day")} ${get("hour")}:${get("minute")}`;
 }
 
-// Discord 알림 (ads.functions.ts의 notifyDiscord 패턴). 웹훅 미설정 시 조용히 skip.
+// Discord 알림. 웹훅 미설정 시 조용히 skip.
 async function notifyDiscord(title: string, fields: { name: string; value: string; inline?: boolean }[]) {
   const webhookUrl = process.env.LANDING_DISCORD_WEBHOOK_URL;
   if (!webhookUrl) return;
@@ -357,6 +357,8 @@ export async function handlePayappFeedbackRequest(request: Request): Promise<Res
     await notifyDiscord("결제 완료 (직무 체험)", [
       { name: "주문", value: orderId, inline: true },
       { name: "금액", value: `${order.amount.toLocaleString()}원`, inline: true },
+      { name: "이메일", value: order.email, inline: true },
+      { name: "신청 직무", value: order.job_role, inline: true },
     ]);
   }
 

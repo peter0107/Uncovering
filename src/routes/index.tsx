@@ -524,9 +524,6 @@ function Index() {
             <Link to="/simulations/all" className="reference-hero-action">
               무료로 시작하기 <ArrowRight aria-hidden="true" />
             </Link>
-            <Link to="/form" className="reference-hero-caption">
-              원하는 직무 요청하기
-            </Link>
           </div>
         </section>
       </div>
