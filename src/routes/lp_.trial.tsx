@@ -654,19 +654,6 @@ function LpTrialPage() {
                     <span style={{ fontSize: 12, color: "#6B7280" }}>결제 금액</span>
                     <b style={{ fontSize: 18, color: "#435BDA" }}>{TRIAL_PLAN_PRICES.single.toLocaleString()}원</b>
                   </div>
-                  <span
-                    style={{
-                      background: "#435BDA",
-                      color: "#fff",
-                      fontSize: 12.5,
-                      fontWeight: 700,
-                      borderRadius: 8,
-                      padding: "10px 0",
-                      textAlign: "center",
-                    }}
-                  >
-                    신청 완료하기
-                  </span>
                 </div>
               </div>
             </div>
@@ -781,19 +768,6 @@ function LpTrialPage() {
                       <span style={{ fontSize: 11.5, color: "#4B5563" }}>첫 결제 코호트부터</span>
                     </div>
                   </div>
-                  <span
-                    style={{
-                      border: "1px solid #D5DAE3",
-                      color: "#4B5563",
-                      fontSize: 12,
-                      fontWeight: 700,
-                      borderRadius: 8,
-                      padding: "9px 0",
-                      textAlign: "center",
-                    }}
-                  >
-                    3일 내 환불 요청
-                  </span>
                 </div>
               </div>
             </div>
