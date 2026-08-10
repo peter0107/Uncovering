@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react";
 
 import { BrandLogo } from "@/components/BrandLogo";
 import { submitLandingLead } from "@/lib/landing.functions";
+import { capturePostHogEvent } from "@/lib/posthog";
 
 export const Route = createFileRoute("/lp_/outsourcing")({
   head: () => ({
@@ -18,6 +19,20 @@ export const Route = createFileRoute("/lp_/outsourcing")({
   component: LpOutsourcingPage,
 });
 
+function trackOutsourcingEvent(event: string, properties?: Record<string, unknown>) {
+  void capturePostHogEvent(event, { landing_page: "outsourcing", ...properties });
+}
+
+function trackConsultationFieldCompleted(field: string, value: string) {
+  const trimmedValue = value.trim();
+  if (!trimmedValue) return;
+
+  trackOutsourcingEvent("outsourcing_form_field_completed", {
+    field,
+    input_length: trimmedValue.length,
+  });
+}
+
 function ConsultationForm() {
   const [companyName, setCompanyName] = useState("");
   const [contactName, setContactName] = useState("");
@@ -32,6 +47,7 @@ function ConsultationForm() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
+    trackOutsourcingEvent("outsourcing_consultation_submit_started");
     setIsSubmitting(true);
     try {
       await submitLandingLead({
@@ -44,8 +60,10 @@ function ConsultationForm() {
           website,
         },
       });
+      trackOutsourcingEvent("outsourcing_consultation_submitted");
       setIsSubmitted(true);
     } catch (submissionError) {
+      trackOutsourcingEvent("outsourcing_consultation_submit_failed");
       setError(
         submissionError instanceof Error
           ? submissionError.message
@@ -80,6 +98,7 @@ function ConsultationForm() {
             placeholder="기업명을 입력해주세요"
             value={companyName}
             onChange={(event) => setCompanyName(event.target.value)}
+            onBlur={(event) => trackConsultationFieldCompleted("company_name", event.target.value)}
           />
         </label>
         <label className="consult-field">
@@ -92,6 +111,7 @@ function ConsultationForm() {
             placeholder="담당자명을 입력해주세요"
             value={contactName}
             onChange={(event) => setContactName(event.target.value)}
+            onBlur={(event) => trackConsultationFieldCompleted("contact_name", event.target.value)}
           />
         </label>
         <label className="consult-field">
@@ -104,6 +124,7 @@ function ConsultationForm() {
             placeholder="name@company.com"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
+            onBlur={(event) => trackConsultationFieldCompleted("email", event.target.value)}
           />
         </label>
         <label className="consult-field">
@@ -117,6 +138,7 @@ function ConsultationForm() {
             placeholder="010-1234-5678"
             value={phone}
             onChange={(event) => setPhone(event.target.value)}
+            onBlur={(event) => trackConsultationFieldCompleted("phone", event.target.value)}
           />
         </label>
         <label className="consult-field full">
@@ -127,6 +149,7 @@ function ConsultationForm() {
             placeholder="필요한 업무, 일정, 예산 범위를 적어주세요"
             value={requestDetail}
             onChange={(event) => setRequestDetail(event.target.value)}
+            onBlur={(event) => trackConsultationFieldCompleted("request_detail", event.target.value)}
           />
         </label>
       </div>
@@ -153,7 +176,7 @@ function ConsultationForm() {
 
 function LpOutsourcingPage() {
   return (
-    <div className="lp-outsourcing">
+    <div className="lp-outsourcing ph-no-capture">
       <div className="hero">
         <div className="wrap">
           <div className="nav">
@@ -161,10 +184,31 @@ function LpOutsourcingPage() {
               <BrandLogo className="h-[1.9rem] w-auto max-w-[9.75rem] object-contain object-left" />
             </div>
             <div className="navlinks">
-              <a href="#how">이용 방법</a>
-              <a href="#price">가격</a>
-              <a href="#faq">자주 묻는 질문</a>
-              <a className="btn" href="#reserve">상담 신청</a>
+              <a
+                href="#how"
+                onClick={() => trackOutsourcingEvent("outsourcing_navigation_clicked", { destination: "how" })}
+              >
+                이용 방법
+              </a>
+              <a
+                href="#price"
+                onClick={() => trackOutsourcingEvent("outsourcing_navigation_clicked", { destination: "price" })}
+              >
+                가격
+              </a>
+              <a
+                href="#faq"
+                onClick={() => trackOutsourcingEvent("outsourcing_navigation_clicked", { destination: "faq" })}
+              >
+                자주 묻는 질문
+              </a>
+              <a
+                className="btn"
+                href="#reserve"
+                onClick={() => trackOutsourcingEvent("outsourcing_navigation_clicked", { destination: "reserve" })}
+              >
+                상담 신청
+              </a>
             </div>
             <div className="burger">
               <span></span>
@@ -185,7 +229,11 @@ function LpOutsourcingPage() {
               적합한 진행 방식과 다음 단계를 함께 정리해드립니다.
             </p>
             <div className="ctas">
-              <a className="btn btn-lg" href="#reserve">
+              <a
+                className="btn btn-lg"
+                href="#reserve"
+                onClick={() => trackOutsourcingEvent("outsourcing_cta_clicked", { placement: "hero" })}
+              >
                 상담 신청하기 →
               </a>
             </div>
@@ -392,9 +440,24 @@ function LpOutsourcingPage() {
         <footer id="faq">
           <span>© 2026 Beginner</span>
           <div>
-            <a href="#faq">자주 묻는 질문</a>
-            <a href="/terms">이용약관</a>
-            <a href="/privacy">개인정보처리방침</a>
+            <a
+              href="#faq"
+              onClick={() => trackOutsourcingEvent("outsourcing_navigation_clicked", { destination: "faq", placement: "footer" })}
+            >
+              자주 묻는 질문
+            </a>
+            <a
+              href="/terms"
+              onClick={() => trackOutsourcingEvent("outsourcing_policy_link_clicked", { policy: "terms", placement: "footer" })}
+            >
+              이용약관
+            </a>
+            <a
+              href="/privacy"
+              onClick={() => trackOutsourcingEvent("outsourcing_policy_link_clicked", { policy: "privacy", placement: "footer" })}
+            >
+              개인정보처리방침
+            </a>
           </div>
         </footer>
       </div>
