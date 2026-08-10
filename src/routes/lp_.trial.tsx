@@ -574,7 +574,10 @@ function LpTrialPage() {
               <BrandLogo className="h-[1.9rem] w-auto max-w-[9.75rem] object-contain object-left" />
             </div>
             <div className="navlinks">
-              <a href="#preview" onClick={() => trackTrialEvent("trial_navigation_clicked", { destination: "preview" })}>
+              <a
+                href={`/simulation/${PREVIEW_SIMULATION_ID}?demo=1`}
+                onClick={() => trackTrialEvent("trial_navigation_clicked", { destination: "simulation_preview" })}
+              >
                 미리보기
               </a>
               <a href="#how" onClick={() => trackTrialEvent("trial_navigation_clicked", { destination: "how" })}>
