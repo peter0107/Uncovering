@@ -68,6 +68,10 @@ function ApplyForm() {
     setJobCategory(category);
     setJobRole(JOB_ROLES_BY_CATEGORY[category][0]);
     setCustomJobRole("");
+    trackTrialEvent("trial_form_input_changed", {
+      field: "job_category",
+      value: category,
+    });
   }
   const [companyType, setCompanyType] = useState(COMPANY_TYPES[0]);
   const [customCompanyType, setCustomCompanyType] = useState("");
@@ -101,7 +105,12 @@ function ApplyForm() {
       return;
     }
     if (step < 2) {
-      trackTrialEvent("trial_apply_next_clicked", { step: 1 });
+      trackTrialEvent("trial_apply_next_clicked", {
+        step: 1,
+        job_category: jobCategory,
+        job_role: selections.effectiveJobRole,
+        company_type: selections.effectiveCompanyType,
+      });
       setStep(2);
       return;
     }
@@ -169,7 +178,17 @@ function ApplyForm() {
           <div className="fgroup">
             <span className="flabel">체험할 직무</span>
             <div className="select">
-              <select value={jobRole} onChange={(event) => setJobRole(event.target.value)}>
+              <select
+                value={jobRole}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setJobRole(value);
+                  trackTrialEvent("trial_form_input_changed", {
+                    field: "job_role",
+                    value,
+                  });
+                }}
+              >
                 {JOB_ROLES_BY_CATEGORY[jobCategory].map((role) => (
                   <option key={role} value={role}>
                     {role}
@@ -186,6 +205,15 @@ function ApplyForm() {
                 placeholder="체험하고 싶은 직무를 입력해주세요"
                 value={customJobRole}
                 onChange={(event) => setCustomJobRole(event.target.value)}
+                onBlur={() => {
+                  const value = customJobRole.trim();
+                  if (value) {
+                    trackTrialEvent("trial_form_input_changed", {
+                      field: "custom_job_role",
+                      value,
+                    });
+                  }
+                }}
               />
             )}
           </div>
@@ -193,7 +221,17 @@ function ApplyForm() {
           <div className="fgroup">
             <span className="flabel">기업</span>
             <div className="select">
-              <select value={companyType} onChange={(event) => setCompanyType(event.target.value)}>
+              <select
+                value={companyType}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setCompanyType(value);
+                  trackTrialEvent("trial_form_input_changed", {
+                    field: "company_type",
+                    value,
+                  });
+                }}
+              >
                 {COMPANY_TYPES.map((type) => (
                   <option key={type} value={type}>
                     {type}
@@ -210,6 +248,15 @@ function ApplyForm() {
                 placeholder="기업을 입력해주세요"
                 value={customCompanyType}
                 onChange={(event) => setCustomCompanyType(event.target.value)}
+                onBlur={() => {
+                  const value = customCompanyType.trim();
+                  if (value) {
+                    trackTrialEvent("trial_form_input_changed", {
+                      field: "custom_company_type",
+                      value,
+                    });
+                  }
+                }}
               />
             )}
           </div>
@@ -237,6 +284,15 @@ function ApplyForm() {
               placeholder="과제를 받을 이메일 주소"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
+              onBlur={() => {
+                const [, domain] = email.trim().split("@");
+                if (domain) {
+                  trackTrialEvent("trial_form_input_completed", {
+                    field: "email",
+                    email_domain: domain.toLowerCase(),
+                  });
+                }
+              }}
             />
           </div>
 
