@@ -309,6 +309,7 @@ function ApplyForm() {
                 <b>{TRIAL_PLAN_PRICES.single.toLocaleString()}원</b>
               </span>
             </div>
+            <p className="purchase-count">15명이 구매했어요!</p>
           </div>
         </>
       )}
