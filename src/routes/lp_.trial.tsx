@@ -365,6 +365,16 @@ function ApplyForm() {
         </p>
       )}
 
+      {step === 1 && (
+        <a
+          href={`/simulation/${PREVIEW_SIMULATION_ID}?demo=1`}
+          style={{ textAlign: "center", fontSize: 13.5, color: "#435BDA", textDecoration: "underline" }}
+          onClick={() => trackTrialEvent("trial_preview_simulation_clicked", { placement: "apply_step1" })}
+        >
+          시뮬레이션 미리보기
+        </a>
+      )}
+
       <div className="apply-actions">
         {step > 1 && (
           <button
