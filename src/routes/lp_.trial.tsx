@@ -413,6 +413,7 @@ const PREVIEW_STEPS = [
 const PREVIEW_SLIDES = [
   {
     label: "시뮬레이션 예시 보기",
+    actionOnly: false,
     content: (
       <>
         <div className="pv-head">
@@ -436,18 +437,11 @@ const PREVIEW_SLIDES = [
         </div>
       </>
     ),
-    foot: (
-      <a
-        className="pv-btn"
-        href={`/simulation/${PREVIEW_SIMULATION_ID}?demo=1`}
-        onClick={() => trackTrialEvent("trial_preview_simulation_clicked", { placement: "preview_slide_1" })}
-      >
-        실제 과제 형식 보러가기 →
-      </a>
-    ),
+    foot: null,
   },
   {
     label: "모범 답안 예시 보기",
+    actionOnly: false,
     content: (
       <>
         <div className="pv-head">
@@ -473,6 +467,7 @@ const PREVIEW_SLIDES = [
   },
   {
     label: "현직자 코멘트",
+    actionOnly: false,
     content: (
       <div className="pv-card">
         <div className="pv-person">
@@ -494,28 +489,8 @@ const PREVIEW_SLIDES = [
   },
   {
     label: "시뮬레이션 미리보기",
-    content: (
-      <>
-        <div className="pv-head">
-          <b className="pv-title">온라인 쇼핑몰 구매 이탈 원인 분석 및 구매 흐름 개선</b>
-          <span className="pv-tag">UI/UX 디자인 · 약 30분</span>
-        </div>
-        <div className="pv-card">
-          <p className="pv-body">
-            실제 과제 화면에서 제공 자료를 확인하고, 단계별 질문에 직접 답안을 작성할 수 있습니다.
-          </p>
-        </div>
-        <div className="pv-steps">
-          {PREVIEW_STEPS.map((step) => (
-            <div className="pv-step" key={step.no}>
-              <span className="pv-stepno">{step.no}</span>
-              <b>{step.title}</b>
-              <span className="pv-stepmin">{step.min}분</span>
-            </div>
-          ))}
-        </div>
-      </>
-    ),
+    actionOnly: true,
+    content: null,
     foot: (
       <a
         className="pv-btn"
@@ -544,22 +519,28 @@ function PreviewCarousel() {
         {PREVIEW_SLIDES.map((slide, i) => (
           <div className="carousel-slide" key={i}>
             <div className="pv-frame">
-              <b className="pv-label">{slide.label}</b>
-              {/* 실제 수행 화면(SimulationShell)과 같은 구성: 상단 진행바 → 회색 본문 → 하단 액션바 */}
-              <div className="mock mock-app">
-                <div className="appbar">
-                  <span className="appbar-logo">Beginner</span>
-                  <span className="appbar-right">
-                    <span className="appbar-stepname">핵심 문제 분석</span>
-                    <span className="appbar-prog">
-                      <i />
-                    </span>
-                    <span>1/3</span>
-                  </span>
-                </div>
-                <div className="mockbody">{slide.content}</div>
-                <div className="appfoot">{slide.foot}</div>
-              </div>
+              {slide.actionOnly ? (
+                <div className="pv-action-only">{slide.foot}</div>
+              ) : (
+                <>
+                  <b className="pv-label">{slide.label}</b>
+                  {/* 실제 수행 화면(SimulationShell)과 같은 구성: 상단 진행바 → 회색 본문 → 하단 액션바 */}
+                  <div className="mock mock-app">
+                    <div className="appbar">
+                      <span className="appbar-logo">Beginner</span>
+                      <span className="appbar-right">
+                        <span className="appbar-stepname">핵심 문제 분석</span>
+                        <span className="appbar-prog">
+                          <i />
+                        </span>
+                        <span>1/3</span>
+                      </span>
+                    </div>
+                    <div className="mockbody">{slide.content}</div>
+                    {slide.foot && <div className="appfoot">{slide.foot}</div>}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         ))}
