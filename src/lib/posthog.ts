@@ -78,13 +78,6 @@ export function getPostHogClient() {
       } else if (config.consentDirective === "opt-in") {
         posthog.opt_in_capturing();
       }
-
-      // Session Replay must begin after the persisted consent state is applied.
-      // Explicitly starting it keeps regular visits recordable while respecting
-      // the dedicated `ph_optout=1` privacy override.
-      if (!posthog.has_opted_out_capturing()) {
-        posthog.startSessionRecording();
-      }
       if (config.sessionUtmProperties && !posthog.has_opted_out_capturing()) {
         for (const parameter of UTM_PARAMETERS) {
           const property = `$${parameter}`;
