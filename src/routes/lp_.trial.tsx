@@ -401,6 +401,36 @@ const PREVIEW_SLIDES = [
     ),
     foot: <span className="pv-note">✓ 모든 과제는 해당 직무 현직자가 만들고 검수해요</span>,
   },
+  {
+    label: "시뮬레이션 미리보기",
+    content: (
+      <>
+        <div className="pv-head">
+          <b className="pv-title">온라인 쇼핑몰 구매 이탈 원인 분석 및 구매 흐름 개선</b>
+          <span className="pv-tag">UI/UX 디자인 · 약 30분</span>
+        </div>
+        <div className="pv-card">
+          <p className="pv-body">
+            실제 과제 화면에서 제공 자료를 확인하고, 단계별 질문에 직접 답안을 작성할 수 있습니다.
+          </p>
+        </div>
+        <div className="pv-steps">
+          {PREVIEW_STEPS.map((step) => (
+            <div className="pv-step" key={step.no}>
+              <span className="pv-stepno">{step.no}</span>
+              <b>{step.title}</b>
+              <span className="pv-stepmin">{step.min}분</span>
+            </div>
+          ))}
+        </div>
+      </>
+    ),
+    foot: (
+      <a className="pv-btn" href={`/simulation/${PREVIEW_SIMULATION_ID}?demo=1`}>
+        시뮬레이션 미리보기 →
+      </a>
+    ),
+  },
 ];
 
 function PreviewCarousel() {
