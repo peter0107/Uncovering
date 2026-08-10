@@ -12,6 +12,7 @@ export function SimulationShell({
   bottomBar,
   children,
   onHomeClick,
+  logoHref = "/",
 }: {
   label: string;
   step: number;
@@ -19,12 +20,13 @@ export function SimulationShell({
   bottomBar?: ReactNode;
   children: ReactNode;
   onHomeClick?: () => void;
+  logoHref?: string;
 }) {
   const progress = totalSteps > 0 ? Math.round((Math.min(step, totalSteps) / totalSteps) * 100) : 0;
   return (
     <div className="flex min-h-dvh flex-col bg-[#EEF0F3]">
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-200 bg-white px-5 py-3.5 sm:px-10">
-        <Link to="/" onClick={onHomeClick} className="flex items-center">
+        <Link to={logoHref} onClick={onHomeClick} className="flex items-center">
           <BrandLogo className="h-6 w-auto" />
         </Link>
         <div className="flex items-center gap-2.5 text-xs text-zinc-500 sm:gap-3.5">

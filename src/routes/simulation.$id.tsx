@@ -47,8 +47,9 @@ export const Route = createFileRoute("/simulation/$id")({
       .union([z.literal("1"), z.literal(1), z.literal(true)])
       .optional()
       .transform((v) => (v == null ? undefined : ("1" as const))),
-    // demo=1: 랜딩에서 넘어온 비로그인 방문자용 공개 열람. 작성은 되고 제출만 막는다.
-    // preview=1(관리자 전용)과 달리 공개 데이터만 읽으므로 별도 권한이 필요 없다.
+    // demo=1: 랜딩에서 넘어온 방문자용 공개 열람. 로그인 여부와 무관하게 항상 미리보기로
+    // 취급 — 작성은 되고 제출만 막는다. preview=1(관리자 전용)과 달리 공개 데이터만
+    // 읽으므로 별도 권한이 필요 없다.
     demo: z
       .union([z.literal("1"), z.literal(1), z.literal(true)])
       .optional()
@@ -171,7 +172,9 @@ function SimulationDetailPage() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const isPreview = preview === "1";
-  const isDemo = demo === "1" && !user;
+  // 로그인 여부와 무관하게 항상 미리보기로 취급 — 이미 로그인한 방문자가 데모 링크로
+  // 들어와도 실제 제출·이탈 설문 대상이 되면 안 된다.
+  const isDemo = demo === "1";
   // 로그인 리다이렉트·로딩 가드에서 preview와 demo를 같이 통과시킨다.
   const isOpenView = isPreview || isDemo;
   const [accessReady, setAccessReady] = useState(isOpenView);
@@ -1275,6 +1278,7 @@ function SimulationDetailPage() {
       totalSteps={model.steps.length}
       bottomBar={bottomBar}
       onHomeClick={() => trackSimulationAction("simulation_home_clicked")}
+      logoHref={isDemo ? "/lp/trial" : "/"}
     >
       {blockerDialog}
       {mainContent}
