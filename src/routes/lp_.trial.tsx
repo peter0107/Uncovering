@@ -690,7 +690,7 @@ function LpTrialPage() {
         </div>
       </section>
 
-      <section id="preview">
+      <section className="sect-gray" id="preview">
         <div className="wrap">
           <div className="center">
             <p className="eyebrow">미리보기</p>
@@ -700,7 +700,7 @@ function LpTrialPage() {
         </div>
       </section>
 
-      <section className="sect-gray" id="refund">
+      <section id="refund">
         <div className="wrap">
           <div className="center">
             <p className="eyebrow">환불 정책</p>
