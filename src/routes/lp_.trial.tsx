@@ -590,11 +590,6 @@ function LpTrialPage() {
                 체험 신청하기
               </a>
             </div>
-            <div className="burger">
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
           </div>
 
           <div className="heroin" id="apply">

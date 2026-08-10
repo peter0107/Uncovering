@@ -121,8 +121,6 @@
 .lp-trial .brand { display: flex; align-items: center; gap: 10px; }
 .lp-trial .navlinks { display: flex; gap: 22px; align-items: center; font-size: 15px; color: #4B5563; }
 .lp-trial .btn { display: inline-block; background: #435BDA; color: #fff; font-weight: 700; border-radius: 8px; padding: 11px 22px; font-size: 15px; }
-.lp-trial .burger { display: none; flex-direction: column; gap: 4.5px; padding: 8px; margin: -8px; }
-.lp-trial .burger span { width: 20px; height: 2px; background: #1B2440; border-radius: 2px; }
 .lp-trial .heroin { position: relative; padding: 68px 0 72px; display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 56px; align-items: start; }
 .lp-trial .hero-copy { display: flex; flex-direction: column; align-items: flex-start; gap: 22px; max-width: 620px; padding-top: 12px; }
 .lp-trial .arrival {
@@ -285,7 +283,6 @@
   .lp-trial .hero-copy { gap: 18px; padding-top: 0; }
   .lp-trial .grid3, .lp-trial .grid2 { grid-template-columns: 1fr; }
   .lp-trial .navlinks { display: none; }
-  .lp-trial .burger { display: flex; }
   .lp-trial section { padding: 44px 0; }
   .lp-trial h1 { letter-spacing: -1.2px; }
   .lp-trial .cta { padding: 36px 22px; }
