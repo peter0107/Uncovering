@@ -17,7 +17,7 @@ export const Route = createFileRoute("/lp_/trial")({
       { title: "Beginner — 직무 체험 신청 (24시간 내 제공)" },
       {
         name: "description",
-        content: "원하는 직무와 기업 유형을 고르면, 현직자가 만든 체험 과제가 24시간 안에 도착해요.",
+        content: "원하는 직무와 기업 유형을 고르면, 현직자가 만든 실무 과제가 24시간 안에 도착해요.",
       },
       { name: "robots", content: "noindex, nofollow" },
     ],
@@ -608,7 +608,7 @@ function LpTrialPage() {
               <p className="lead">
                 원하는 직무와 기업 유형을 고르면,
                 <br />
-                그 분야 현직자가 만든 체험 과제가 24시간 안에 도착해요.
+                그 분야 현직자가 만든 실무 과제가 24시간 안에 도착해요.
               </p>
             </div>
 
