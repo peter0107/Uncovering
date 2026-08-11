@@ -855,12 +855,6 @@ function LpTrialPage() {
             </a>
           </div>
         </footer>
-        <div className="bizinfo">
-          {/* TODO: 사업자정보 확정 후 실값으로 교체 (상호/대표자/사업자등록번호/통신판매업신고번호/주소/연락처) */}
-          상호 [TODO] · 대표 [TODO] · 사업자등록번호 [TODO] · 통신판매업신고번호 [TODO]
-          <br />
-          주소 [TODO] · 고객센터 [TODO]
-        </div>
       </div>
     </div>
   );
