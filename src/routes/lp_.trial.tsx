@@ -59,7 +59,7 @@ const JOB_ROLES_BY_CATEGORY: Record<DomainCategory, string[]> = {
 const COMPANY_TYPES = ["스타트업", "중소기업", "중견기업", "대기업", OTHER_COMPANY_TYPE];
 
 function ApplyForm() {
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2>(1);
   const [jobCategory, setJobCategory] = useState<DomainCategory>(DOMAIN_CATEGORIES[0]);
   const [jobRole, setJobRole] = useState(JOB_ROLES_BY_CATEGORY[DOMAIN_CATEGORIES[0]][0]);
   const [customJobRole, setCustomJobRole] = useState("");
@@ -104,7 +104,7 @@ function ApplyForm() {
     if (!selections) {
       return;
     }
-    if (step === 1) {
+    if (step < 2) {
       trackTrialEvent("trial_apply_next_clicked", {
         step: 1,
         job_category: jobCategory,
@@ -114,16 +114,6 @@ function ApplyForm() {
       setStep(2);
       return;
     }
-
-    if (step === 2) {
-      trackTrialEvent("trial_apply_next_clicked", {
-        step: 2,
-        email_domain: email.trim().split("@")[1]?.toLowerCase() ?? null,
-      });
-      setStep(3);
-      return;
-    }
-
     if (!agreedToTerms) {
       setError("환불 정책과 이용약관에 동의해주세요.");
       return;
@@ -162,15 +152,9 @@ function ApplyForm() {
     <form className="apply" onSubmit={handleSubmit}>
       <div className="apply-head">
         <span className="apply-step" aria-live="polite">
-          Step {step} / 3
+          Step {step} / 2
         </span>
-        <h3>
-          {step === 1
-            ? "직무와 기업을 선택해주세요"
-            : step === 2
-              ? "이메일 주소를 입력해주세요"
-              : "신청 내용을 확인하고 결제해주세요"}
-        </h3>
+        <h3>{step === 1 ? "직무와 기업을 선택해주세요" : "이메일과 결제 정보를 확인해주세요"}</h3>
       </div>
 
       {step === 1 ? (
@@ -278,30 +262,6 @@ function ApplyForm() {
             )}
           </div>
         </>
-      ) : step === 2 ? (
-        <div className="fgroup">
-          <span className="flabel">
-            이메일 <span style={{ color: "#435BDA" }}>*</span>
-          </span>
-          <input
-            type="email"
-            required
-            maxLength={200}
-            className="textinput"
-            placeholder="과제를 받을 이메일 주소"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            onBlur={() => {
-              const [, domain] = email.trim().split("@");
-              if (domain) {
-                trackTrialEvent("trial_form_input_completed", {
-                  field: "email",
-                  email_domain: domain.toLowerCase(),
-                });
-              }
-            }}
-          />
-        </div>
       ) : (
         <>
           <div className="selection-summary">
@@ -311,9 +271,30 @@ function ApplyForm() {
             <span>
               기업 <b>{companyType === OTHER_COMPANY_TYPE ? customCompanyType : companyType}</b>
             </span>
-            <span>
-              이메일 <b>{email.trim()}</b>
+          </div>
+
+          <div className="fgroup">
+            <span className="flabel">
+              이메일 <span style={{ color: "#435BDA" }}>*</span>
             </span>
+            <input
+              type="email"
+              required
+              maxLength={200}
+              className="textinput"
+              placeholder="과제를 받을 이메일 주소"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              onBlur={() => {
+                const [, domain] = email.trim().split("@");
+                if (domain) {
+                  trackTrialEvent("trial_form_input_completed", {
+                    field: "email",
+                    email_domain: domain.toLowerCase(),
+                  });
+                }
+              }}
+            />
           </div>
 
           <div className="fgroup">
@@ -346,7 +327,7 @@ function ApplyForm() {
         />
       </div>
 
-      {step === 3 && (
+      {step === 2 && (
         <label className="agree">
           <input
             type="checkbox"
@@ -401,9 +382,9 @@ function ApplyForm() {
             type="button"
             className="back"
             onClick={() => {
-              trackTrialEvent("trial_apply_back_clicked", { step });
+              trackTrialEvent("trial_apply_back_clicked", { step: 2 });
               setError("");
-              setStep(step === 3 ? 2 : 1);
+              setStep(1);
             }}
           >
             이전
@@ -415,10 +396,10 @@ function ApplyForm() {
           disabled={isSubmitting}
           onClick={() => trackTrialEvent("trial_apply_primary_button_clicked", { step })}
         >
-          {step < 3 ? "다음" : isSubmitting ? "결제창으로 이동 중..." : "결제창으로 이동하기"}
+          {step < 2 ? "다음" : isSubmitting ? "결제창으로 이동 중..." : "결제창으로 이동하기"}
         </button>
       </div>
-      {step === 3 && (
+      {step === 2 && (
         <span style={{ textAlign: "center", fontSize: 12.5, color: "#9CA3AF" }}>
           24시간 내 미제공 시 전액 환불
         </span>
