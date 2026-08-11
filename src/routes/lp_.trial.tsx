@@ -372,7 +372,7 @@ function ApplyForm() {
           style={{ textAlign: "center", fontSize: 13.5, color: "#435BDA", textDecoration: "underline" }}
           onClick={() => trackTrialEvent("trial_preview_simulation_clicked", { placement: "apply_step1" })}
         >
-          시뮬레이션 미리보기
+          예시 시뮬레이션 미리보기
         </a>
       )}
 
@@ -500,7 +500,7 @@ const PREVIEW_SLIDES = [
     foot: <span className="pv-note">✓ 모든 과제는 해당 직무 현직자가 만들고 검수해요</span>,
   },
   {
-    label: "시뮬레이션 미리보기",
+    label: "예시 시뮬레이션 미리보기",
     actionOnly: true,
     content: null,
     foot: (
@@ -509,7 +509,7 @@ const PREVIEW_SLIDES = [
         href={`/simulation/${PREVIEW_SIMULATION_ID}?demo=1`}
         onClick={() => trackTrialEvent("trial_preview_simulation_clicked", { placement: "preview_slide_4" })}
       >
-        시뮬레이션 미리보기 →
+        예시 시뮬레이션 미리보기 →
       </a>
     ),
   },
