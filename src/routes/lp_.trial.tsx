@@ -516,8 +516,33 @@ const PREVIEW_SLIDES = [
 function PreviewCarousel() {
   const [index, setIndex] = useState(0);
 
+  function goTo(i: number) {
+    const nextIndex = (i + PREVIEW_SLIDES.length) % PREVIEW_SLIDES.length;
+    trackTrialEvent("trial_preview_slide_selected", {
+      slide_index: nextIndex + 1,
+      slide_label: PREVIEW_SLIDES[nextIndex].label,
+    });
+    setIndex(nextIndex);
+  }
+
   return (
     <div className="carousel">
+      <button
+        type="button"
+        className="carousel-arrow carousel-arrow-prev"
+        onClick={() => goTo(index - 1)}
+        aria-label="이전 미리보기"
+      >
+        ‹
+      </button>
+      <button
+        type="button"
+        className="carousel-arrow carousel-arrow-next"
+        onClick={() => goTo(index + 1)}
+        aria-label="다음 미리보기"
+      >
+        ›
+      </button>
       <div className="carousel-track" style={{ transform: `translateX(-${index * 100}%)` }}>
         {PREVIEW_SLIDES.map((slide, i) => (
           <div className="carousel-slide" key={i}>
@@ -554,10 +579,7 @@ function PreviewCarousel() {
             key={i}
             type="button"
             className={i === index ? "on" : ""}
-            onClick={() => {
-              trackTrialEvent("trial_preview_slide_selected", { slide_index: i + 1, slide_label: slide.label });
-              setIndex(i);
-            }}
+            onClick={() => goTo(i)}
             aria-label={slide.label}
           />
         ))}
@@ -656,7 +678,24 @@ function LpTrialPage() {
                     }}
                   >
                     <span style={{ fontSize: 12, color: "#6B7280" }}>결제 금액</span>
-                    <b style={{ fontSize: 18, color: "#435BDA" }}>{TRIAL_PLAN_PRICES.single.toLocaleString()}원</b>
+                    <span style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+                      <s style={{ fontSize: 12.5, fontWeight: 600, color: "#9CA3AF" }}>
+                        {TRIAL_SINGLE_ORIGINAL_PRICE.toLocaleString()}원
+                      </s>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 800,
+                          color: "#DC2626",
+                          background: "#FEE2E2",
+                          borderRadius: 4,
+                          padding: "2px 5px",
+                        }}
+                      >
+                        {TRIAL_SINGLE_DISCOUNT_PERCENT}%
+                      </span>
+                      <b style={{ fontSize: 18, color: "#435BDA" }}>{TRIAL_PLAN_PRICES.single.toLocaleString()}원</b>
+                    </span>
                   </div>
                 </div>
               </div>
