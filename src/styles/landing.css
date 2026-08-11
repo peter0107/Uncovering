@@ -229,13 +229,8 @@
 
 /* 실제 수행 화면을 모사한 앱 프레임 (브라우저 크롬 대신) */
 .lp-trial .mock-app { margin-top: 10px; }
-.lp-trial .mock-app .appbar { display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding: 9px 12px; background: #fff; border-bottom: 1px solid #E9ECF2; }
-.lp-trial .mock-app .appbar-right { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #9CA3AF; white-space: nowrap; }
-.lp-trial .mock-app .appbar-stepname { overflow: hidden; text-overflow: ellipsis; max-width: 96px; }
-.lp-trial .mock-app .appbar-prog { width: 60px; height: 5px; border-radius: 3px; background: #E7EAF0; overflow: hidden; flex: none; }
-.lp-trial .mock-app .appbar-prog i { display: block; width: 33%; height: 100%; border-radius: 3px; background: #1B2440; }
-.lp-trial .mock-app .mockbody { background: #EEF0F3; padding: 14px; gap: 9px; }
-.lp-trial .mock-app .appfoot { display: flex; align-items: center; justify-content: flex-end; padding: 10px 12px; background: #fff; border-top: 1px solid #E9ECF2; }
+.lp-trial .mock-app .mockbody { background: #fff; padding: 14px; gap: 9px; }
+.lp-trial .mock-app .pv-inline-foot { margin-top: auto; display: flex; align-items: center; }
 .lp-trial .mock-app .pv-btn { display: inline-block; font-size: 12px; font-weight: 700; color: #fff; background: #435BDA; border-radius: 7px; padding: 8px 14px; transition: background-color 150ms ease; }
 .lp-trial .mock-app a.pv-btn:hover { color: #fff; background: #3349B8; }
 .lp-trial .pv-action-only { min-height: 0; display: grid; flex: 1; place-items: center; }

@@ -542,19 +542,11 @@ function PreviewCarousel() {
               ) : (
                 <>
                   <b className="pv-label">{slide.label}</b>
-                  {/* 실제 수행 화면(SimulationShell)과 같은 구성: 상단 진행바 → 회색 본문 → 하단 액션바 */}
                   <div className="mock mock-app">
-                    <div className="appbar">
-                      <span className="appbar-right">
-                        <span className="appbar-stepname">핵심 문제 분석</span>
-                        <span className="appbar-prog">
-                          <i />
-                        </span>
-                        <span>1/3</span>
-                      </span>
+                    <div className="mockbody">
+                      {slide.content}
+                      {slide.foot && <div className="pv-inline-foot">{slide.foot}</div>}
                     </div>
-                    <div className="mockbody">{slide.content}</div>
-                    {slide.foot && <div className="appfoot">{slide.foot}</div>}
                   </div>
                 </>
               )}
