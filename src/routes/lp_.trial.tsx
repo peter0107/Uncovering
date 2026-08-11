@@ -420,14 +420,12 @@ const PREVIEW_SLIDES = [
       <>
         <div className="pv-head">
           <b className="pv-title">온라인 쇼핑몰 구매 이탈 원인 분석 및 구매 흐름 개선</b>
-          <span className="pv-tag">UI/UX 디자인 · 약 30분</span>
+          <span className="pv-meta">UI/UX 디자인 · 약 30분</span>
         </div>
-        <div className="pv-card">
-          <p className="pv-quote">
-            "상품 조회와 장바구니 담기는 꾸준히 늘고 있는데, 결제 완료율은 오히려 낮아지고 있습니다.
-            어디서, 왜 이탈이 발생하는지 직접 분석해 개선안을 제안해주세요."
-          </p>
-        </div>
+        <p className="pv-quote">
+          "상품 조회와 장바구니 담기는 꾸준히 늘고 있는데, 결제 완료율은 오히려 낮아지고 있습니다.
+          어디서, 왜 이탈이 발생하는지 직접 분석해 개선안을 제안해주세요."
+        </p>
         <div className="pv-steps">
           {PREVIEW_STEPS.map((step) => (
             <div className="pv-step" key={step.no}>
@@ -469,21 +467,21 @@ const PREVIEW_SLIDES = [
     label: "현직자 코멘트",
     actionOnly: false,
     content: (
-      <div className="pv-card">
+      <>
         <div className="pv-person">
           <span className="pv-avatar">김</span>
           <span className="pv-personinfo">
             <b>김*현 · UI/UX 디자인</b>
             <span className="pv-meta">라이프스타일 커머스 · 스타트업 · 1~2년차</span>
           </span>
-          <span className="pv-tag pv-tag-green">검수 완료</span>
+          <span className="pv-status">검수 완료</span>
         </div>
         <p className="pv-quote">
           "실무에서는 '전환율이 떨어진다'는 말만 듣고 시작하는 경우가 많아요. 그래서 이 과제도 정답을
           정해두지 않았어요. 데이터에서 이탈 구간을 직접 찾고, 왜 그 화면이라고 판단했는지 설명할 수
           있는지를 봅니다."
         </p>
-      </div>
+      </>
     ),
     foot: <span className="pv-note">✓ 모든 과제는 해당 직무 현직자가 만들고 검수해요</span>,
   },
@@ -517,6 +515,22 @@ function PreviewCarousel() {
 
   return (
     <div className="carousel">
+      <button
+        type="button"
+        className="carousel-arrow carousel-arrow-prev"
+        onClick={() => goTo(index - 1)}
+        aria-label="이전 미리보기"
+      >
+        ‹
+      </button>
+      <button
+        type="button"
+        className="carousel-arrow carousel-arrow-next"
+        onClick={() => goTo(index + 1)}
+        aria-label="다음 미리보기"
+      >
+        ›
+      </button>
       <div className="carousel-track" style={{ transform: `translateX(-${index * 100}%)` }}>
         {PREVIEW_SLIDES.map((slide, i) => (
           <div className="carousel-slide" key={i}>
@@ -538,16 +552,16 @@ function PreviewCarousel() {
           </div>
         ))}
       </div>
-      <div className="carousel-controls" aria-label="미리보기 탐색">
-        <button type="button" onClick={() => goTo(index - 1)}>
-          이전
-        </button>
-        <span>
-          {index + 1} / {PREVIEW_SLIDES.length}
-        </span>
-        <button type="button" onClick={() => goTo(index + 1)}>
-          다음
-        </button>
+      <div className="carousel-dots" aria-label="미리보기 탐색">
+        {PREVIEW_SLIDES.map((slide, i) => (
+          <button
+            key={slide.label}
+            type="button"
+            className={i === index ? "on" : ""}
+            onClick={() => goTo(i)}
+            aria-label={slide.label}
+          />
+        ))}
       </div>
     </div>
   );
