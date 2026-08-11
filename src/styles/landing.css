@@ -220,9 +220,9 @@
 .lp-trial .carousel-arrow-next { right: 4px; }
 .lp-trial .carousel-track { display: flex; align-items: stretch; transition: transform 320ms ease; }
 .lp-trial .carousel-slide { flex: 0 0 100%; min-width: 0; display: flex; }
-.lp-trial .carousel-slide .pv-frame { width: 100%; max-width: 560px; min-height: 358px; margin: 0 auto; display: flex; flex: 1; flex-direction: column; }
+.lp-trial .carousel-slide .pv-frame { width: 100%; max-width: 560px; min-height: 316px; margin: 0 auto; display: flex; flex: 1; flex-direction: column; }
 .lp-trial .carousel-slide .mock { width: 100%; display: flex; flex: 1; flex-direction: column; }
-.lp-trial .carousel-slide .mockbody { flex: 1; min-height: 268px; }
+.lp-trial .carousel-slide .mockbody { flex: 1; min-height: 226px; }
 
 /* 캐러셀 슬라이드 제목 — 앱 화면 바깥에 둔다 */
 .lp-trial .pv-label { font-size: 13px; letter-spacing: -.2px; color: #1B2440; }
