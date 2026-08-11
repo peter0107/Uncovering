@@ -808,7 +808,7 @@ function LpTrialPage() {
         <div className="wrap">
           <div className="center">
             <p className="eyebrow">미리보기</p>
-            <h2 style={{ marginTop: 9 }}>체험 과제, 이런 모습이에요</h2>
+            <h2 style={{ marginTop: 9 }}>시뮬레이션, 이런 모습이에요</h2>
           </div>
           <PreviewCarousel />
         </div>
