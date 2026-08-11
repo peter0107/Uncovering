@@ -517,22 +517,6 @@ function PreviewCarousel() {
 
   return (
     <div className="carousel">
-      <button
-        type="button"
-        className="carousel-arrow carousel-arrow-prev"
-        onClick={() => goTo(index - 1)}
-        aria-label="이전 미리보기"
-      >
-        ‹
-      </button>
-      <button
-        type="button"
-        className="carousel-arrow carousel-arrow-next"
-        onClick={() => goTo(index + 1)}
-        aria-label="다음 미리보기"
-      >
-        ›
-      </button>
       <div className="carousel-track" style={{ transform: `translateX(-${index * 100}%)` }}>
         {PREVIEW_SLIDES.map((slide, i) => (
           <div className="carousel-slide" key={i}>
@@ -554,16 +538,16 @@ function PreviewCarousel() {
           </div>
         ))}
       </div>
-      <div className="carousel-dots">
-        {PREVIEW_SLIDES.map((slide, i) => (
-          <button
-            key={i}
-            type="button"
-            className={i === index ? "on" : ""}
-            onClick={() => goTo(i)}
-            aria-label={slide.label}
-          />
-        ))}
+      <div className="carousel-controls" aria-label="미리보기 탐색">
+        <button type="button" onClick={() => goTo(index - 1)}>
+          이전
+        </button>
+        <span>
+          {index + 1} / {PREVIEW_SLIDES.length}
+        </span>
+        <button type="button" onClick={() => goTo(index + 1)}>
+          다음
+        </button>
       </div>
     </div>
   );
