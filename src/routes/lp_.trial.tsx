@@ -366,16 +366,6 @@ function ApplyForm() {
         </p>
       )}
 
-      {step === 1 && (
-        <a
-          href={`/simulation/${PREVIEW_SIMULATION_ID}?demo=1`}
-          style={{ textAlign: "center", fontSize: 13.5, color: "#435BDA", textDecoration: "underline" }}
-          onClick={() => trackTrialEvent("trial_form_preview_clicked")}
-        >
-          예시 시뮬레이션 미리보기
-        </a>
-      )}
-
       <div className="apply-actions">
         {step > 1 && (
           <button
@@ -634,6 +624,13 @@ function LpTrialPage() {
                 <br />
                 그 분야 현직자가 만든 업무 시뮬레이션이 24시간 안에 도착해요.
               </p>
+              <a
+                className="trial-hero-preview-link"
+                href={`/simulation/${PREVIEW_SIMULATION_ID}?demo=1`}
+                onClick={() => trackTrialEvent("trial_form_preview_clicked")}
+              >
+                예시 시뮬레이션 미리보기
+              </a>
             </div>
 
             <ApplyForm />

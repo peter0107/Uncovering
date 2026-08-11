@@ -147,6 +147,7 @@
 }
 .lp-trial h1 { margin: 0; font-size: clamp(34px,4.4vw,50px); line-height: 1.18; letter-spacing: -1.7px; font-weight: 780; color: #172033; }
 .lp-trial .lead { margin: 0; max-width: 570px; font-size: clamp(15px,2vw,17px); color: #586174; line-height: 1.7; }
+.lp-trial .trial-hero-preview-link { color: #435BDA; font-size: 14px; font-weight: 650; text-decoration: underline; text-underline-offset: 3px; }
 .lp-trial .apply { background: #fff; border: 1px solid #E3E6EC; border-radius: 8px; padding: 26px; display: flex; flex-direction: column; gap: 18px; }
 .lp-trial .apply-head { display: flex; flex-direction: column; gap: 6px; }
 .lp-trial .apply-step { font-size: 12px; font-weight: 700; color: #6B7280; }
