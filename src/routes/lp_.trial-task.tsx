@@ -297,17 +297,17 @@ function TaskWizard({
   }, []);
 
   const goNext = useCallback(() => {
-    trackTrialAction("simulation_next_clicked");
+    trackTrialAction("trial_simulation_next_clicked");
     goToScreen(Math.min(screens.length - 1, screenIndex + 1));
   }, [goToScreen, screenIndex, screens.length, trackTrialAction]);
 
   const goPrev = useCallback(() => {
-    trackTrialAction("simulation_previous_clicked");
+    trackTrialAction("trial_simulation_previous_clicked");
     goToScreen(Math.max(0, screenIndex - 1));
   }, [goToScreen, screenIndex, trackTrialAction]);
 
   const submit = useCallback(async () => {
-    trackTrialAction("simulation_submission_confirmed");
+    trackTrialAction("trial_simulation_submission_confirmed");
     setIsSubmitting(true);
     try {
       const startedAt = localStorage.getItem(startedAtKey(code)) ?? undefined;
@@ -317,12 +317,12 @@ function TaskWizard({
       localStorage.removeItem(draftKey(code));
       onSubmitted(result);
       window.scrollTo({ top: 0 });
-      void capturePostHogEvent("simulation_submit", {
+      void capturePostHogEvent("trial_simulation_submit", {
         simulation_context: "trial",
         simulation_title: task.title,
         role_label: task.roleLabel ?? null,
       });
-      void capturePostHogEvent("simulation_complete", {
+      void capturePostHogEvent("trial_simulation_complete", {
         simulation_context: "trial",
         simulation_title: task.title,
       });
@@ -407,7 +407,7 @@ function TaskWizard({
           value={materialTabIndex}
           onValueChange={setMaterialTabIndex}
           onTabChange={(tabIndex, tabLabel) =>
-            trackTrialAction("simulation_material_tab_selected", {
+            trackTrialAction("trial_simulation_material_tab_selected", {
               material_area: "materials",
               tab_index: tabIndex,
               tab_label: tabLabel,
@@ -450,7 +450,7 @@ function TaskWizard({
                 value={materialTabIndex}
                 onValueChange={setMaterialTabIndex}
                 onTabChange={(tabIndex, tabLabel) =>
-                  trackTrialAction("simulation_material_tab_selected", {
+                  trackTrialAction("trial_simulation_material_tab_selected", {
                     material_area: "sidebar",
                     tab_index: tabIndex,
                     tab_label: tabLabel,
@@ -507,7 +507,7 @@ function TaskWizard({
                 onToggle={(event) => {
                   const isOpen = (event.target as HTMLDetailsElement).open;
                   setHintOpen(isOpen);
-                  trackTrialAction(isOpen ? "simulation_hint_opened" : "simulation_hint_closed");
+                  trackTrialAction(isOpen ? "trial_simulation_hint_opened" : "trial_simulation_hint_closed");
                 }}
               >
                 <summary className="cursor-pointer list-none text-sm font-semibold text-zinc-700">
@@ -533,7 +533,7 @@ function TaskWizard({
     primaryLabel = isSubmitting ? "제출 중..." : "제출하고 모범답안 보기";
     primaryDisabled = !allAnswered(model, answers) || isSubmitting;
     onPrimary = () => {
-      trackTrialAction("simulation_submit_clicked");
+      trackTrialAction("trial_simulation_submit_clicked");
       setConfirmOpen(true);
     };
     mainContent = (
@@ -551,7 +551,7 @@ function TaskWizard({
           aria-label="제공 자료 열기"
           onClick={() => {
             setDrawerOpen(true);
-            trackTrialAction("simulation_material_drawer_opened");
+            trackTrialAction("trial_simulation_material_drawer_opened");
           }}
           className="flex h-6 w-full items-center justify-center border-b border-zinc-100 bg-white lg:hidden"
         >
@@ -582,7 +582,7 @@ function TaskWizard({
       step={trialProgressStep(screen, model.steps.length)}
       totalSteps={model.steps.length}
       bottomBar={bottomBar}
-      onHomeClick={() => trackTrialAction("simulation_home_clicked")}
+      onHomeClick={() => trackTrialAction("trial_simulation_home_clicked")}
     >
       {mainContent}
       {sidebarTabs.length > 0 && (
@@ -590,7 +590,7 @@ function TaskWizard({
           open={drawerOpen}
           onOpenChange={(isOpen) => {
             setDrawerOpen(isOpen);
-            if (!isOpen) trackTrialAction("simulation_material_drawer_closed");
+            if (!isOpen) trackTrialAction("trial_simulation_material_drawer_closed");
           }}
         >
           <DrawerContent className="max-h-[80dvh]">
@@ -603,7 +603,7 @@ function TaskWizard({
                 value={materialTabIndex}
                 onValueChange={setMaterialTabIndex}
                 onTabChange={(tabIndex, tabLabel) =>
-                  trackTrialAction("simulation_material_tab_selected", {
+                  trackTrialAction("trial_simulation_material_tab_selected", {
                     material_area: "drawer",
                     tab_index: tabIndex,
                     tab_label: tabLabel,
@@ -626,7 +626,7 @@ function TaskWizard({
           <AlertDialogFooter>
             <AlertDialogCancel
               disabled={isSubmitting}
-              onClick={() => trackTrialAction("simulation_submission_cancelled")}
+              onClick={() => trackTrialAction("trial_simulation_submission_cancelled")}
             >
               더 작성할게요
             </AlertDialogCancel>

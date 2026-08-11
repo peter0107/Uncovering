@@ -174,7 +174,7 @@ function SimulationDetailPage() {
   const isPreview = preview === "1";
   // 로그인 여부와 무관하게 항상 미리보기로 취급 — 이미 로그인한 방문자가 데모 링크로
   // 들어와도 실제 제출·이탈 설문 대상이 되면 안 된다.
-  const isDemo = demo === "1";
+  const isDemo = demo === "1" || demo === '"1"';
   // 로그인 리다이렉트·로딩 가드에서 preview와 demo를 같이 통과시킨다.
   const isOpenView = isPreview || isDemo;
   const [accessReady, setAccessReady] = useState(isOpenView);
@@ -425,9 +425,10 @@ function SimulationDetailPage() {
     if (startCapturedRef.current === sim.id) return;
     startCapturedRef.current = sim.id;
     const entry = consumeSimulationEntry(sim.id) ?? "direct";
-    void capturePostHogEvent("simulation_start", {
+    void capturePostHogEvent(isDemo ? "trial_simulation_start" : "simulation_start", {
       simulation_id: sim.id,
       simulation_source: sim.simulation_source,
+      simulation_context: isDemo ? "trial_preview" : "standard",
       entry,
     });
   }, [isPreview, accessReady, user, sim]);
@@ -482,18 +483,21 @@ function SimulationDetailPage() {
   const trackSimulationAction = (event: string, properties: Record<string, unknown> = {}) => {
     if (!sim || !model) return;
     const currentScreen = screens[screenIdx];
-    void capturePostHogEvent(event, {
+    void capturePostHogEvent(
+      isDemo && event.startsWith("simulation_") ? `trial_${event}` : event,
+      {
       simulation_id: sim.id,
       simulation_name: sim.title,
       simulation_source: sim.simulation_source,
       simulation_format: sim.simulation_format,
-      simulation_context: "standard",
+      simulation_context: isDemo ? "trial_preview" : "standard",
       screen_kind: currentScreen?.kind ?? "unknown",
       screen_index: screenIdx,
       step_index: currentScreen ? screenProgressStep(currentScreen, model.steps.length) : null,
       total_steps: model.steps.length,
       ...properties,
-    });
+      },
+    );
   };
 
   const goNext = () => {
@@ -795,7 +799,7 @@ function SimulationDetailPage() {
       return;
     }
 
-    void capturePostHogEvent("simulation_exit_survey_submitted", {
+    void capturePostHogEvent(isDemo ? "trial_simulation_exit_survey_submitted" : "simulation_exit_survey_submitted", {
       reason: exitSurveyReason,
       reason_label: selectedOption?.label,
       has_other_text: Boolean(surveyData.otherText),
@@ -806,6 +810,7 @@ function SimulationDetailPage() {
       total_steps: surveyData.totalSteps,
       answered_count: surveyData.answeredCount,
       elapsed_seconds: surveyData.elapsedSeconds,
+      simulation_context: isDemo ? "trial_preview" : "standard",
     }).catch((error) => console.error("[Simulation exit survey analytics]", error));
 
     setExitSurveySubmitting(false);
