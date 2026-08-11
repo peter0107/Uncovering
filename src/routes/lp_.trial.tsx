@@ -446,23 +446,21 @@ const PREVIEW_SLIDES = [
     actionOnly: false,
     content: (
       <>
-        <div className="pv-head">
+        <div className="pv-answer-copy">
           <b className="pv-title">1단계 · 핵심 문제 분석</b>
-          <span className="pv-tag pv-tag-blue">모범 답안</span>
-        </div>
-        <div className="pv-card">
           <p className="pv-body">
             가장 큰 문제는 장바구니에서 주문서로 넘어가는 구간이다. 장바구니에 들어온{" "}
             <b>3,900명 중 주문서로 이동한 사용자는 1,700명</b>뿐이다. 장바구니에서는 쿠폰 할인,
             배송비, 최종 결제 금액을 정확히 확인하기 어렵다.
           </p>
-          <div className="pv-callout">
-            <span className="pv-calloutlbl">핵심 문제</span>
+          <p className="pv-body">
+            <b>핵심 문제</b>
+            <br />
             사용자가 장바구니에서 실제 결제 금액을 미리 알기 어려워, 구매를 계속해도 되는지 확신하지
             못하고 이탈하고 있다.
-          </div>
+          </p>
         </div>
-        <div className="pv-lock">🔒 2·3단계 모범답안은 과제를 제출하면 전체 공개돼요</div>
+        <div className="pv-lock">2·3단계 모범답안은 과제를 제출하면 전체 공개돼요</div>
       </>
     ),
     foot: null,
@@ -547,7 +545,6 @@ function PreviewCarousel() {
                   {/* 실제 수행 화면(SimulationShell)과 같은 구성: 상단 진행바 → 회색 본문 → 하단 액션바 */}
                   <div className="mock mock-app">
                     <div className="appbar">
-                      <span className="appbar-logo">Beginner</span>
                       <span className="appbar-right">
                         <span className="appbar-stepname">핵심 문제 분석</span>
                         <span className="appbar-prog">
