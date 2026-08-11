@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 
 import { BrandLogo } from "@/components/BrandLogo";
 import { DOMAIN_CATEGORIES, type DomainCategory } from "@/lib/domain-categories";
@@ -411,8 +411,6 @@ function ApplyForm() {
 // 실제 현직자 시뮬레이션 "온라인 쇼핑몰 구매 이탈 원인 분석 및 구매 흐름 개선"
 // (job_simulations.id = 9ab768b1-…, 작성자 김*현)의 상황·단계·모범답안을 그대로 옮긴 미리보기.
 // 모범답안은 유료 콘텐츠라 1단계 일부만 노출하고 나머지는 잠금 처리한다.
-const PREVIEW_AUTOPLAY_MS = 4000;
-
 // 미리보기가 옮겨 담은 실제 시뮬레이션. demo=1로 열면 비로그인도 과제 형식을 볼 수 있다.
 const PREVIEW_SIMULATION_ID = "9ab768b1-86a8-4eb5-a0ff-7d59b1ce5165";
 
@@ -517,13 +515,6 @@ const PREVIEW_SLIDES = [
 
 function PreviewCarousel() {
   const [index, setIndex] = useState(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setIndex((i) => (i + 1) % PREVIEW_SLIDES.length);
-    }, PREVIEW_AUTOPLAY_MS);
-    return () => clearInterval(timer);
-  }, []);
 
   return (
     <div className="carousel">

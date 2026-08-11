@@ -112,13 +112,13 @@ export const submitLandingLead = createServerFn({ method: "POST" })
 
 // ── 27b: 직무 체험 주문 (PG: 페이앱) ─────────────────────────────
 export const TRIAL_PLAN_PRICES = {
-  single: 9900,
+  single: 3990,
   pack3: 19800,
   monthly: 29000,
 } as const;
 
 export const TRIAL_SINGLE_ORIGINAL_PRICE = 25000;
-export const TRIAL_SINGLE_DISCOUNT_PERCENT = 60;
+export const TRIAL_SINGLE_DISCOUNT_PERCENT = 84;
 
 export const TRIAL_PLAN_LABELS: Record<keyof typeof TRIAL_PLAN_PRICES, { name: string; sub: string }> = {
   single: { name: "체험 1회", sub: "과제 1건 · 현직자 답안 포함" },
