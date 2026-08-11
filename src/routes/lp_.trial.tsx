@@ -395,7 +395,6 @@ function ApplyForm() {
           className="submit"
           disabled={isSubmitting}
           onClick={() => {
-            trackTrialEvent("trial_apply_primary_button_clicked", { step });
             if (step === 2) trackTrialEvent("trial_checkout_button_clicked");
           }}
         >
