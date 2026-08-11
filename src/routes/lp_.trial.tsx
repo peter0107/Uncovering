@@ -370,7 +370,7 @@ function ApplyForm() {
         <a
           href={`/simulation/${PREVIEW_SIMULATION_ID}?demo=1`}
           style={{ textAlign: "center", fontSize: 13.5, color: "#435BDA", textDecoration: "underline" }}
-          onClick={() => trackTrialEvent("trial_preview_simulation_clicked", { placement: "apply_step1" })}
+          onClick={() => trackTrialEvent("trial_form_preview_clicked")}
         >
           예시 시뮬레이션 미리보기
         </a>
@@ -394,7 +394,10 @@ function ApplyForm() {
           type="submit"
           className="submit"
           disabled={isSubmitting}
-          onClick={() => trackTrialEvent("trial_apply_primary_button_clicked", { step })}
+          onClick={() => {
+            trackTrialEvent("trial_apply_primary_button_clicked", { step });
+            if (step === 2) trackTrialEvent("trial_checkout_button_clicked");
+          }}
         >
           {step < 2 ? "다음" : isSubmitting ? "결제창으로 이동 중..." : "결제창으로 이동하기"}
         </button>
@@ -505,7 +508,7 @@ const PREVIEW_SLIDES = [
       <a
         className="pv-btn"
         href={`/simulation/${PREVIEW_SIMULATION_ID}?demo=1`}
-        onClick={() => trackTrialEvent("trial_preview_simulation_clicked", { placement: "preview_slide_4" })}
+        onClick={() => trackTrialEvent("trial_carousel_preview_clicked")}
       >
         예시 시뮬레이션 미리보기 →
       </a>
@@ -590,7 +593,7 @@ function PreviewCarousel() {
 
 function LpTrialPage() {
   return (
-    <div className="lp-trial ph-no-capture">
+    <div className="lp-trial">
       <div className="hero">
         <div className="wrap">
           <div className="nav">

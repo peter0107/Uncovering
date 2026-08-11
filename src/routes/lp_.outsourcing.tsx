@@ -176,7 +176,7 @@ function ConsultationForm() {
 
 function LpOutsourcingPage() {
   return (
-    <div className="lp-outsourcing ph-no-capture">
+    <div className="lp-outsourcing">
       <div className="hero">
         <div className="wrap">
           <div className="nav">
