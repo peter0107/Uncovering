@@ -742,7 +742,7 @@ function LpTrialPage() {
             <div>
               <div className="stepttl">
                 <span className="stepnum">3</span>
-                <b style={{ fontSize: 16, letterSpacing: "-.3px" }}>과제 도착 후 수행하기</b>
+                <b style={{ fontSize: 16, letterSpacing: "-.3px" }}>과제 도착</b>
               </div>
               <div className="mock">
                 <div className="mockbar">
