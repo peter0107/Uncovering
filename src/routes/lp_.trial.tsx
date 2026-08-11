@@ -742,7 +742,7 @@ function LpTrialPage() {
             <div>
               <div className="stepttl">
                 <span className="stepnum">3</span>
-                <b style={{ fontSize: 16, letterSpacing: "-.3px" }}>체험하고 답안 비교</b>
+                <b style={{ fontSize: 16, letterSpacing: "-.3px" }}>과제 도착 후 수행하기</b>
               </div>
               <div className="mock">
                 <div className="mockbar">
@@ -752,8 +752,8 @@ function LpTrialPage() {
                 </div>
                 <div className="mockbody">
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <b style={{ fontSize: 12.5 }}>CRM 마케터 체험</b>
-                    <span style={{ fontSize: 11, color: "#0F9D58", fontWeight: 700 }}>21시간 만에 도착</span>
+                    <b style={{ fontSize: 12.5 }}>CRM 마케터 업무 시뮬레이션</b>
+                    <span style={{ fontSize: 11, color: "#0F9D58", fontWeight: 700 }}>과제 도착</span>
                   </div>
                   <div
                     style={{
@@ -780,23 +780,23 @@ function LpTrialPage() {
                       }}
                     >
                       <span style={{ fontSize: 10.5, color: "#9CA3AF", fontWeight: 700, display: "block" }}>
-                        내 답안
+                        제공 자료
                       </span>
-                      <span style={{ fontSize: 11.5, color: "#4B5563" }}>이탈률부터 확인</span>
+                      <span style={{ fontSize: 11.5, color: "#4B5563" }}>고객 데이터를 확인해요</span>
                     </div>
                     <div
                       style={{
                         flex: 1,
-                        background: "#E9EEFC",
-                        border: "1px solid #D2DAF6",
+                        background: "#F5F6F9",
+                        border: "1px solid #E9ECF2",
                         borderRadius: 8,
                         padding: "9px 10px",
                       }}
                     >
-                      <span style={{ fontSize: 10.5, color: "#435BDA", fontWeight: 700, display: "block" }}>
-                        현직자 답안
+                      <span style={{ fontSize: 10.5, color: "#6B7280", fontWeight: 700, display: "block" }}>
+                        답안 작성
                       </span>
-                      <span style={{ fontSize: 11.5, color: "#4B5563" }}>첫 결제 코호트부터</span>
+                      <span style={{ fontSize: 11.5, color: "#4B5563" }}>내 관점으로 정리해요</span>
                     </div>
                   </div>
                 </div>
