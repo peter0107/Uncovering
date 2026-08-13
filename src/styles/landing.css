@@ -168,6 +168,7 @@
 .lp-trial .steptext b { font-size: clamp(21px,2.6vw,28px); letter-spacing: -1px; line-height: 1.4; }
 .lp-trial .steptext p { margin: 0; font-size: 17px; color: #5A6478; line-height: 1.7; }
 .lp-trial .panel { width: 380px; min-height: 220px; box-sizing: border-box; flex: none; background: #F7F8FA; border-radius: 20px; padding: 28px; display: flex; flex-direction: column; gap: 14px; }
+.lp-trial .panel-apply { min-height: 0; }
 .lp-trial .kv { display: flex; justify-content: space-between; align-items: center; font-size: 15px; color: #5A6478; }
 .lp-trial .kv b { color: #16233D; }
 .lp-trial .kv-total { padding-top: 14px; }

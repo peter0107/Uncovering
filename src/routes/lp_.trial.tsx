@@ -727,9 +727,9 @@ function LpTrialPage() {
               <div className="steptext">
                 <span className="stepnum">01</span>
                 <b>직무를 고르고 신청해요</b>
-                <p>분야, 직무, 기업 유형 세 가지만 고르면 신청이 끝나요.</p>
+                <p>분야, 직무, 기업 유형을 고르고 990원으로 신청할 수 있어요.</p>
               </div>
-              <div className="panel">
+              <div className="panel panel-apply">
                 <div className="kv">
                   <span>직무</span>
                   <b>CRM 마케터</b>
