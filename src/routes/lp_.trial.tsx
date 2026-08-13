@@ -680,8 +680,8 @@ function LpTrialPage() {
             </div>
             <a
               className="btn-blue"
-              href="#preview"
-              onClick={() => trackTrialEvent("trial_cta_clicked", { placement: "hero_sample" })}
+              href={`/simulation/${PREVIEW_SIMULATION_ID}?demo=1`}
+              onClick={() => trackTrialEvent("trial_cta_clicked", { placement: "hero_sample", destination: "interactive_simulation" })}
             >
               실제 예시 1분 체험하기
             </a>
@@ -807,16 +807,6 @@ function LpTrialPage() {
         </div>
       </section>
 
-      <section className="sect-gray" id="preview">
-        <div className="wrap">
-          <div className="center">
-            <p className="eyebrow">미리보기</p>
-            <h2 style={{ marginTop: 9 }}>체험 과제, 이런 모습이에요</h2>
-          </div>
-          <PreviewCarousel />
-        </div>
-      </section>
-
       <section id="apply">
         <div className="wrap applyrow">
           <div className="applycopy">
@@ -909,7 +899,7 @@ function LpTrialPage() {
       <div className="mobilebar">
         <a
           className="sub"
-          href="#preview"
+          href={`/simulation/${PREVIEW_SIMULATION_ID}?demo=1`}
           onClick={() => trackTrialEvent("trial_cta_clicked", { placement: "mobilebar_sample" })}
         >
           예시 체험
