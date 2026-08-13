@@ -9,100 +9,44 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TermsRouteImport } from './routes/terms'
-import { Route as StartRouteImport } from './routes/start'
-import { Route as SimulationsRouteImport } from './routes/simulations'
-import { Route as PrivacyRouteImport } from './routes/privacy'
-import { Route as PasswordResetRouteImport } from './routes/password-reset'
-import { Route as OnboardingRouteImport } from './routes/onboarding'
-import { Route as MyRouteImport } from './routes/my'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as FaqRouteImport } from './routes/faq'
-import { Route as ExpertSimulationsRouteImport } from './routes/expert-simulations'
-import { Route as BizRouteImport } from './routes/biz'
-import { Route as AdminRouteImport } from './routes/admin'
-import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as SimulationsAllRouteImport } from './routes/simulations_.all'
-import { Route as SimulationIdRouteImport } from './routes/simulation.$id'
-import { Route as LpTrialTaskRouteImport } from './routes/lp_.trial-task'
-import { Route as LpTrialCompleteRouteImport } from './routes/lp_.trial-complete'
-import { Route as LpTrialRouteImport } from './routes/lp_.trial'
-import { Route as LpOutsourcingRouteImport } from './routes/lp_.outsourcing'
-import { Route as BizReviewRouteImport } from './routes/biz_.review'
-import { Route as BizContactRouteImport } from './routes/biz_.contact'
-import { Route as BizCoffeeChatRouteImport } from './routes/biz_.coffee-chat'
-import { Route as BizApplyRouteImport } from './routes/biz_.apply'
-import { Route as AdminSubmissionsRouteImport } from './routes/admin.submissions'
-import { Route as AdminSimulationsRouteImport } from './routes/admin.simulations'
-import { Route as AdminSimulationGeneratorRouteImport } from './routes/admin.simulation-generator'
-import { Route as AdminLandingRouteImport } from './routes/admin.landing'
-import { Route as AdminInquiriesRouteImport } from './routes/admin.inquiries'
-import { Route as AdminExpertSimulationsRouteImport } from './routes/admin.expert-simulations'
-import { Route as AdminExitSurveysRouteImport } from './routes/admin.exit-surveys'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as BizRouteImport } from './routes/biz'
+import { Route as ExpertSimulationsRouteImport } from './routes/expert-simulations'
+import { Route as FaqRouteImport } from './routes/faq'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as MyRouteImport } from './routes/my'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as PasswordResetRouteImport } from './routes/password-reset'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as SimulationsRouteImport } from './routes/simulations'
+import { Route as StartRouteImport } from './routes/start'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AdminAiPromptsRouteImport } from './routes/admin.ai-prompts'
-import { Route as SimulationIdFeedbackRouteImport } from './routes/simulation.$id.feedback'
-import { Route as ExpertSimulationIdReviewRouteImport } from './routes/expert-simulation.$id.review'
+import { Route as AdminExitSurveysRouteImport } from './routes/admin.exit-surveys'
+import { Route as AdminExpertSimulationsRouteImport } from './routes/admin.expert-simulations'
+import { Route as AdminInquiriesRouteImport } from './routes/admin.inquiries'
+import { Route as AdminLandingRouteImport } from './routes/admin.landing'
+import { Route as AdminSimulationGeneratorRouteImport } from './routes/admin.simulation-generator'
+import { Route as AdminSimulationsRouteImport } from './routes/admin.simulations'
+import { Route as AdminSubmissionsRouteImport } from './routes/admin.submissions'
+import { Route as BizApplyRouteImport } from './routes/biz_.apply'
+import { Route as BizCoffeeChatRouteImport } from './routes/biz_.coffee-chat'
+import { Route as BizContactRouteImport } from './routes/biz_.contact'
+import { Route as BizReviewRouteImport } from './routes/biz_.review'
+import { Route as LpTrialRouteImport } from './routes/lp_.trial'
+import { Route as LpTrialCompleteRouteImport } from './routes/lp_.trial-complete'
+import { Route as LpTrialTaskRouteImport } from './routes/lp_.trial-task'
+import { Route as SimulationIdRouteImport } from './routes/simulation.$id'
+import { Route as SimulationsAllRouteImport } from './routes/simulations_.all'
 import { Route as ExpertSimulationIdFeedbackRouteImport } from './routes/expert-simulation.$id.feedback'
+import { Route as ExpertSimulationIdReviewRouteImport } from './routes/expert-simulation.$id.review'
+import { Route as SimulationIdFeedbackRouteImport } from './routes/simulation.$id.feedback'
 
-const TermsRoute = TermsRouteImport.update({
-  id: '/terms',
-  path: '/terms',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const StartRoute = StartRouteImport.update({
-  id: '/start',
-  path: '/start',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SimulationsRoute = SimulationsRouteImport.update({
-  id: '/simulations',
-  path: '/simulations',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrivacyRoute = PrivacyRouteImport.update({
-  id: '/privacy',
-  path: '/privacy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PasswordResetRoute = PasswordResetRouteImport.update({
-  id: '/password-reset',
-  path: '/password-reset',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OnboardingRoute = OnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MyRoute = MyRouteImport.update({
-  id: '/my',
-  path: '/my',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FaqRoute = FaqRouteImport.update({
-  id: '/faq',
-  path: '/faq',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ExpertSimulationsRoute = ExpertSimulationsRouteImport.update({
-  id: '/expert-simulations',
-  path: '/expert-simulations',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BizRoute = BizRouteImport.update({
-  id: '/biz',
-  path: '/biz',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminRoute = AdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -110,69 +54,89 @@ const AboutRoute = AboutRouteImport.update({
   path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SimulationsAllRoute = SimulationsAllRouteImport.update({
-  id: '/simulations_/all',
-  path: '/simulations/all',
+const BizRoute = BizRouteImport.update({
+  id: '/biz',
+  path: '/biz',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SimulationIdRoute = SimulationIdRouteImport.update({
-  id: '/simulation/$id',
-  path: '/simulation/$id',
+const ExpertSimulationsRoute = ExpertSimulationsRouteImport.update({
+  id: '/expert-simulations',
+  path: '/expert-simulations',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LpTrialTaskRoute = LpTrialTaskRouteImport.update({
-  id: '/lp_/trial-task',
-  path: '/lp/trial-task',
+const FaqRoute = FaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LpTrialCompleteRoute = LpTrialCompleteRouteImport.update({
-  id: '/lp_/trial-complete',
-  path: '/lp/trial-complete',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LpTrialRoute = LpTrialRouteImport.update({
-  id: '/lp_/trial',
-  path: '/lp/trial',
+const MyRoute = MyRouteImport.update({
+  id: '/my',
+  path: '/my',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LpOutsourcingRoute = LpOutsourcingRouteImport.update({
-  id: '/lp_/outsourcing',
-  path: '/lp/outsourcing',
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
-const BizReviewRoute = BizReviewRouteImport.update({
-  id: '/biz_/review',
-  path: '/biz/review',
+const PasswordResetRoute = PasswordResetRouteImport.update({
+  id: '/password-reset',
+  path: '/password-reset',
   getParentRoute: () => rootRouteImport,
 } as any)
-const BizContactRoute = BizContactRouteImport.update({
-  id: '/biz_/contact',
-  path: '/biz/contact',
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
-const BizCoffeeChatRoute = BizCoffeeChatRouteImport.update({
-  id: '/biz_/coffee-chat',
-  path: '/biz/coffee-chat',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BizApplyRoute = BizApplyRouteImport.update({
-  id: '/biz_/apply',
-  path: '/biz/apply',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminSubmissionsRoute = AdminSubmissionsRouteImport.update({
-  id: '/submissions',
-  path: '/submissions',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminSimulationsRoute = AdminSimulationsRouteImport.update({
+const SimulationsRoute = SimulationsRouteImport.update({
   id: '/simulations',
   path: '/simulations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StartRoute = StartRouteImport.update({
+  id: '/start',
+  path: '/start',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminAiPromptsRoute = AdminAiPromptsRouteImport.update({
+  id: '/ai-prompts',
+  path: '/ai-prompts',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminExitSurveysRoute = AdminExitSurveysRouteImport.update({
+  id: '/exit-surveys',
+  path: '/exit-surveys',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminExpertSimulationsRoute = AdminExpertSimulationsRouteImport.update({
+  id: '/expert-simulations',
+  path: '/expert-simulations',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminInquiriesRoute = AdminInquiriesRouteImport.update({
+  id: '/inquiries',
+  path: '/inquiries',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminLandingRoute = AdminLandingRouteImport.update({
+  id: '/landing',
+  path: '/landing',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminSimulationGeneratorRoute =
@@ -181,48 +145,78 @@ const AdminSimulationGeneratorRoute =
     path: '/simulation-generator',
     getParentRoute: () => AdminRoute,
   } as any)
-const AdminLandingRoute = AdminLandingRouteImport.update({
-  id: '/landing',
-  path: '/landing',
+const AdminSimulationsRoute = AdminSimulationsRouteImport.update({
+  id: '/simulations',
+  path: '/simulations',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminInquiriesRoute = AdminInquiriesRouteImport.update({
-  id: '/inquiries',
-  path: '/inquiries',
+const AdminSubmissionsRoute = AdminSubmissionsRouteImport.update({
+  id: '/submissions',
+  path: '/submissions',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminExpertSimulationsRoute = AdminExpertSimulationsRouteImport.update({
-  id: '/expert-simulations',
-  path: '/expert-simulations',
-  getParentRoute: () => AdminRoute,
+const BizApplyRoute = BizApplyRouteImport.update({
+  id: '/biz_/apply',
+  path: '/biz/apply',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AdminExitSurveysRoute = AdminExitSurveysRouteImport.update({
-  id: '/exit-surveys',
-  path: '/exit-surveys',
-  getParentRoute: () => AdminRoute,
+const BizCoffeeChatRoute = BizCoffeeChatRouteImport.update({
+  id: '/biz_/coffee-chat',
+  path: '/biz/coffee-chat',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AdminAiPromptsRoute = AdminAiPromptsRouteImport.update({
-  id: '/ai-prompts',
-  path: '/ai-prompts',
-  getParentRoute: () => AdminRoute,
+const BizContactRoute = BizContactRouteImport.update({
+  id: '/biz_/contact',
+  path: '/biz/contact',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const SimulationIdFeedbackRoute = SimulationIdFeedbackRouteImport.update({
-  id: '/feedback',
-  path: '/feedback',
-  getParentRoute: () => SimulationIdRoute,
+const BizReviewRoute = BizReviewRouteImport.update({
+  id: '/biz_/review',
+  path: '/biz/review',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const ExpertSimulationIdReviewRoute =
-  ExpertSimulationIdReviewRouteImport.update({
-    id: '/expert-simulation/$id/review',
-    path: '/expert-simulation/$id/review',
-    getParentRoute: () => rootRouteImport,
-  } as any)
+const LpTrialRoute = LpTrialRouteImport.update({
+  id: '/lp_/trial',
+  path: '/lp/trial',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LpTrialCompleteRoute = LpTrialCompleteRouteImport.update({
+  id: '/lp_/trial-complete',
+  path: '/lp/trial-complete',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LpTrialTaskRoute = LpTrialTaskRouteImport.update({
+  id: '/lp_/trial-task',
+  path: '/lp/trial-task',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SimulationIdRoute = SimulationIdRouteImport.update({
+  id: '/simulation/$id',
+  path: '/simulation/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SimulationsAllRoute = SimulationsAllRouteImport.update({
+  id: '/simulations_/all',
+  path: '/simulations/all',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ExpertSimulationIdFeedbackRoute =
   ExpertSimulationIdFeedbackRouteImport.update({
     id: '/expert-simulation/$id/feedback',
     path: '/expert-simulation/$id/feedback',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ExpertSimulationIdReviewRoute =
+  ExpertSimulationIdReviewRouteImport.update({
+    id: '/expert-simulation/$id/review',
+    path: '/expert-simulation/$id/review',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const SimulationIdFeedbackRoute = SimulationIdFeedbackRouteImport.update({
+  id: '/feedback',
+  path: '/feedback',
+  getParentRoute: () => SimulationIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -251,7 +245,6 @@ export interface FileRoutesByFullPath {
   '/biz/coffee-chat': typeof BizCoffeeChatRoute
   '/biz/contact': typeof BizContactRoute
   '/biz/review': typeof BizReviewRoute
-  '/lp/outsourcing': typeof LpOutsourcingRoute
   '/lp/trial': typeof LpTrialRoute
   '/lp/trial-complete': typeof LpTrialCompleteRoute
   '/lp/trial-task': typeof LpTrialTaskRoute
@@ -288,7 +281,6 @@ export interface FileRoutesByTo {
   '/biz/coffee-chat': typeof BizCoffeeChatRoute
   '/biz/contact': typeof BizContactRoute
   '/biz/review': typeof BizReviewRoute
-  '/lp/outsourcing': typeof LpOutsourcingRoute
   '/lp/trial': typeof LpTrialRoute
   '/lp/trial-complete': typeof LpTrialCompleteRoute
   '/lp/trial-task': typeof LpTrialTaskRoute
@@ -326,7 +318,6 @@ export interface FileRoutesById {
   '/biz_/coffee-chat': typeof BizCoffeeChatRoute
   '/biz_/contact': typeof BizContactRoute
   '/biz_/review': typeof BizReviewRoute
-  '/lp_/outsourcing': typeof LpOutsourcingRoute
   '/lp_/trial': typeof LpTrialRoute
   '/lp_/trial-complete': typeof LpTrialCompleteRoute
   '/lp_/trial-task': typeof LpTrialTaskRoute
@@ -365,7 +356,6 @@ export interface FileRouteTypes {
     | '/biz/coffee-chat'
     | '/biz/contact'
     | '/biz/review'
-    | '/lp/outsourcing'
     | '/lp/trial'
     | '/lp/trial-complete'
     | '/lp/trial-task'
@@ -402,7 +392,6 @@ export interface FileRouteTypes {
     | '/biz/coffee-chat'
     | '/biz/contact'
     | '/biz/review'
-    | '/lp/outsourcing'
     | '/lp/trial'
     | '/lp/trial-complete'
     | '/lp/trial-task'
@@ -439,7 +428,6 @@ export interface FileRouteTypes {
     | '/biz_/coffee-chat'
     | '/biz_/contact'
     | '/biz_/review'
-    | '/lp_/outsourcing'
     | '/lp_/trial'
     | '/lp_/trial-complete'
     | '/lp_/trial-task'
@@ -469,7 +457,6 @@ export interface RootRouteChildren {
   BizCoffeeChatRoute: typeof BizCoffeeChatRoute
   BizContactRoute: typeof BizContactRoute
   BizReviewRoute: typeof BizReviewRoute
-  LpOutsourcingRoute: typeof LpOutsourcingRoute
   LpTrialRoute: typeof LpTrialRoute
   LpTrialCompleteRoute: typeof LpTrialCompleteRoute
   LpTrialTaskRoute: typeof LpTrialTaskRoute
@@ -481,88 +468,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/terms': {
-      id: '/terms'
-      path: '/terms'
-      fullPath: '/terms'
-      preLoaderRoute: typeof TermsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/start': {
-      id: '/start'
-      path: '/start'
-      fullPath: '/start'
-      preLoaderRoute: typeof StartRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/simulations': {
-      id: '/simulations'
-      path: '/simulations'
-      fullPath: '/simulations'
-      preLoaderRoute: typeof SimulationsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/privacy': {
-      id: '/privacy'
-      path: '/privacy'
-      fullPath: '/privacy'
-      preLoaderRoute: typeof PrivacyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/password-reset': {
-      id: '/password-reset'
-      path: '/password-reset'
-      fullPath: '/password-reset'
-      preLoaderRoute: typeof PasswordResetRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/onboarding': {
-      id: '/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof OnboardingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/my': {
-      id: '/my'
-      path: '/my'
-      fullPath: '/my'
-      preLoaderRoute: typeof MyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/faq': {
-      id: '/faq'
-      path: '/faq'
-      fullPath: '/faq'
-      preLoaderRoute: typeof FaqRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/expert-simulations': {
-      id: '/expert-simulations'
-      path: '/expert-simulations'
-      fullPath: '/expert-simulations'
-      preLoaderRoute: typeof ExpertSimulationsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/biz': {
-      id: '/biz'
-      path: '/biz'
-      fullPath: '/biz'
-      preLoaderRoute: typeof BizRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin': {
-      id: '/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AdminRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/about': {
@@ -572,123 +482,95 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/simulations_/all': {
-      id: '/simulations_/all'
-      path: '/simulations/all'
-      fullPath: '/simulations/all'
-      preLoaderRoute: typeof SimulationsAllRouteImport
+    '/biz': {
+      id: '/biz'
+      path: '/biz'
+      fullPath: '/biz'
+      preLoaderRoute: typeof BizRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/simulation/$id': {
-      id: '/simulation/$id'
-      path: '/simulation/$id'
-      fullPath: '/simulation/$id'
-      preLoaderRoute: typeof SimulationIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lp_/trial-task': {
-      id: '/lp_/trial-task'
-      path: '/lp/trial-task'
-      fullPath: '/lp/trial-task'
-      preLoaderRoute: typeof LpTrialTaskRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lp_/trial-complete': {
-      id: '/lp_/trial-complete'
-      path: '/lp/trial-complete'
-      fullPath: '/lp/trial-complete'
-      preLoaderRoute: typeof LpTrialCompleteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lp_/trial': {
-      id: '/lp_/trial'
-      path: '/lp/trial'
-      fullPath: '/lp/trial'
-      preLoaderRoute: typeof LpTrialRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lp_/outsourcing': {
-      id: '/lp_/outsourcing'
-      path: '/lp/outsourcing'
-      fullPath: '/lp/outsourcing'
-      preLoaderRoute: typeof LpOutsourcingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/biz_/review': {
-      id: '/biz_/review'
-      path: '/biz/review'
-      fullPath: '/biz/review'
-      preLoaderRoute: typeof BizReviewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/biz_/contact': {
-      id: '/biz_/contact'
-      path: '/biz/contact'
-      fullPath: '/biz/contact'
-      preLoaderRoute: typeof BizContactRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/biz_/coffee-chat': {
-      id: '/biz_/coffee-chat'
-      path: '/biz/coffee-chat'
-      fullPath: '/biz/coffee-chat'
-      preLoaderRoute: typeof BizCoffeeChatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/biz_/apply': {
-      id: '/biz_/apply'
-      path: '/biz/apply'
-      fullPath: '/biz/apply'
-      preLoaderRoute: typeof BizApplyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/submissions': {
-      id: '/admin/submissions'
-      path: '/submissions'
-      fullPath: '/admin/submissions'
-      preLoaderRoute: typeof AdminSubmissionsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/simulations': {
-      id: '/admin/simulations'
-      path: '/simulations'
-      fullPath: '/admin/simulations'
-      preLoaderRoute: typeof AdminSimulationsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/simulation-generator': {
-      id: '/admin/simulation-generator'
-      path: '/simulation-generator'
-      fullPath: '/admin/simulation-generator'
-      preLoaderRoute: typeof AdminSimulationGeneratorRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/landing': {
-      id: '/admin/landing'
-      path: '/landing'
-      fullPath: '/admin/landing'
-      preLoaderRoute: typeof AdminLandingRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/inquiries': {
-      id: '/admin/inquiries'
-      path: '/inquiries'
-      fullPath: '/admin/inquiries'
-      preLoaderRoute: typeof AdminInquiriesRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/expert-simulations': {
-      id: '/admin/expert-simulations'
+    '/expert-simulations': {
+      id: '/expert-simulations'
       path: '/expert-simulations'
-      fullPath: '/admin/expert-simulations'
-      preLoaderRoute: typeof AdminExpertSimulationsRouteImport
+      fullPath: '/expert-simulations'
+      preLoaderRoute: typeof ExpertSimulationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/faq': {
+      id: '/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof FaqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/my': {
+      id: '/my'
+      path: '/my'
+      fullPath: '/my'
+      preLoaderRoute: typeof MyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/password-reset': {
+      id: '/password-reset'
+      path: '/password-reset'
+      fullPath: '/password-reset'
+      preLoaderRoute: typeof PasswordResetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/simulations': {
+      id: '/simulations'
+      path: '/simulations'
+      fullPath: '/simulations'
+      preLoaderRoute: typeof SimulationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/start': {
+      id: '/start'
+      path: '/start'
+      fullPath: '/start'
+      preLoaderRoute: typeof StartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/ai-prompts': {
+      id: '/admin/ai-prompts'
+      path: '/ai-prompts'
+      fullPath: '/admin/ai-prompts'
+      preLoaderRoute: typeof AdminAiPromptsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/exit-surveys': {
@@ -698,25 +580,109 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminExitSurveysRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/ai-prompts': {
-      id: '/admin/ai-prompts'
-      path: '/ai-prompts'
-      fullPath: '/admin/ai-prompts'
-      preLoaderRoute: typeof AdminAiPromptsRouteImport
+    '/admin/expert-simulations': {
+      id: '/admin/expert-simulations'
+      path: '/expert-simulations'
+      fullPath: '/admin/expert-simulations'
+      preLoaderRoute: typeof AdminExpertSimulationsRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/simulation/$id/feedback': {
-      id: '/simulation/$id/feedback'
-      path: '/feedback'
-      fullPath: '/simulation/$id/feedback'
-      preLoaderRoute: typeof SimulationIdFeedbackRouteImport
-      parentRoute: typeof SimulationIdRoute
+    '/admin/inquiries': {
+      id: '/admin/inquiries'
+      path: '/inquiries'
+      fullPath: '/admin/inquiries'
+      preLoaderRoute: typeof AdminInquiriesRouteImport
+      parentRoute: typeof AdminRoute
     }
-    '/expert-simulation/$id/review': {
-      id: '/expert-simulation/$id/review'
-      path: '/expert-simulation/$id/review'
-      fullPath: '/expert-simulation/$id/review'
-      preLoaderRoute: typeof ExpertSimulationIdReviewRouteImport
+    '/admin/landing': {
+      id: '/admin/landing'
+      path: '/landing'
+      fullPath: '/admin/landing'
+      preLoaderRoute: typeof AdminLandingRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/simulation-generator': {
+      id: '/admin/simulation-generator'
+      path: '/simulation-generator'
+      fullPath: '/admin/simulation-generator'
+      preLoaderRoute: typeof AdminSimulationGeneratorRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/simulations': {
+      id: '/admin/simulations'
+      path: '/simulations'
+      fullPath: '/admin/simulations'
+      preLoaderRoute: typeof AdminSimulationsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/submissions': {
+      id: '/admin/submissions'
+      path: '/submissions'
+      fullPath: '/admin/submissions'
+      preLoaderRoute: typeof AdminSubmissionsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/biz_/apply': {
+      id: '/biz_/apply'
+      path: '/biz/apply'
+      fullPath: '/biz/apply'
+      preLoaderRoute: typeof BizApplyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/biz_/coffee-chat': {
+      id: '/biz_/coffee-chat'
+      path: '/biz/coffee-chat'
+      fullPath: '/biz/coffee-chat'
+      preLoaderRoute: typeof BizCoffeeChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/biz_/contact': {
+      id: '/biz_/contact'
+      path: '/biz/contact'
+      fullPath: '/biz/contact'
+      preLoaderRoute: typeof BizContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/biz_/review': {
+      id: '/biz_/review'
+      path: '/biz/review'
+      fullPath: '/biz/review'
+      preLoaderRoute: typeof BizReviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lp_/trial': {
+      id: '/lp_/trial'
+      path: '/lp/trial'
+      fullPath: '/lp/trial'
+      preLoaderRoute: typeof LpTrialRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lp_/trial-complete': {
+      id: '/lp_/trial-complete'
+      path: '/lp/trial-complete'
+      fullPath: '/lp/trial-complete'
+      preLoaderRoute: typeof LpTrialCompleteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lp_/trial-task': {
+      id: '/lp_/trial-task'
+      path: '/lp/trial-task'
+      fullPath: '/lp/trial-task'
+      preLoaderRoute: typeof LpTrialTaskRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/simulation/$id': {
+      id: '/simulation/$id'
+      path: '/simulation/$id'
+      fullPath: '/simulation/$id'
+      preLoaderRoute: typeof SimulationIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/simulations_/all': {
+      id: '/simulations_/all'
+      path: '/simulations/all'
+      fullPath: '/simulations/all'
+      preLoaderRoute: typeof SimulationsAllRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/expert-simulation/$id/feedback': {
@@ -725,6 +691,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/expert-simulation/$id/feedback'
       preLoaderRoute: typeof ExpertSimulationIdFeedbackRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/expert-simulation/$id/review': {
+      id: '/expert-simulation/$id/review'
+      path: '/expert-simulation/$id/review'
+      fullPath: '/expert-simulation/$id/review'
+      preLoaderRoute: typeof ExpertSimulationIdReviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/simulation/$id/feedback': {
+      id: '/simulation/$id/feedback'
+      path: '/feedback'
+      fullPath: '/simulation/$id/feedback'
+      preLoaderRoute: typeof SimulationIdFeedbackRouteImport
+      parentRoute: typeof SimulationIdRoute
     }
   }
 }
@@ -784,7 +764,6 @@ const rootRouteChildren: RootRouteChildren = {
   BizCoffeeChatRoute: BizCoffeeChatRoute,
   BizContactRoute: BizContactRoute,
   BizReviewRoute: BizReviewRoute,
-  LpOutsourcingRoute: LpOutsourcingRoute,
   LpTrialRoute: LpTrialRoute,
   LpTrialCompleteRoute: LpTrialCompleteRoute,
   LpTrialTaskRoute: LpTrialTaskRoute,
