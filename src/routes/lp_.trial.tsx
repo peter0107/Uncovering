@@ -299,14 +299,14 @@ function ApplyForm() {
 
           <div className="fgroup">
             <span className="flabel">결제 옵션</span>
-            <div className="opt solo">
+            <div className="opt">
               <span>
                 <b>체험 1회</b>
                 <span className="sub">과제 1건 · 현직자 답안 포함</span>
               </span>
               <span className="price">
                 <s className="price-original">{TRIAL_SINGLE_ORIGINAL_PRICE.toLocaleString()}원</s>
-                <span className="price-badge">{TRIAL_SINGLE_DISCOUNT_PERCENT}%</span>
+                <span className="price-badge">{TRIAL_SINGLE_DISCOUNT_PERCENT}% 할인</span>
                 <b>{TRIAL_PLAN_PRICES.single.toLocaleString()}원</b>
               </span>
             </div>
@@ -366,6 +366,16 @@ function ApplyForm() {
         </p>
       )}
 
+      {step === 1 && (
+        <a
+          href={`/simulation/${PREVIEW_SIMULATION_ID}?demo=1`}
+          style={{ textAlign: "center", fontSize: 13.5, color: "#2E86FF", textDecoration: "underline" }}
+          onClick={() => trackTrialEvent("trial_form_preview_clicked")}
+        >
+          예시 시뮬레이션 미리보기
+        </a>
+      )}
+
       <div className="apply-actions">
         {step > 1 && (
           <button
@@ -391,11 +401,7 @@ function ApplyForm() {
           {step < 2 ? "다음" : isSubmitting ? "결제창으로 이동 중..." : "결제창으로 이동하기"}
         </button>
       </div>
-      {step === 2 && (
-        <span style={{ textAlign: "center", fontSize: 12.5, color: "#9CA3AF" }}>
-          24시간 내 미제공 시 전액 환불
-        </span>
-      )}
+      {step === 2 && <span className="apply-note">24시간 내 미제공 시 자동 환불</span>}
     </form>
   );
 }
@@ -420,12 +426,14 @@ const PREVIEW_SLIDES = [
       <>
         <div className="pv-head">
           <b className="pv-title">온라인 쇼핑몰 구매 이탈 원인 분석 및 구매 흐름 개선</b>
-          <span className="pv-meta">UI/UX 디자인 · 약 30분</span>
+          <span className="pv-tag">UI/UX 디자인 · 약 30분</span>
         </div>
-        <p className="pv-quote">
-          "상품 조회와 장바구니 담기는 꾸준히 늘고 있는데, 결제 완료율은 오히려 낮아지고 있습니다.
-          어디서, 왜 이탈이 발생하는지 직접 분석해 개선안을 제안해주세요."
-        </p>
+        <div className="pv-card">
+          <p className="pv-quote">
+            "상품 조회와 장바구니 담기는 꾸준히 늘고 있는데, 결제 완료율은 오히려 낮아지고 있습니다.
+            어디서, 왜 이탈이 발생하는지 직접 분석해 개선안을 제안해주세요."
+          </p>
+        </div>
         <div className="pv-steps">
           {PREVIEW_STEPS.map((step) => (
             <div className="pv-step" key={step.no}>
@@ -444,21 +452,23 @@ const PREVIEW_SLIDES = [
     actionOnly: false,
     content: (
       <>
-        <div className="pv-answer-copy">
+        <div className="pv-head">
           <b className="pv-title">1단계 · 핵심 문제 분석</b>
+          <span className="pv-tag pv-tag-blue">모범 답안</span>
+        </div>
+        <div className="pv-card">
           <p className="pv-body">
             가장 큰 문제는 장바구니에서 주문서로 넘어가는 구간이다. 장바구니에 들어온{" "}
             <b>3,900명 중 주문서로 이동한 사용자는 1,700명</b>뿐이다. 장바구니에서는 쿠폰 할인,
             배송비, 최종 결제 금액을 정확히 확인하기 어렵다.
           </p>
-          <p className="pv-body">
-            <b>핵심 문제</b>
-            <br />
+          <div className="pv-callout">
+            <span className="pv-calloutlbl">핵심 문제</span>
             사용자가 장바구니에서 실제 결제 금액을 미리 알기 어려워, 구매를 계속해도 되는지 확신하지
             못하고 이탈하고 있다.
-          </p>
+          </div>
         </div>
-        <div className="pv-lock">2·3단계 모범답안은 과제를 제출하면 전체 공개돼요</div>
+        <div className="pv-lock">🔒 2·3단계 모범답안은 과제를 제출하면 전체 공개돼요</div>
       </>
     ),
     foot: null,
@@ -467,21 +477,21 @@ const PREVIEW_SLIDES = [
     label: "현직자 코멘트",
     actionOnly: false,
     content: (
-      <>
+      <div className="pv-card">
         <div className="pv-person">
           <span className="pv-avatar">김</span>
           <span className="pv-personinfo">
             <b>김*현 · UI/UX 디자인</b>
             <span className="pv-meta">라이프스타일 커머스 · 스타트업 · 1~2년차</span>
           </span>
-          <span className="pv-status">검수 완료</span>
+          <span className="pv-tag pv-tag-green">검수 완료</span>
         </div>
         <p className="pv-quote">
           "실무에서는 '전환율이 떨어진다'는 말만 듣고 시작하는 경우가 많아요. 그래서 이 과제도 정답을
           정해두지 않았어요. 데이터에서 이탈 구간을 직접 찾고, 왜 그 화면이라고 판단했는지 설명할 수
           있는지를 봅니다."
         </p>
-      </>
+      </div>
     ),
     foot: <span className="pv-note">✓ 모든 과제는 해당 직무 현직자가 만들고 검수해요</span>,
   },
@@ -540,11 +550,20 @@ function PreviewCarousel() {
               ) : (
                 <>
                   <b className="pv-label">{slide.label}</b>
+                  {/* 실제 수행 화면(SimulationShell)과 같은 구성: 상단 진행바 → 회색 본문 → 하단 액션바 */}
                   <div className="mock mock-app">
-                    <div className="mockbody">
-                      {slide.content}
-                      {slide.foot && <div className="pv-inline-foot">{slide.foot}</div>}
+                    <div className="appbar">
+                      <span className="appbar-logo">Beginner</span>
+                      <span className="appbar-right">
+                        <span className="appbar-stepname">핵심 문제 분석</span>
+                        <span className="appbar-prog">
+                          <i />
+                        </span>
+                        <span>1/3</span>
+                      </span>
                     </div>
+                    <div className="mockbody">{slide.content}</div>
+                    {slide.foot && <div className="appfoot">{slide.foot}</div>}
                   </div>
                 </>
               )}
@@ -552,10 +571,10 @@ function PreviewCarousel() {
           </div>
         ))}
       </div>
-      <div className="carousel-dots" aria-label="미리보기 탐색">
+      <div className="carousel-dots">
         {PREVIEW_SLIDES.map((slide, i) => (
           <button
-            key={slide.label}
+            key={i}
             type="button"
             className={i === index ? "on" : ""}
             onClick={() => goTo(i)}
@@ -567,235 +586,219 @@ function PreviewCarousel() {
   );
 }
 
+// 27b 시안(모바일·웹)의 2인 대화 일러스트
+function TalkerAsker() {
+  return (
+    <svg viewBox="0 0 52 64" aria-hidden="true">
+      <path d="M12 62c0-26 6-40 14-40s14 14 14 40z" fill="#1E3A66" />
+      <path d="M26 22l-6 7 6 15 6-15z" fill="#fff" />
+      <path d="M26 27l-2.5 3 2.5 10 2.5-10z" fill="#2E86FF" />
+      <circle cx="26" cy="13" r="10" fill="#F2C9A8" />
+      <path d="M18 7a10 10 0 0116 0c0 3-3 4-8 4s-8-1-8-4z" fill="#3B4656" />
+    </svg>
+  );
+}
+
+function TalkerAnswerer() {
+  return (
+    <svg viewBox="0 0 52 64" aria-hidden="true">
+      <path d="M12 62c0-26 6-40 14-40s14 14 14 40z" fill="#7FB4FF" />
+      <path d="M26 22c-3 0-5 2-5 4 0 2 2.4 3.4 5 3.4s5-1.4 5-3.4c0-2-2-4-5-4z" fill="#fff" />
+      <path d="M13.5 47c-.7 4.6-1 9.6-1 15h27c0-5.4-.3-10.4-1-15z" fill="#3B4656" />
+      <circle cx="26" cy="13" r="10" fill="#F2C9A8" />
+      <path d="M18 7a10 10 0 0116 0c0 3-3 4-8 4s-8-1-8-4z" fill="#6B4A2F" />
+    </svg>
+  );
+}
+
 function LpTrialPage() {
   return (
     <div className="lp-trial">
+      <header className="topbar">
+        <div className="wrap topbar-in">
+          <div className="brand">
+            <BrandLogo className="h-[1.5rem] w-auto max-w-[9.75rem] object-contain object-left" />
+          </div>
+          <div className="navlinks">
+            <a
+              href={`/simulation/${PREVIEW_SIMULATION_ID}?demo=1`}
+              onClick={() => trackTrialEvent("trial_navigation_clicked", { destination: "simulation_preview" })}
+            >
+              미리보기
+            </a>
+            <a href="#how" onClick={() => trackTrialEvent("trial_navigation_clicked", { destination: "how" })}>
+              이용 방법
+            </a>
+            <a href="#refund" onClick={() => trackTrialEvent("trial_navigation_clicked", { destination: "refund" })}>
+              환불 정책
+            </a>
+            <a
+              className="btn"
+              href="#apply"
+              onClick={() => trackTrialEvent("trial_navigation_clicked", { destination: "apply" })}
+            >
+              신청하기
+            </a>
+          </div>
+        </div>
+      </header>
+
       <div className="hero">
         <div className="wrap">
-          <div className="nav">
-            <div className="brand">
-              <BrandLogo className="h-[1.9rem] w-auto max-w-[9.75rem] object-contain object-left" />
-            </div>
-            <div className="navlinks">
-              <a
-                href={`/simulation/${PREVIEW_SIMULATION_ID}?demo=1`}
-                onClick={() => trackTrialEvent("trial_navigation_clicked", { destination: "simulation_preview" })}
-              >
-                미리보기
-              </a>
-              <a href="#how" onClick={() => trackTrialEvent("trial_navigation_clicked", { destination: "how" })}>
-                이용 방법
-              </a>
-              <a href="#refund" onClick={() => trackTrialEvent("trial_navigation_clicked", { destination: "refund" })}>
-                환불 정책
-              </a>
-              <a className="btn" href="#apply" onClick={() => trackTrialEvent("trial_navigation_clicked", { destination: "apply" })}>
-                체험 신청하기
-              </a>
-            </div>
-          </div>
-
-          <div className="heroin" id="apply">
-            <div className="hero-copy">
+          <div className="hero-copy">
             <div className="arrival" aria-label="환불 정책">
               <span>24시간 내 미제공 시 전액 환불</span>
               <span>불만족 시 3일 내 환불</span>
             </div>
-              <h1>
-                궁금한 직무,
-                <br />
-                직접 해보고 판단하세요!
-              </h1>
-              <p className="lead">
-                원하는 직무와 기업 유형을 고르면,
-                <br />
-                그 분야 현직자가 만든 업무 시뮬레이션이 24시간 안에 도착해요.
-              </p>
-              <a
-                className="trial-hero-preview-link"
-                href={`/simulation/${PREVIEW_SIMULATION_ID}?demo=1`}
-                onClick={() => trackTrialEvent("trial_form_preview_clicked")}
-              >
-                예시 시뮬레이션 미리보기
-              </a>
-            </div>
+            <h1>
+              궁금한 직무,
+              <br />
+              직접 해보고 판단하세요.
+            </h1>
+            <p className="lead">
+              설명 대신 실제 업무 과제 하나를 그대로 보여드려요.
+              <br />
+              1분이면 충분해요.
+            </p>
+          </div>
 
-            <ApplyForm />
+          <div className="taskcard">
+            <span className="taskcard-label">서비스 기획자 체험 과제</span>
+            <div>
+              <div className="bubble">
+                <span>당신은 1년차 서비스 기획자입니다.</span>
+                <span>신규 서비스의 가입 전환율이 떨어졌습니다.</span>
+                <span>사용자 데이터를 분석하고 개선안을 제안하세요.</span>
+              </div>
+              <div className="talkers">
+                <TalkerAsker />
+                <div className="talkers-right">
+                  <span className="dots">···</span>
+                  <TalkerAnswerer />
+                </div>
+              </div>
+            </div>
+            <a
+              className="btn-blue"
+              href="#preview"
+              onClick={() => trackTrialEvent("trial_cta_clicked", { placement: "hero_sample" })}
+            >
+              실제 예시 1분 체험하기
+            </a>
           </div>
         </div>
       </div>
 
+      <section className="sect-gray">
+        <div className="wrap center">
+          <h2>
+            원하는 직무도
+            <br />
+            24시간 안에 만들어드려요.
+          </h2>
+          <p className="lead">
+            직무와 기업 유형을 고르면 과제가 도착해요.
+            <br />
+            24시간 안에 못 받으면 전액 환불해드려요.
+          </p>
+          <a
+            className="btn-navy"
+            href="#apply"
+            style={{ marginTop: 8 }}
+            onClick={() => trackTrialEvent("trial_cta_clicked", { placement: "band" })}
+          >
+            내 직무 신청하기
+          </a>
+        </div>
+      </section>
+
       <section id="how">
         <div className="wrap">
-          <p className="eyebrow">이렇게 진행돼요</p>
-          <h2 style={{ marginTop: 9 }}>신청부터 체험 과제 도착까지, 24시간</h2>
-          <div className="grid3">
-            <div>
-              <div className="stepttl">
-                <span className="stepnum">1</span>
-                <b style={{ fontSize: 16, letterSpacing: "-.3px" }}>직무 고르고 신청</b>
+          <h2>
+            신청부터 과제 도착까지,
+            <br />
+            이렇게 진행됩니다.
+          </h2>
+
+          <div className="steps">
+            <div className="steprow">
+              <div className="steptext">
+                <span className="stepnum">01</span>
+                <b>직무를 고르고 신청해요</b>
+                <p>분야, 직무, 기업 유형 세 가지만 고르면 신청이 끝나요.</p>
               </div>
-              <div className="mock">
-                <div className="mockbar">
-                  <i></i>
-                  <i></i>
-                  <i></i>
+              <div className="panel">
+                <div className="kv">
+                  <span>직무</span>
+                  <b>CRM 마케터</b>
                 </div>
-                <div className="mockbody">
-                  <div className="kv">
-                    <span>직무</span>
-                    <b>CRM 마케터</b>
-                  </div>
-                  <div className="kv">
-                    <span>기업 유형</span>
-                    <b>스타트업</b>
-                  </div>
-                  <div className="kv">
-                    <span>결제 옵션</span>
-                    <b>체험 1회</b>
-                  </div>
-                  <div
-                    style={{
-                      borderTop: "1px dashed #E3E6EC",
-                      paddingTop: 10,
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <span style={{ fontSize: 12, color: "#6B7280" }}>결제 금액</span>
-                    <span style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                      <s style={{ fontSize: 12.5, fontWeight: 600, color: "#9CA3AF" }}>
-                        {TRIAL_SINGLE_ORIGINAL_PRICE.toLocaleString()}원
-                      </s>
-                      <span
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 800,
-                          color: "#DC2626",
-                          background: "#FEE2E2",
-                          borderRadius: 4,
-                          padding: "2px 5px",
-                        }}
-                      >
-                        {TRIAL_SINGLE_DISCOUNT_PERCENT}%
-                      </span>
-                      <b style={{ fontSize: 18, color: "#435BDA" }}>{TRIAL_PLAN_PRICES.single.toLocaleString()}원</b>
-                    </span>
-                  </div>
+                <div className="kv">
+                  <span>기업 유형</span>
+                  <b>스타트업</b>
+                </div>
+                <div className="kv kv-total">
+                  <span>결제 금액</span>
+                  <span className="price">
+                    <s className="price-original">{TRIAL_SINGLE_ORIGINAL_PRICE.toLocaleString()}원</s>
+                    <span className="price-badge">{TRIAL_SINGLE_DISCOUNT_PERCENT}% 할인</span>
+                    <b>{TRIAL_PLAN_PRICES.single.toLocaleString()}원</b>
+                  </span>
                 </div>
               </div>
             </div>
 
-            <div>
-              <div className="stepttl">
-                <span className="stepnum">2</span>
-                <b style={{ fontSize: 16, letterSpacing: "-.3px" }}>현직자 검수 · 과제 준비</b>
+            <div className="steprow rev">
+              <div className="steptext">
+                <span className="stepnum">02</span>
+                <b>현직자가 실무 과제를 만들어요</b>
+                <p>현직자가 실제로 하는 업무를 그대로 옮긴 과제를 준비해요.</p>
               </div>
-              <div className="mock">
-                <div className="mockbar">
-                  <i></i>
-                  <i></i>
-                  <i></i>
+              <div className="panel">
+                <div className="kv">
+                  <b style={{ fontSize: 15 }}>도착까지</b>
+                  <span>오늘 밤 11시까지</span>
                 </div>
-                <div className="mockbody">
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <b style={{ fontSize: 12.5 }}>도착까지</b>
-                    <span
-                      style={{
-                        fontSize: 12,
-                        fontWeight: 800,
-                        color: "#435BDA",
-                        background: "#E9EEFC",
-                        borderRadius: 6,
-                        padding: "4px 9px",
-                      }}
-                    >
-                      18:42:07
-                    </span>
-                  </div>
-                  <div className="prog">
-                    <i style={{ width: "38%" }}></i>
-                  </div>
-                  <div className="check">
-                    <span className="dot done">✓</span>
-                    <span>신청 접수</span>
-                  </div>
-                  <div className="check">
-                    <span className="dot done">✓</span>
-                    <span>현직자 검수 완료</span>
-                  </div>
-                  <div className="check">
-                    <span className="dot now"></span>
-                    <b style={{ color: "#1B2440" }}>체험 과제 준비 중</b>
-                  </div>
-                  <div className="check" style={{ color: "#B7BEC9" }}>
-                    <span className="dot todo"></span>
-                    <span>과제 도착</span>
-                  </div>
+                <div className="check">
+                  <span className="dot" />
+                  <span>신청 접수</span>
+                </div>
+                <div className="check">
+                  <span className="dot" />
+                  <span>현직자 매칭 완료</span>
+                </div>
+                <div className="check">
+                  <span className="dot" />
+                  <b style={{ color: "#16233D" }}>체험 과제 준비 중</b>
+                </div>
+                <div className="check todo">
+                  <span className="dot" />
+                  <span>과제 도착</span>
                 </div>
               </div>
             </div>
 
-            <div>
-              <div className="stepttl">
-                <span className="stepnum">3</span>
-                <b style={{ fontSize: 16, letterSpacing: "-.3px" }}>과제 도착</b>
+            <div className="steprow">
+              <div className="steptext">
+                <span className="stepnum">03</span>
+                <b>모범 답안과 현직자 피드백까지</b>
+                <p>내가 쓴 답과 현직자의 답을 나란히 놓고 차이를 확인해요.</p>
               </div>
-              <div className="mock">
-                <div className="mockbar">
-                  <i></i>
-                  <i></i>
-                  <i></i>
+              <div className="panel">
+                <div className="qa">
+                  <span className="qa-label">내가 낸 답안</span>
+                  <div className="qa-text">가입 화면 이탈률이 높아 보여서, 입력 항목을 줄이는 걸 제안했어요.</div>
                 </div>
-                <div className="mockbody">
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <b style={{ fontSize: 12.5 }}>CRM 마케터 업무 시뮬레이션</b>
-                    <span style={{ fontSize: 11, color: "#0F9D58", fontWeight: 700 }}>과제 도착</span>
+                <div className="qa">
+                  <span className="qa-label blue">현직자 모범답안</span>
+                  <div className="qa-text tint">
+                    이탈률보다 먼저 유입 채널별 코호트를 나눠 봅니다. 특정 채널만 떨어졌다면 화면이 아니라 타깃
+                    문제예요.
                   </div>
-                  <div
-                    style={{
-                      border: "1px solid #E9ECF2",
-                      borderRadius: 8,
-                      padding: 11,
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 6,
-                    }}
-                  >
-                    <span className="bar" style={{ width: "88%" }}></span>
-                    <span className="bar" style={{ width: "70%" }}></span>
-                    <span className="bar" style={{ width: "46%" }}></span>
-                  </div>
-                  <div style={{ display: "flex", gap: 7 }}>
-                    <div
-                      style={{
-                        flex: 1,
-                        background: "#F5F6F9",
-                        border: "1px solid #E9ECF2",
-                        borderRadius: 8,
-                        padding: "9px 10px",
-                      }}
-                    >
-                      <span style={{ fontSize: 10.5, color: "#9CA3AF", fontWeight: 700, display: "block" }}>
-                        제공 자료
-                      </span>
-                      <span style={{ fontSize: 11.5, color: "#4B5563" }}>고객 데이터를 확인해요</span>
-                    </div>
-                    <div
-                      style={{
-                        flex: 1,
-                        background: "#F5F6F9",
-                        border: "1px solid #E9ECF2",
-                        borderRadius: 8,
-                        padding: "9px 10px",
-                      }}
-                    >
-                      <span style={{ fontSize: 10.5, color: "#6B7280", fontWeight: 700, display: "block" }}>
-                        답안 작성
-                      </span>
-                      <span style={{ fontSize: 11.5, color: "#4B5563" }}>내 관점으로 정리해요</span>
-                    </div>
+                </div>
+                <div className="qa">
+                  <span className="qa-label">현직자 피드백</span>
+                  <div className="qa-text">
+                    문제를 화면에서만 찾은 점이 아쉬워요. 다음엔 원인을 나누는 기준부터 잡아보세요.
                   </div>
                 </div>
               </div>
@@ -808,50 +811,71 @@ function LpTrialPage() {
         <div className="wrap">
           <div className="center">
             <p className="eyebrow">미리보기</p>
-            <h2 style={{ marginTop: 9 }}>시뮬레이션, 이런 모습이에요</h2>
+            <h2 style={{ marginTop: 9 }}>체험 과제, 이런 모습이에요</h2>
           </div>
           <PreviewCarousel />
         </div>
       </section>
 
-      <section id="refund">
-        <div className="wrap">
-          <div className="center">
-            <p className="eyebrow">환불 정책</p>
+      <section id="apply">
+        <div className="wrap applyrow">
+          <div className="applycopy">
             <h2>
-              못 받으면 환불,
+              내 직무
               <br />
-              마음에 안 들어도 환불
+              신청하기
             </h2>
+            <p>
+              세 가지만 고르면 끝나요.
+              <br />
+              과제는 24시간 안에 도착해요.
+            </p>
           </div>
+          <ApplyForm />
+        </div>
+      </section>
+
+      <section className="sect-gray" id="refund">
+        <div className="wrap">
+          <h2>
+            못 받으면 환불,
+            <br />
+            마음에 안 들어도 환불
+          </h2>
           <div className="grid2">
             <div className="card">
-              <h3>24시간 내 미제공 시 전액 환불해 드려요</h3>
-              <p>신청 시점부터 24시간 안에 체험 과제가 도착하지 않으면, 고객센터로 알려주세요. 전액 환불해 드려요.</p>
+              <h3>
+                24시간 내 미제공 시
+                <br />
+                전액 환불
+              </h3>
+              <p>신청 시점부터 24시간 안에 체험 과제가 도착하지 않으면, 별도 신청 없이 전액 환불해 드려요.</p>
             </div>
             <div className="card">
-              <h3>불만족 시 3일 내 환불</h3>
-              <p>체험을 마친 뒤 3일 안에 환불을 요청하면, 사유를 묻지 않고 처리해 드려요.</p>
+              <h3>
+                불만족 시
+                <br />
+                3일 내 환불
+              </h3>
+              <p>체험을 마친 뒤 3일 안에 요청하면, 사유를 묻지 않고 처리해 드려요.</p>
             </div>
           </div>
         </div>
       </section>
 
-      <section style={{ paddingTop: 0 }}>
-        <div className="wrap">
-          <div className="cta">
-            <b style={{ fontSize: "clamp(22px,3.4vw,30px)", letterSpacing: "-.6px" }}>
-              오늘 신청하면, 내일 체험해요
-            </b>
-            <span style={{ fontSize: 15, color: "#D9E0FA", lineHeight: 1.6 }}>
-              24시간 내 미제공 시 전액 환불 · 불만족 시 3일 내 환불
-            </span>
-            <a className="go" href="#apply" onClick={() => trackTrialEvent("trial_cta_clicked", { placement: "bottom" })}>
-              체험 신청하기 →
-            </a>
-          </div>
+      <div className="cta">
+        <div className="cta-in">
+          <b>
+            오늘 신청하면,
+            <br />
+            내일 안으로 체험해요
+          </b>
+          <span>24시간 내 미제공 시 전액 환불 · 불만족 시 3일 내 환불</span>
+          <a className="go" href="#apply" onClick={() => trackTrialEvent("trial_cta_clicked", { placement: "bottom" })}>
+            내 직무 신청하기 →
+          </a>
         </div>
-      </section>
+      </div>
 
       <div className="wrap">
         <footer>
@@ -860,17 +884,43 @@ function LpTrialPage() {
             <a href="mailto:info@beginner.today">Contact: info@beginner.today</a>
           </div>
           <div>
-            <a href="#refund" onClick={() => trackTrialEvent("trial_policy_link_clicked", { policy: "refund", placement: "footer" })}>
+            <a
+              href="#refund"
+              onClick={() => trackTrialEvent("trial_policy_link_clicked", { policy: "refund", placement: "footer" })}
+            >
               환불 정책
             </a>
-            <a href="/terms" onClick={() => trackTrialEvent("trial_policy_link_clicked", { policy: "terms", placement: "footer" })}>
+            <a
+              href="/terms"
+              onClick={() => trackTrialEvent("trial_policy_link_clicked", { policy: "terms", placement: "footer" })}
+            >
               이용약관
             </a>
-            <a href="/privacy" onClick={() => trackTrialEvent("trial_policy_link_clicked", { policy: "privacy", placement: "footer" })}>
+            <a
+              href="/privacy"
+              onClick={() => trackTrialEvent("trial_policy_link_clicked", { policy: "privacy", placement: "footer" })}
+            >
               개인정보처리방침
             </a>
           </div>
         </footer>
+      </div>
+
+      <div className="mobilebar">
+        <a
+          className="sub"
+          href="#preview"
+          onClick={() => trackTrialEvent("trial_cta_clicked", { placement: "mobilebar_sample" })}
+        >
+          예시 체험
+        </a>
+        <a
+          className="main"
+          href="#apply"
+          onClick={() => trackTrialEvent("trial_cta_clicked", { placement: "mobilebar" })}
+        >
+          내 직무 신청하기
+        </a>
       </div>
     </div>
   );
