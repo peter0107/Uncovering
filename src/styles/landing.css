@@ -164,7 +164,7 @@
 .lp-trial .stepnum { font-size: 15px; font-weight: 700; color: #2E86FF; }
 .lp-trial .steptext b { font-size: clamp(21px,2.6vw,28px); letter-spacing: -1px; line-height: 1.4; }
 .lp-trial .steptext p { margin: 0; font-size: 17px; color: #5A6478; line-height: 1.7; }
-.lp-trial .panel { width: 380px; flex: none; background: #F7F8FA; border-radius: 20px; padding: 28px; display: flex; flex-direction: column; gap: 14px; }
+.lp-trial .panel { width: 380px; min-height: 220px; box-sizing: border-box; flex: none; background: #F7F8FA; border-radius: 20px; padding: 28px; display: flex; flex-direction: column; gap: 14px; }
 .lp-trial .kv { display: flex; justify-content: space-between; align-items: center; font-size: 15px; color: #5A6478; }
 .lp-trial .kv b { color: #16233D; }
 .lp-trial .kv-total { border-top: 1px solid #E4E7ED; padding-top: 14px; }
@@ -183,6 +183,7 @@
 .lp-trial .qa-text.tint { background: #EAF2FF; }
 
 /* 신청 폼 */
+.lp-trial #apply { background: #F7F8FA; }
 .lp-trial .applyrow { display: flex; gap: 64px; align-items: flex-start; }
 .lp-trial .applycopy { flex: 1; display: flex; flex-direction: column; gap: 18px; padding-top: 8px; }
 .lp-trial .applycopy p { margin: 0; font-size: 18px; color: #5A6478; line-height: 1.7; }
@@ -192,7 +193,7 @@
 .lp-trial .apply h3 { margin: 0; font-size: 19px; letter-spacing: -.4px; }
 .lp-trial .fgroup { display: flex; flex-direction: column; gap: 8px; }
 .lp-trial .flabel { font-size: 14px; color: #5A6478; }
-.lp-trial .select { background: #F7F8FA; border-radius: 14px; padding: 17px 18px; display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 16px; }
+.lp-trial .select { background: #F7F8FA; border: 1px solid #E4E7ED; border-radius: 14px; padding: 17px 18px; display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 16px; }
 .lp-trial .select select { appearance: none; border: none; background: transparent; flex: 1; min-width: 0; font-family: inherit; font-size: 16px; color: #16233D; padding: 0; outline: none; }
 .lp-trial .textinput { background: #F7F8FA; border: none; border-radius: 14px; padding: 17px 18px; font-size: 16px; width: 100%; font-family: inherit; color: #16233D; }
 .lp-trial .textinput::placeholder { color: #9BA3B2; }
@@ -220,7 +221,7 @@
 
 /* 환불 카드 */
 .lp-trial .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 40px; }
-.lp-trial .card { background: #F7F8FA; border-radius: 20px; padding: 40px; display: flex; flex-direction: column; gap: 14px; }
+.lp-trial .card { background: #F7F8FA; border: 1px solid #E4E7ED; border-radius: 20px; padding: 40px; display: flex; flex-direction: column; gap: 14px; }
 .lp-trial .card h3 { margin: 0; font-size: 24px; letter-spacing: -.8px; line-height: 1.45; color: #1E3A66; }
 .lp-trial .card p { margin: 0; font-size: 17px; color: #5A6478; line-height: 1.75; }
 
