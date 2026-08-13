@@ -657,12 +657,16 @@ function LpTrialPage() {
         <div className="wrap">
           <div className="hero-copy">
             <h1>
-              <span className="hero-role" key={HERO_ROLES[heroRoleIndex]}>{HERO_ROLES[heroRoleIndex]}</span>는 오늘도
+              <span className="hero-role" key={HERO_ROLES[heroRoleIndex]}>{HERO_ROLES[heroRoleIndex]}</span>는
+              <br />
+              오늘도
               <br />
               이런 일을 했습니다.
             </h1>
             <p className="lead">
-              설명 대신 실제 업무 과제 하나를 그대로 보여드려요. 1분이면 충분해요.
+              설명 대신 실제 업무 과제 하나를 그대로 보여드려요.
+              <br />
+              1분이면 충분해요.
             </p>
           </div>
 

@@ -313,6 +313,7 @@
   .lp-trial .navlinks a:not(.btn) { display: none; }
   .lp-trial .navlinks { gap: 0; }
   .lp-trial .hero { padding: 48px 0 56px; }
+  .lp-trial h1 { font-size: 35px; }
   .lp-trial .hero .wrap { gap: 32px; }
   .lp-trial .taskcard { padding: 26px 22px; border-radius: 20px; }
   .lp-trial .talkers { padding: 0 6px; }
