@@ -819,7 +819,7 @@ function LpTrialPage() {
         </div>
       </section>
 
-      <section className="sect-gray" id="refund">
+      <section id="refund">
         <div className="wrap">
           <h2>
             못 받으면 환불,

@@ -142,7 +142,7 @@
 .lp-trial .bubble span { font-size: clamp(14px,1.8vw,17px); line-height: 1.55; font-weight: 600; }
 .lp-trial .talkers { display: flex; justify-content: space-between; align-items: flex-end; padding: 0 18px; }
 .lp-trial .talkers svg { flex: none; display: block; width: 56px; height: 68px; }
-.lp-trial .talkers-right { display: flex; align-items: flex-start; gap: 10px; }
+.lp-trial .talkers-right { display: flex; align-items: flex-end; gap: 10px; }
 .lp-trial .dots { background: #EAF2FF; border-radius: 14px 14px 4px 14px; padding: 11px 17px; font-size: 16px; font-weight: 700; color: #5A6478; letter-spacing: 2px; margin-bottom: 40px; }
 .lp-trial .btn-blue { display: block; background: #2E86FF; color: #fff; font-weight: 700; border-radius: 14px; padding: 19px 0; text-align: center; font-size: 17px; }
 .lp-trial a.btn-blue:hover { color: #fff; background: #1E6FE0; }
