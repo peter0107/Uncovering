@@ -303,8 +303,8 @@ function ApplyForm() {
             <span className="flabel">결제 옵션</span>
             <div className="opt">
               <span>
-                <b>체험 1회</b>
-                <span className="sub">과제 1건 · 현직자 답안 포함</span>
+                <b>체험 1회 과제 1건</b>
+                <span className="sub">현직자 답안 포함</span>
               </span>
               <span className="price">
                 <s className="price-original">{TRIAL_SINGLE_ORIGINAL_PRICE.toLocaleString()}원</s>
@@ -366,16 +366,6 @@ function ApplyForm() {
         <p role="alert" className="formerror">
           {error}
         </p>
-      )}
-
-      {step === 1 && (
-        <a
-          href={`/simulation/${PREVIEW_SIMULATION_ID}?demo=1`}
-          style={{ textAlign: "center", fontSize: 13.5, color: "#2E86FF", textDecoration: "underline" }}
-          onClick={() => trackTrialEvent("trial_form_preview_clicked")}
-        >
-          예시 시뮬레이션 미리보기
-        </a>
       )}
 
       <div className="apply-actions">
@@ -822,11 +812,7 @@ function LpTrialPage() {
       <section id="apply">
         <div className="wrap applyrow">
           <div className="applycopy">
-            <h2>
-              내 직무
-              <br />
-              신청하기
-            </h2>
+            <h2>내 직무 신청하기</h2>
             <p>
               세 가지만 고르면 끝나요.
               <br />
