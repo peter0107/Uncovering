@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 
 import { BrandLogo } from "@/components/BrandLogo";
 import { DOMAIN_CATEGORIES, type DomainCategory } from "@/lib/domain-categories";
