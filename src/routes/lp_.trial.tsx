@@ -646,14 +646,10 @@ function LpTrialPage() {
       <div className="hero">
         <div className="wrap">
           <div className="hero-copy">
-            <div className="arrival" aria-label="환불 정책">
-              <span>24시간 내 미제공 시 전액 환불</span>
-              <span>불만족 시 3일 내 환불</span>
-            </div>
             <h1>
-              궁금한 직무,
+              ________는 오늘도
               <br />
-              직접 해보고 판단하세요.
+              이런 일을 했습니다.
             </h1>
             <p className="lead">
               설명 대신 실제 업무 과제 하나를 그대로 보여드려요.

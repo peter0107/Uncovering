@@ -166,6 +166,71 @@ function AnswerEditor({
   );
 }
 
+function TrialDemoSimulation() {
+  const [answer, setAnswer] = useState("");
+  const [showResult, setShowResult] = useState(false);
+
+  return (
+    <div className="min-h-dvh bg-white text-[#16233D]">
+      <header className="sticky top-0 z-10 flex h-[68px] items-center justify-between border-b border-[#EEF0F4] bg-white/95 px-5 backdrop-blur sm:px-10">
+        <Link to="/lp/trial" className="text-xl leading-none text-[#5A6478]" aria-label="랜딩으로 돌아가기">←</Link>
+        <span className="text-[15px] font-bold">서비스 기획자 체험</span>
+        <span className="text-sm text-[#9BA3B2]">1 / 3</span>
+      </header>
+
+      <main>
+        <section className="mx-auto max-w-[760px] px-5 pb-10 pt-[72px]">
+          <p className="text-sm font-bold text-[#2E86FF]">STEP 1 · 상황 파악</p>
+          <h1 className="mt-3 text-4xl font-extrabold leading-[1.35] tracking-[-1.4px]">구독 서비스 가입 전환율 개선</h1>
+          <p className="mt-3 text-[17px] leading-[1.75] text-[#5A6478]">신규 구독 서비스의 가입 전환율이 3주째 떨어지고 있습니다. 원인을 찾고 개선안을 제안해주세요.</p>
+        </section>
+
+        <section className="mx-auto max-w-[760px] px-5 pb-12">
+          <p className="text-sm font-bold text-[#5A6478]">참고 자료</p>
+          <div className="mt-3 rounded-[20px] bg-[#F7F8FA] p-7">
+            <b className="text-[15px]">주차별 가입 퍼널</b>
+            <div className="mt-4 space-y-3 text-[14.5px] text-[#5A6478]">
+              {[["랜딩 방문", "100%", "12,400", "#1E3A66"], ["가입 시작", "46%", "5,700", "#1E3A66"], ["정보 입력", "19%", "2,350", "#2E86FF"], ["첫 결제", "7%", "860", "#2E86FF"]].map(([label, width, value, color]) => (
+                <div key={label} className="flex items-center gap-3">
+                  <span className="w-20 shrink-0">{label}</span>
+                  <span className="h-2 flex-1 overflow-hidden rounded-full bg-[#DCE4F0]"><i className="block h-full rounded-full" style={{ width, backgroundColor: color }} /></span>
+                  <b className="w-14 text-right text-[#16233D]">{value}</b>
+                </div>
+              ))}
+            </div>
+            <div className="mt-5 flex flex-wrap gap-x-10 gap-y-2 border-t border-[#E4E7ED] pt-4 text-sm text-[#5A6478]">
+              <span>검색 유입 전환율 <b className="ml-2 text-[#16233D]">7.4% → 7.1%</b></span>
+              <span>SNS 광고 유입 전환율 <b className="ml-2 text-[#2E86FF]">6.9% → 2.2%</b></span>
+            </div>
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-[760px] px-5 pb-14">
+          <p className="text-sm font-bold text-[#2E86FF]">STEP 2 · 답안 작성</p>
+          <h2 className="mt-3 text-[22px] font-extrabold tracking-[-.7px]">어디가 문제이고, 무엇을 개선하시겠어요?</h2>
+          <Textarea value={answer} onChange={(event) => setAnswer(event.target.value)} placeholder="문제라고 생각한 구간과 그 근거, 제안하는 개선안을 3~5줄로 적어보세요." className="mt-4 min-h-36 resize-none rounded-[20px] border-0 bg-[#F7F8FA] p-6 text-base leading-7 shadow-none focus-visible:ring-2 focus-visible:ring-[#2E86FF]" />
+          <p className="mt-3 text-[13.5px] text-[#9BA3B2]">평균 작성 시간 4분 · 중간 저장돼요</p>
+          <button type="button" onClick={() => setShowResult(true)} className="mt-5 w-full rounded-[14px] bg-[#1E3A66] py-4 text-[17px] font-bold text-white hover:bg-[#16233D]">답안 비교 보기</button>
+        </section>
+
+        {showResult && (
+          <section className="bg-[#F7F8FA] px-5 py-16">
+            <div className="mx-auto flex max-w-[760px] flex-col gap-6">
+              <div><p className="text-sm font-bold text-[#2E86FF]">STEP 3 · 답안 비교</p><h2 className="mt-3 text-3xl font-extrabold tracking-[-1.2px]">모범 답안과 현직자 피드백까지</h2><p className="mt-2 text-[16.5px] leading-7 text-[#5A6478]">제출하면 바로 이렇게 보여드려요.</p></div>
+              <DemoAnswer label="내가 낸 답안" text={answer.trim() || "가입 화면 이탈률이 높아 보여서, 입력 항목을 줄이는 걸 제안했어요."} />
+              <DemoAnswer blue label="현직자 모범답안" text="이탈률보다 먼저 유입 채널별 코호트를 나눠 봅니다. SNS 광고 유입만 6.9%에서 2.2%로 떨어졌다면 화면이 아니라 타깃과 소재 문제예요. 화면을 고치기 전에 광고 소재와 랜딩의 약속이 어긋난 지점을 먼저 맞춥니다." />
+              <DemoAnswer label="현직자 피드백" text="문제를 화면에서만 찾은 점이 아쉬워요. 자료에 채널별 수치가 있었으니, 원인을 나누는 기준부터 잡아보면 훨씬 좋아집니다." />
+            </div>
+          </section>
+        )}
+      </main>
+    </div>
+  );
+}
+
+function DemoAnswer({ label, text, blue = false }: { label: string; text: string; blue?: boolean }) {
+  return <div><p className={`mb-2 text-[13px] font-bold ${blue ? "text-[#2E86FF]" : "text-[#9BA3B2]"}`}>{label}</p><div className={`rounded-2xl p-5 text-base leading-7 text-[#5A6478] ${blue ? "bg-[#EAF2FF]" : "bg-white"}`}>{text}</div></div>;
+}
 function SimulationDetailPage() {
   const { id } = Route.useParams();
   const { preview, demo } = Route.useSearch();
@@ -624,6 +689,8 @@ function SimulationDetailPage() {
       </div>
     );
   }
+
+  if (isDemo && sim) return <TrialDemoSimulation />;
 
   if (!sim || !model) {
     return (
