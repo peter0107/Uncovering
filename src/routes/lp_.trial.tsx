@@ -28,6 +28,8 @@ export const Route = createFileRoute("/lp_/trial")({
 const OTHER_JOB_ROLE = "직접 입력";
 const OTHER_COMPANY_TYPE = "희망 기업 직접 입력";
 
+const HERO_ROLES = ["서비스 기획자", "CRM 마케터", "UI/UX 디자이너", "데이터 분석가", "백엔드 개발자"];
+
 function trackTrialEvent(event: string, properties?: Record<string, unknown>) {
   void capturePostHogEvent(event, { landing_page: "trial", ...properties });
 }
@@ -612,6 +614,14 @@ function TalkerAnswerer() {
 }
 
 function LpTrialPage() {
+  const [heroRoleIndex, setHeroRoleIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setHeroRoleIndex((current) => (current + 1) % HERO_ROLES.length);
+    }, 1400);
+    return () => window.clearInterval(timer);
+  }, []);
   return (
     <div className="lp-trial">
       <header className="topbar">
@@ -647,7 +657,7 @@ function LpTrialPage() {
         <div className="wrap">
           <div className="hero-copy">
             <h1>
-              ________는 오늘도
+              <span className="hero-role" key={HERO_ROLES[heroRoleIndex]}>{HERO_ROLES[heroRoleIndex]}</span>는 오늘도
               <br />
               이런 일을 했습니다.
             </h1>
