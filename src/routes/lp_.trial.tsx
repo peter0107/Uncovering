@@ -657,7 +657,11 @@ function LpTrialPage() {
         <div className="wrap">
           <div className="hero-copy">
             <h1>
-              <span className="hero-role" key={HERO_ROLES[heroRoleIndex]}>{HERO_ROLES[heroRoleIndex]}</span>는
+              <span className="hero-role">
+                <span className="hero-role-text" key={HERO_ROLES[heroRoleIndex]}>
+                  {HERO_ROLES[heroRoleIndex]}
+                </span>
+              </span>는
               <br />
               오늘도
               <br />
