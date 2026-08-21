@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent, type KeyboardEvent } from "react";
 import { REGEXP_ONLY_DIGITS } from "input-otp";
-import { ArrowLeft, CircleCheck, Eye, EyeOff, Lock, Mail, UserRound } from "lucide-react";
+import { ArrowLeft, CircleCheck, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { getPostLoginPath } from "@/lib/admin";
 import { captureLogin, captureSignup } from "@/lib/posthog";
-import { ADMIN_NICKNAME, normalizeNickname, signInWithNickname, validateNickname } from "@/lib/nickname-auth";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
@@ -24,7 +23,7 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
-type LoginView = "choice" | "nickname" | "email";
+type LoginView = "choice" | "email";
 type LoginMode = "signup" | "login" | "reset";
 type SignupStep = "email" | "verify" | "password";
 type ResetStep = "email" | "password";
@@ -47,9 +46,6 @@ function LoginPage() {
   const [view, setView] = useState<LoginView>("choice");
   const [mode, setMode] = useState<LoginMode>("signup");
   const [email, setEmail] = useState("");
-  const [nickname, setNickname] = useState("");
-  const [adminPassword, setAdminPassword] = useState("");
-  const [nicknameError, setNicknameError] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -142,27 +138,6 @@ function LoginPage() {
     setPasswordConfirm("");
     setAgree(false);
     setLoginError(null);
-  }
-
-async function submitNickname(event: FormEvent) {
-    event.preventDefault();
-    if (submitting) return;
-    const validationError = validateNickname(nickname);
-    if (validationError) {
-      setNicknameError(validationError);
-      return;
-    }
-    setSubmitting(true);
-    setNicknameError(null);
-    try {
-      const result = await signInWithNickname(nickname, adminPassword);
-      await captureLogin(result.user.id);
-      navigate({ to: result.admin ? "/admin" : (redirect === "/" ? "/start" : redirect), replace: true });
-    } catch (error) {
-      setNicknameError(error instanceof Error ? error.message : "닉네임으로 로그인하지 못했습니다.");
-    } finally {
-      setSubmitting(false);
-    }
   }
 
   async function sendPasswordReset() {
@@ -356,17 +331,6 @@ async function submitNickname(event: FormEvent) {
             </h1>
 
             <div className="mt-10 w-full space-y-4">
-              <Button
-                type="button"
-                className="h-12 w-full gap-3 rounded-[14px] text-base font-semibold"
-                onClick={() => {
-                  setView("nickname");
-                  setNicknameError(null);
-                }}
-              >
-                <UserRound className="!h-5 !w-5" />
-                닉네임으로 시작하기
-              </Button>
               {GOOGLE_SIGN_IN_ENABLED && <GoogleSignInButton size="large" appearance="matched" />}
 
               <Button
@@ -381,52 +345,6 @@ async function submitNickname(event: FormEvent) {
             </div>
 
             <AgreementText className="mt-12" />
-          </section>
-        )}
-
-{view === "nickname" && (
-          <section>
-            <BackButton onClick={() => setView("choice")} />
-            <h1 className="mt-5 text-xl font-semibold text-foreground">닉네임으로 시작하기</h1>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              처음 입력한 닉네임으로 계정이 만들어지고, 다음에도 같은 닉네임으로 수행 기록을 이어볼 수 있어요.
-            </p>
-            <form onSubmit={submitNickname} className="mt-8 space-y-5">
-              <div className="space-y-2.5">
-                <Label htmlFor="nickname">닉네임</Label>
-                <Input
-                  id="nickname"
-                  autoFocus
-                  autoComplete="username"
-                  value={nickname}
-                  onChange={(event) => {
-                    setNickname(event.target.value);
-                    setNicknameError(null);
-                  }}
-                  placeholder="2~20자 닉네임"
-                />
-              </div>
-              {normalizeNickname(nickname) === ADMIN_NICKNAME && (
-                <div className="space-y-2.5">
-                  <Label htmlFor="admin-password">관리자 비밀번호</Label>
-                  <Input
-                    id="admin-password"
-                    type="password"
-                    autoComplete="current-password"
-                    value={adminPassword}
-                    onChange={(event) => {
-                      setAdminPassword(event.target.value);
-                      setNicknameError(null);
-                    }}
-                    placeholder="관리자 비밀번호"
-                  />
-                </div>
-              )}
-              {nicknameError && <p className="text-sm text-destructive">{nicknameError}</p>}
-              <Button type="submit" className="h-12 w-full rounded-[14px] text-base" disabled={submitting}>
-                {submitting ? "로그인 중..." : "시작하기"}
-              </Button>
-            </form>
           </section>
         )}
 
