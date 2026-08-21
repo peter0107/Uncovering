@@ -721,25 +721,62 @@ function SimulationDetailPage() {
           };
 
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-[#EEF0F3] px-4 text-center">
-        <CheckCircle2 className="h-12 w-12 text-zinc-900" />
-        <h1 className="text-xl font-bold text-zinc-900">제출이 완료됐어요</h1>
-        <div className="mt-2 flex w-full max-w-sm gap-2">
-          <Button asChild className="h-10 flex-1 rounded-lg bg-zinc-900 text-sm hover:bg-zinc-800">
-            <Link {...resultLink} onClick={() => trackSimulationAction("simulation_result_view_clicked")}>
-              결과 화면 보러가기
-            </Link>
-          </Button>
-          <Button
-            asChild
-            variant="outline"
-            className="h-10 flex-1 rounded-lg border-zinc-300 bg-white text-sm shadow-none hover:bg-zinc-100"
-          >
-            <Link to="/" onClick={() => trackSimulationAction("simulation_home_return_clicked")}>
-              홈화면으로 가기
-            </Link>
-          </Button>
-        </div>
+      <div className="min-h-dvh bg-[#F0F2F5] px-4 py-12 text-[#171C26] sm:px-6 sm:py-20">
+        <main className="mx-auto flex w-full max-w-[520px] flex-col items-center text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full border-[2.5px] border-[#171C26]">
+            <CheckCircle2 className="h-6 w-6 text-[#171C26]" strokeWidth={2.5} />
+          </div>
+          <h1 className="mt-[18px] text-[26px] font-bold tracking-[-0.5px]">제출이 완료됐어요</h1>
+
+          <section className="mt-7 w-full rounded-[20px] bg-[#0F1B2E] p-7 text-left shadow-[0_12px_32px_rgba(15,27,46,0.22)] sm:p-[30px_28px]">
+            <div className="flex items-start justify-between gap-3">
+              <span className="rounded-full bg-[#4D82D9] px-3 py-[5px] text-xs font-bold text-white">현직자 대화</span>
+              <span className="pt-1 text-right text-xs text-[#8B95A5]">취준·이직 상담 후기 4.9 ★</span>
+            </div>
+            <h2 className="mt-[18px] text-[19px] font-bold leading-[1.4] text-white">
+              이 직무, 진짜 나랑 맞을까요?
+              <br />
+              현직자에게 직접 물어보세요
+            </h2>
+            <p className="mt-[6px] text-[13.5px] leading-[1.6] text-[#B8C2D4]">
+              방금 푼 과제를 실제로 매일 하는 사람과 15분 대화하면, 취업 준비나 이직 전에 궁금했던 현실적인 이야기까지 들을 수 있어요.
+            </p>
+            <ul className="mt-[18px] space-y-[9px] rounded-xl bg-white/[0.06] p-[14px_16px] text-[13.5px] text-[#DCE3EF]">
+              <li className="flex gap-2"><b className="text-[#4D82D9]">✓</b>이 직무 현직자와 1:1 채팅 15분</li>
+              <li className="flex gap-2"><b className="text-[#4D82D9]">✓</b>취준·이직 시 필요한 역량 솔직하게 질문</li>
+              <li className="flex gap-2"><b className="text-[#4D82D9]">✓</b>내 답안 기반 맞춤 커리어 조언</li>
+            </ul>
+            <div className="mt-[18px] flex flex-wrap items-center justify-between gap-4 pt-1">
+              <div className="flex items-baseline gap-2">
+                <span className="text-[13.5px] text-[#7C879B] line-through">19,900원</span>
+                <b className="text-[22px] tracking-[-0.4px] text-white">9,900원</b>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  trackSimulationAction("simulation_expert_chat_clicked");
+                  toast("현직자 대화 예약 서비스는 준비 중이에요.");
+                }}
+                className="rounded-[10px] bg-[#4D82D9] px-[22px] py-[13px] text-[14.5px] font-bold text-white transition-colors hover:bg-[#3d70c4]"
+              >
+                현직자와 대화하기 →
+              </button>
+            </div>
+          </section>
+
+          <div className="mt-7 flex w-full gap-[10px]">
+            <Button asChild className="h-[52px] flex-1 rounded-xl bg-[#171C26] text-[15px] font-bold hover:bg-[#283143]">
+              <Link {...resultLink} onClick={() => trackSimulationAction("simulation_result_view_clicked")}>
+                결과 화면 보러가기
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="h-[52px] flex-1 rounded-xl border-[1.5px] border-[#E3E6EC] bg-white text-[15px] font-semibold text-[#171C26] shadow-none hover:bg-[#F7F8FA] hover:text-[#171C26]">
+              <Link to="/" onClick={() => trackSimulationAction("simulation_home_return_clicked")}>
+                홈화면으로 가기
+              </Link>
+            </Button>
+          </div>
+        </main>
       </div>
     );
   }
