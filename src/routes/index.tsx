@@ -47,7 +47,7 @@ function HomePage() {
         <main>
           <section className="reference-hero" aria-labelledby="home-title">
             <div className="reference-shell reference-hero-copy !pt-16 !pb-[7.5rem]">
-              <h1 id="home-title" style={{ fontSize: "3rem" }}>
+              <h1 id="home-title" className="reference-home-title">
                 &quot;직무가 궁금한데 <br />
                 사람 많은데는 질문하기 힘들어서 싫어&quot;
               </h1>
