@@ -40,6 +40,7 @@ import { Route as LpTrialCompleteRouteImport } from './routes/lp_.trial-complete
 import { Route as LpTrialTaskRouteImport } from './routes/lp_.trial-task'
 import { Route as SimulationIdRouteImport } from './routes/simulation.$id'
 import { Route as SimulationsAllRouteImport } from './routes/simulations_.all'
+import { Route as BizCoffeeChatPastRouteImport } from './routes/biz_.coffee-chat_.past'
 import { Route as ExpertSimulationIdFeedbackRouteImport } from './routes/expert-simulation.$id.feedback'
 import { Route as ExpertSimulationIdReviewRouteImport } from './routes/expert-simulation.$id.review'
 import { Route as SimulationIdFeedbackRouteImport } from './routes/simulation.$id.feedback'
@@ -200,6 +201,11 @@ const SimulationsAllRoute = SimulationsAllRouteImport.update({
   path: '/simulations/all',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BizCoffeeChatPastRoute = BizCoffeeChatPastRouteImport.update({
+  id: '/biz_/coffee-chat_/past',
+  path: '/biz/coffee-chat/past',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ExpertSimulationIdFeedbackRoute =
   ExpertSimulationIdFeedbackRouteImport.update({
     id: '/expert-simulation/$id/feedback',
@@ -250,6 +256,7 @@ export interface FileRoutesByFullPath {
   '/lp/trial-task': typeof LpTrialTaskRoute
   '/simulation/$id': typeof SimulationIdRouteWithChildren
   '/simulations/all': typeof SimulationsAllRoute
+  '/biz/coffee-chat/past': typeof BizCoffeeChatPastRoute
   '/expert-simulation/$id/feedback': typeof ExpertSimulationIdFeedbackRoute
   '/expert-simulation/$id/review': typeof ExpertSimulationIdReviewRoute
   '/simulation/$id/feedback': typeof SimulationIdFeedbackRoute
@@ -286,6 +293,7 @@ export interface FileRoutesByTo {
   '/lp/trial-task': typeof LpTrialTaskRoute
   '/simulation/$id': typeof SimulationIdRouteWithChildren
   '/simulations/all': typeof SimulationsAllRoute
+  '/biz/coffee-chat/past': typeof BizCoffeeChatPastRoute
   '/expert-simulation/$id/feedback': typeof ExpertSimulationIdFeedbackRoute
   '/expert-simulation/$id/review': typeof ExpertSimulationIdReviewRoute
   '/simulation/$id/feedback': typeof SimulationIdFeedbackRoute
@@ -323,6 +331,7 @@ export interface FileRoutesById {
   '/lp_/trial-task': typeof LpTrialTaskRoute
   '/simulation/$id': typeof SimulationIdRouteWithChildren
   '/simulations_/all': typeof SimulationsAllRoute
+  '/biz_/coffee-chat_/past': typeof BizCoffeeChatPastRoute
   '/expert-simulation/$id/feedback': typeof ExpertSimulationIdFeedbackRoute
   '/expert-simulation/$id/review': typeof ExpertSimulationIdReviewRoute
   '/simulation/$id/feedback': typeof SimulationIdFeedbackRoute
@@ -361,6 +370,7 @@ export interface FileRouteTypes {
     | '/lp/trial-task'
     | '/simulation/$id'
     | '/simulations/all'
+    | '/biz/coffee-chat/past'
     | '/expert-simulation/$id/feedback'
     | '/expert-simulation/$id/review'
     | '/simulation/$id/feedback'
@@ -397,6 +407,7 @@ export interface FileRouteTypes {
     | '/lp/trial-task'
     | '/simulation/$id'
     | '/simulations/all'
+    | '/biz/coffee-chat/past'
     | '/expert-simulation/$id/feedback'
     | '/expert-simulation/$id/review'
     | '/simulation/$id/feedback'
@@ -433,6 +444,7 @@ export interface FileRouteTypes {
     | '/lp_/trial-task'
     | '/simulation/$id'
     | '/simulations_/all'
+    | '/biz_/coffee-chat_/past'
     | '/expert-simulation/$id/feedback'
     | '/expert-simulation/$id/review'
     | '/simulation/$id/feedback'
@@ -462,6 +474,7 @@ export interface RootRouteChildren {
   LpTrialTaskRoute: typeof LpTrialTaskRoute
   SimulationIdRoute: typeof SimulationIdRouteWithChildren
   SimulationsAllRoute: typeof SimulationsAllRoute
+  BizCoffeeChatPastRoute: typeof BizCoffeeChatPastRoute
   ExpertSimulationIdFeedbackRoute: typeof ExpertSimulationIdFeedbackRoute
   ExpertSimulationIdReviewRoute: typeof ExpertSimulationIdReviewRoute
 }
@@ -685,6 +698,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SimulationsAllRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/biz_/coffee-chat_/past': {
+      id: '/biz_/coffee-chat_/past'
+      path: '/biz/coffee-chat/past'
+      fullPath: '/biz/coffee-chat/past'
+      preLoaderRoute: typeof BizCoffeeChatPastRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/expert-simulation/$id/feedback': {
       id: '/expert-simulation/$id/feedback'
       path: '/expert-simulation/$id/feedback'
@@ -769,6 +789,7 @@ const rootRouteChildren: RootRouteChildren = {
   LpTrialTaskRoute: LpTrialTaskRoute,
   SimulationIdRoute: SimulationIdRouteWithChildren,
   SimulationsAllRoute: SimulationsAllRoute,
+  BizCoffeeChatPastRoute: BizCoffeeChatPastRoute,
   ExpertSimulationIdFeedbackRoute: ExpertSimulationIdFeedbackRoute,
   ExpertSimulationIdReviewRoute: ExpertSimulationIdReviewRoute,
 }

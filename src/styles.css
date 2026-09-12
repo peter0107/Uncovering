@@ -41,8 +41,9 @@
   --color-brand-soft: var(--brand-soft);
   --font-sans:
     "Wanted Sans Variable", "Wanted Sans", -apple-system, BlinkMacSystemFont,
-    system-ui, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic",
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+    system-ui, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR",
+    "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+    sans-serif;
 }
 
 :root {
@@ -1218,8 +1219,14 @@
   .rich-text-content tr > td:not(:last-child):hover::after,
   .rich-text-editor[data-table-resizing] tr > th:not(:last-child)::after,
   .rich-text-editor[data-table-resizing] tr > td:not(:last-child)::after,
-  body.rich-text-table-resizing .rich-text-content tr > th:not(:last-child)::after,
-  body.rich-text-table-resizing .rich-text-content tr > td:not(:last-child)::after {
+  body.rich-text-table-resizing
+    .rich-text-content
+    tr
+    > th:not(:last-child)::after,
+  body.rich-text-table-resizing
+    .rich-text-content
+    tr
+    > td:not(:last-child)::after {
     background: var(--color-foreground);
     opacity: 0.45;
   }
@@ -1251,7 +1258,9 @@
 
   .rich-text-content th:hover .rich-text-table-resize-handle::after,
   .rich-text-content td:hover .rich-text-table-resize-handle::after,
-  body.rich-text-table-resizing .rich-text-content .rich-text-table-resize-handle::after {
+  body.rich-text-table-resizing
+    .rich-text-content
+    .rich-text-table-resize-handle::after {
     opacity: 1;
   }
 
@@ -1492,7 +1501,10 @@
     z-index: -1;
     inset: 0;
     content: "";
-    background-image: radial-gradient(rgb(22 89 227 / 10%) 1.5px, transparent 1.5px);
+    background-image: radial-gradient(
+      rgb(22 89 227 / 10%) 1.5px,
+      transparent 1.5px
+    );
     background-position: top left;
     background-size: 26px 26px;
     pointer-events: none;
@@ -1751,10 +1763,18 @@
     scroll-snap-align: start;
   }
 
-  .reference-featured-card:nth-child(2) { animation-delay: 60ms; }
-  .reference-featured-card:nth-child(3) { animation-delay: 120ms; }
-  .reference-featured-card:nth-child(4) { animation-delay: 180ms; }
-  .reference-featured-card:nth-child(5) { animation-delay: 240ms; }
+  .reference-featured-card:nth-child(2) {
+    animation-delay: 60ms;
+  }
+  .reference-featured-card:nth-child(3) {
+    animation-delay: 120ms;
+  }
+  .reference-featured-card:nth-child(4) {
+    animation-delay: 180ms;
+  }
+  .reference-featured-card:nth-child(5) {
+    animation-delay: 240ms;
+  }
 
   .reference-featured-skeleton {
     overflow: hidden;
@@ -2099,12 +2119,18 @@
   }
 
   @keyframes dvFloat {
-    0%, 100% { translate: 0 0; }
-    50% { translate: 0 -0.8rem; }
+    0%,
+    100% {
+      translate: 0 0;
+    }
+    50% {
+      translate: 0 -0.8rem;
+    }
   }
 
   @keyframes dvGlow {
-    0%, 100% {
+    0%,
+    100% {
       opacity: 0.45;
       scale: 0.94;
     }
@@ -2277,7 +2303,9 @@
     .reference-hero-glow,
     .reference-hero-shape,
     .reference-featured-card,
-    .reference-featured-skeleton { animation: none; }
+    .reference-featured-skeleton {
+      animation: none;
+    }
 
     .reference-reveal {
       opacity: 1;

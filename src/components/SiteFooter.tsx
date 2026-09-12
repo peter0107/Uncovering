@@ -6,14 +6,14 @@ export function SiteFooter() {
       <div className="mx-auto flex max-w-6xl flex-col gap-5 px-4 py-7 text-xs text-zinc-400 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-1">
           <span>© 2026 Beginner. All rights reserved.</span>
-          <a href="mailto:info@beginner.today" className="w-fit transition-colors hover:text-zinc-600">
-            Contact: info@beginner.today
+          <a
+            href="tel:01024382048"
+            className="w-fit transition-colors hover:text-zinc-600"
+          >
+            Contact: 010-2438-2048 (대표자: 박규현)
           </a>
         </div>
         <nav className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          <Link to="/faq" className="transition-colors hover:text-zinc-600">
-            자주 묻는 질문
-          </Link>
           <Link to="/terms" className="transition-colors hover:text-zinc-600">
             이용약관
           </Link>

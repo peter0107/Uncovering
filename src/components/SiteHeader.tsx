@@ -7,23 +7,25 @@ import { GuestProfileMenu } from "@/components/GuestProfileMenu";
 import { useAuth } from "@/hooks/use-auth";
 import { AUTHENTICATION_ENABLED } from "@/lib/auth-features";
 
-const NAV: { to: string; label: string }[] = [];
+const NAV: { to: string; label: string }[] = [
+  { to: "/about", label: "서비스 소개" },
+  { to: "/biz/coffee-chat", label: "소규모 커피챗" },
+  { to: "/biz/coffee-chat/past", label: "지난 커피챗" },
+];
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const { user } = useAuth();
-  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
   const isLoginPage = pathname === "/login";
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b border-border bg-background">
+      <header className="sticky top-0 z-40 w-full border-b border-[#e3e6ec]/70 bg-[#edf3fe]/80 backdrop-blur">
         <div className="mx-auto flex h-16 w-full max-w-[72.5rem] items-center justify-between px-12 max-[42rem]:px-5">
-          <Link
-            to="/"
-            className="flex items-center"
-            aria-label="Beginner 홈"
-          >
+          <Link to="/" className="flex items-center" aria-label="Beginner 홈">
             <BrandLogo className="h-[1.9rem] w-auto max-w-[9.75rem] object-contain object-left" />
           </Link>
 
@@ -32,8 +34,8 @@ export function SiteHeader() {
               <Link
                 key={n.to}
                 to={n.to}
-                className="text-sm text-foreground/80 transition-colors hover:text-foreground"
-                activeProps={{ className: "text-foreground font-semibold" }}
+                className="text-[13px] font-semibold text-[#4b5563] transition-colors hover:text-[#1659e3]"
+                activeProps={{ className: "font-semibold text-[#1a2340]" }}
               >
                 {n.label}
               </Link>
@@ -68,14 +70,22 @@ export function SiteHeader() {
 
           {!isLoginPage && (
             <div className="flex items-center gap-1 min-[42rem]:hidden">
-              {AUTHENTICATION_ENABLED && user ? <AccountMenu /> : <GuestProfileMenu />}
+              {AUTHENTICATION_ENABLED && user ? (
+                <AccountMenu />
+              ) : (
+                <GuestProfileMenu />
+              )}
               {(AUTHENTICATION_ENABLED || NAV.length > 0) && (
                 <button
                   aria-label="메뉴"
                   onClick={() => setOpen((v) => !v)}
                   className="grid h-9 w-9 place-items-center rounded-[8px] bg-white text-[#1a2340] transition-colors hover:bg-[#e5edfb]"
                 >
-                  {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                  {open ? (
+                    <X className="h-5 w-5" />
+                  ) : (
+                    <Menu className="h-5 w-5" />
+                  )}
                 </button>
               )}
             </div>
@@ -83,14 +93,14 @@ export function SiteHeader() {
         </div>
 
         {!isLoginPage && open && (AUTHENTICATION_ENABLED || NAV.length > 0) && (
-          <div className="border-t border-border bg-background min-[42rem]:hidden">
+          <div className="border-t border-[#d3e1fb] bg-[#edf3fe] min-[42rem]:hidden">
             <div className="mx-auto flex max-w-[72.5rem] flex-col gap-1 px-5 py-3">
               {NAV.map((n) => (
                 <Link
                   key={n.to}
                   to={n.to}
                   onClick={() => setOpen(false)}
-                  className="rounded-md px-2 py-2 text-sm hover:bg-muted"
+                  className="rounded-md px-2 py-2 text-sm font-medium text-[#4b5563] hover:bg-[#e5edfb] hover:text-[#1659e3]"
                 >
                   {n.label}
                 </Link>
