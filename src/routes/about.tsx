@@ -10,7 +10,7 @@ export const Route = createFileRoute("/about")({
       {
         name: "description",
         content:
-          "Beginner는 취업준비생이 실제 업무 과제를 경험하며 직무 적합성과 실무 역량을 확인하는 직무 시뮬레이션 서비스입니다.",
+          "Beginner는 현직자 1명과 취준생분들 4~6이 함께하는 소규모 커피챗 모임입니다.",
       },
     ],
   }),

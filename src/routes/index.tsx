@@ -11,7 +11,18 @@ export const Route = createFileRoute("/")({
       { title: "Beginner" },
       {
         name: "description",
-        content: "직무와 취업에 대한 궁금증을 현직자와 소규모로 나눠보세요.",
+        content:
+          "Beginner는 현직자 1명과 취준생분들 4~6이 함께하는 소규모 커피챗 모임입니다.",
+      },
+      {
+        property: "og:description",
+        content:
+          "Beginner는 현직자 1명과 취준생분들 4~6이 함께하는 소규모 커피챗 모임입니다.",
+      },
+      {
+        name: "twitter:description",
+        content:
+          "Beginner는 현직자 1명과 취준생분들 4~6이 함께하는 소규모 커피챗 모임입니다.",
       },
     ],
   }),
