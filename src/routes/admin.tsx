@@ -279,7 +279,7 @@ function AdminHome() {
                   </div>
                   <h2 className="mt-4 text-base font-semibold text-neutral-900">문의·신청 관리</h2>
                   <p className="mt-2 text-sm leading-6 text-neutral-500">
-                    가입 신청, 커피챗 예약, 직무 요청을 한곳에서 확인합니다.
+                    가입 신청, 밋업 예약, 직무 요청을 한곳에서 확인합니다.
                   </p>
                 </div>
                 <ArrowRight className="mt-1 h-4 w-4 text-neutral-400 transition-colors group-hover:text-neutral-900" />

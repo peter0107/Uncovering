@@ -6,8 +6,8 @@ import { BrandLogo } from "@/components/BrandLogo";
 
 const NAVIGATION = [
   { to: "/about", label: "서비스 소개" },
-  { to: "/biz/coffee-chat", label: "소규모 커피챗" },
-  { to: "/biz/coffee-chat/past", label: "지난 커피챗" },
+  { to: "/biz/coffee-chat", label: "소규모 밋업" },
+  { to: "/biz/coffee-chat/past", label: "지난 밋업" },
 ] as const;
 
 export function CoffeeChatHeader() {

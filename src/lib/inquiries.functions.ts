@@ -5,7 +5,7 @@ import { z } from "zod";
 
 import type { Database } from "@/integrations/supabase/types";
 
-// ── 커피챗 고정 슬롯 (평일 10:00~16:30 시작, 30분 단위 14개) ──────────
+// ── 밋업 고정 슬롯 (평일 10:00~16:30 시작, 30분 단위 14개) ──────────
 // 상수/타입은 클라이언트 번들에 포함돼도 안전. supabaseAdmin만 핸들러 내부 동적 import.
 export const COFFEE_CHAT_SLOT_TIMES = [
   "10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "13:00",
@@ -396,7 +396,7 @@ export const getAdminInquiries = createServerFn({ method: "GET" }).handler(
     }
     if (bookingsRes.error) {
       console.error("Failed to load coffee chat bookings:", bookingsRes.error);
-      throw new Error("커피챗 예약 목록을 불러오지 못했습니다.");
+      throw new Error("밋업 예약 목록을 불러오지 못했습니다.");
     }
     if (companyRoleRequestsRes.error) {
       console.error("Failed to load company role requests:", companyRoleRequestsRes.error);

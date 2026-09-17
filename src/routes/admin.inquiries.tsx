@@ -10,8 +10,8 @@ import { getAdminInquiries, type AdminInquiries } from "@/lib/inquiries.function
 export const Route = createFileRoute("/admin/inquiries")({
   head: () => ({
     meta: [
-      { title: "Beginner - 가입 신청·커피챗" },
-      { name: "description", content: "기업 서비스 가입 신청과 커피챗 예약을 확인합니다." },
+      { title: "Beginner - 가입 신청·밋업" },
+      { name: "description", content: "기업 서비스 가입 신청과 밋업 예약을 확인합니다." },
     ],
   }),
   component: AdminInquiries,
@@ -65,9 +65,9 @@ function AdminInquiries() {
       <div className="flex flex-col gap-4 border-b border-neutral-200 pb-6 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-xs font-medium text-neutral-500">Beginner Admin</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">가입 신청·커피챗</h1>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight">가입 신청·밋업</h1>
           <p className="mt-2 text-sm text-neutral-500">
-            기업 서비스 가입 신청과 커피챗 예약을 확인합니다.
+            기업 서비스 가입 신청과 밋업 예약을 확인합니다.
           </p>
         </div>
         <button
@@ -86,7 +86,7 @@ function AdminInquiries() {
           가입 신청 <TabCount>{applications.length}</TabCount>
         </TabButton>
         <TabButton active={tab === "coffeeChats"} onClick={() => setTab("coffeeChats")}>
-          커피챗 예약 <TabCount>{bookings.length}</TabCount>
+          밋업 예약 <TabCount>{bookings.length}</TabCount>
         </TabButton>
         <TabButton
           active={tab === "companyRoleRequests"}

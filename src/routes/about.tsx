@@ -10,7 +10,7 @@ export const Route = createFileRoute("/about")({
       {
         name: "description",
         content:
-          "Beginner는 현직자 1명과 취준생분들 4~6이 함께하는 소규모 커피챗 모임입니다.",
+          "Beginner는 현직자 1명과 취준생분들 4~6이 함께하는 소규모 밋업입니다.",
       },
     ],
   }),
@@ -23,7 +23,7 @@ function AboutPage() {
       <article className="mx-auto max-w-3xl">
         <section className="border-b border-zinc-200 pb-12">
           <p className="text-sm font-semibold text-blue-600">
-            현직자와의 소규모 커피챗 모임
+            현직자와의 소규모 밋업
           </p>
           <img
             src="/brand/브랜드로고.jpg"
@@ -68,10 +68,10 @@ function AboutPage() {
               대형 강연에서는 사람이 많아 내가 궁금한 걸 충분히 질문하기
               어렵습니다.
             </p>
-            <p>반대로 1:1 커피챗은 혼자라서 좀 부담되고요.</p>
+            <p>반대로 1:1 밋업은 혼자라서 좀 부담되고요.</p>
             <p>그래서 저희는 그 사이를 만들고자 했습니다.</p>
             <p className="text-2xl font-bold leading-tight tracking-tight text-zinc-950 sm:text-3xl">
-              현직자 1명과 참가자 4~6명이 함께하는 소규모 모임
+              현직자 1명과 참가자 4~6명이 함께하는 소규모 밋업
             </p>
             <p>
               현직자의 실제 업무 이야기를 듣고,

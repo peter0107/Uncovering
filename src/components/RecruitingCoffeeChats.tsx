@@ -10,7 +10,7 @@ const RECRUITING_COFFEE_CHATS = [
     id: "toss-frontend-developer",
     date: "9/18(금) 19:00~21:00",
     deadlineDate: "2026-09-17",
-    title: "토스 프론트엔드 개발자와 커피챗",
+    title: "토스 프론트엔드 개발자와 밋업",
     location: "강남역 인근",
     capacity: "4~6명",
     imageSrc: "/coffee-chats/토스개발자분.jpg",
@@ -43,7 +43,7 @@ export function RecruitingCoffeeChats({
     >
       <div className="mx-auto max-w-5xl px-6 py-16 sm:py-20">
         <h2 id="recruiting-coffee-chats-title" className={headingClassName}>
-          모집 중인 커피챗
+          모집 중인 밋업
         </h2>
         <div className="mt-7 grid gap-4 sm:grid-cols-2">
           {RECRUITING_COFFEE_CHATS.map((chat) => (

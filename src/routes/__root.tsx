@@ -152,20 +152,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         {
           name: "description",
           content:
-            "Beginner는 현직자 1명과 취준생분들 4~6이 함께하는 소규모 커피챗 모임입니다.",
+            "Beginner는 현직자 1명과 취준생분들 4~6이 함께하는 소규모 밋업입니다.",
         },
         { property: "og:title", content: "Beginner" },
         {
           property: "og:description",
           content:
-            "Beginner는 현직자 1명과 취준생분들 4~6이 함께하는 소규모 커피챗 모임입니다.",
+            "Beginner는 현직자 1명과 취준생분들 4~6이 함께하는 소규모 밋업입니다.",
         },
         { property: "og:type", content: "website" },
         { name: "twitter:title", content: "Beginner" },
         {
           name: "twitter:description",
           content:
-            "Beginner는 현직자 1명과 취준생분들 4~6이 함께하는 소규모 커피챗 모임입니다.",
+            "Beginner는 현직자 1명과 취준생분들 4~6이 함께하는 소규모 밋업입니다.",
         },
         {
           property: "og:image",

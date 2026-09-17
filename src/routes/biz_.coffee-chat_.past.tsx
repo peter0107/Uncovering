@@ -7,10 +7,10 @@ import { CoffeeChatHeader } from "@/components/CoffeeChatHeader";
 export const Route = createFileRoute("/biz_/coffee-chat_/past")({
   head: () => ({
     meta: [
-      { title: "지난 커피챗 — Beginner" },
+      { title: "지난 밋업 — Beginner" },
       {
         name: "description",
-        content: "지난 현직자 소규모 커피챗을 확인하세요.",
+        content: "지난 현직자 소규모 밋업을 확인하세요.",
       },
     ],
   }),
@@ -43,7 +43,7 @@ const PAST_COFFEE_CHATS = [
   {
     id: "2026-09-13-kakao-pay-growth-marketer",
     date: "9/13(일) 19:00~21:00",
-    title: "카카오페이 그로스 마케터와 커피챗",
+    title: "그로스 마케터와 2차 밋업",
     location: "강남역 부근",
     photos: [
       "/coffee-chats/2026-09-13-모임1.jpg",
@@ -58,7 +58,7 @@ const PAST_COFFEE_CHATS = [
   {
     id: "2026-09-02-growth-marketer",
     date: "9/2(수) 19:00~21:00",
-    title: "그로스 마케터와 커피챗",
+    title: "그로스 마케터와 밋업",
     location: "강남역 부근",
     photos: ["/coffee-chats/모임1.jpg", "/coffee-chats/모임2.jpg"],
     reviews: [
@@ -125,12 +125,12 @@ function PastCoffeeChatsPage() {
     <div className="min-h-screen bg-white text-neutral-900">
       <CoffeeChatHeader />
       <main className="mx-auto max-w-5xl px-6 py-16 sm:py-20">
-        <h1 className="text-3xl font-bold tracking-tight">지난 커피챗</h1>
+        <h1 className="text-3xl font-bold tracking-tight">지난 밋업</h1>
         <p className="mt-3 text-sm leading-6 text-neutral-500">
-          현직자와 함께한 커피챗의 이야기를 확인해보세요.
+          현직자와 함께한 밋업의 이야기를 확인해보세요.
         </p>
 
-        <section className="mt-10 space-y-4" aria-label="지난 커피챗 목록">
+        <section className="mt-10 space-y-4" aria-label="지난 밋업 목록">
           {PAST_COFFEE_CHATS.map((chat) => {
             const expanded = expandedId === chat.id;
             return (

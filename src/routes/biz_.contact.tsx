@@ -52,7 +52,7 @@ function BizContact() {
                 <div className="grid h-10 w-10 place-items-center rounded-md bg-neutral-100 text-neutral-900">
                   <CalendarClock className="h-5 w-5" />
                 </div>
-                <h2 className="mt-4 text-base font-semibold text-neutral-900">커피챗 신청</h2>
+                <h2 className="mt-4 text-base font-semibold text-neutral-900">밋업 신청</h2>
                 <p className="mt-2 text-sm leading-6 text-neutral-500">
                   30분 구글미트로 서비스에 대해 편하게 이야기 나눠요.
                 </p>

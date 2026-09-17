@@ -6,10 +6,10 @@ import { RecruitingCoffeeChats } from "@/components/RecruitingCoffeeChats";
 export const Route = createFileRoute("/biz_/coffee-chat")({
   head: () => ({
     meta: [
-      { title: "소규모 커피챗 — Beginner" },
+      { title: "소규모 밋업 — Beginner" },
       {
         name: "description",
-        content: "현직자와 함께하는 모집 중인 소규모 커피챗을 확인하세요.",
+        content: "현직자와 함께하는 모집 중인 소규모 밋업을 확인하세요.",
       },
     ],
   }),
