@@ -2,21 +2,10 @@ import { ArrowRight, CalendarDays, MapPin, Users } from "lucide-react";
 
 // Tally 폼 URL은 여기서만 교체하면 됩니다.
 const TALLY_APPLICATION_URLS = {
-  kakaoPay: "https://tally.so/r/5BAN5Q?utm_source=website",
   toss: "https://tally.so/r/jaRR4Q?utm_source=website",
 } as const;
 
 const RECRUITING_COFFEE_CHATS = [
-  {
-    id: "kakao-pay-growth-marketer",
-    date: "9/13(일) 19:00~21:00",
-    deadlineDate: "2026-09-12",
-    title: "카카오페이 그로스 마케터와 커피챗",
-    location: "강남역 인근",
-    capacity: "4~6명",
-    imageSrc: "/coffee-chats/카카오페이마케터.jpg",
-    applicationUrl: TALLY_APPLICATION_URLS.kakaoPay,
-  },
   {
     id: "toss-frontend-developer",
     date: "9/18(금) 19:00~21:00",

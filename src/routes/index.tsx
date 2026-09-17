@@ -91,9 +91,9 @@ function HomePage() {
             className="mt-7 flex items-center justify-between gap-5 rounded-md border border-neutral-200 bg-white p-5 transition-colors hover:border-neutral-300 hover:bg-neutral-50"
           >
             <div>
-              <p className="text-sm text-neutral-500">9/2(수) 19:00~21:00</p>
+              <p className="text-sm text-neutral-500">9/13(일) 19:00~21:00</p>
               <h3 className="mt-2 text-lg font-semibold tracking-tight">
-                그로스 마케터와 커피챗
+                카카오페이 그로스 마케터와 커피챗
               </h3>
               <p className="mt-3 inline-flex items-center gap-1.5 text-sm text-neutral-500">
                 <Star className="h-4 w-4 fill-neutral-900 text-neutral-900" />{" "}
