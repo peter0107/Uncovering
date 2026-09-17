@@ -224,6 +224,7 @@ export type Database = {
           id: string
           requester_email: string | null
           requester_id: string | null
+          requester_phone: string | null
           role_name: string
           status: string
         }
@@ -233,6 +234,7 @@ export type Database = {
           id?: string
           requester_email?: string | null
           requester_id?: string | null
+          requester_phone?: string | null
           role_name: string
           status?: string
         }
@@ -242,6 +244,7 @@ export type Database = {
           id?: string
           requester_email?: string | null
           requester_id?: string | null
+          requester_phone?: string | null
           role_name?: string
           status?: string
         }

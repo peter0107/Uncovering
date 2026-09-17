@@ -34,6 +34,8 @@ export const Route = createFileRoute("/")({
 
 function HomePage() {
   const [roleName, setRoleName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [contactConsent, setContactConsent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function submitRoleRequest(event: React.FormEvent<HTMLFormElement>) {
@@ -43,13 +45,27 @@ function HomePage() {
       toast.error("알고 싶은 직무를 입력해주세요.");
       return;
     }
+    if (!phone.trim()) {
+      toast.error("다음 밋업 안내를 받을 전화번호를 입력해주세요.");
+      return;
+    }
+    if (!contactConsent) {
+      toast.error("전화번호 수집 및 밋업 안내 수신에 동의해주세요.");
+      return;
+    }
 
     setIsSubmitting(true);
     try {
       await submitCompanyRoleRequest({
-        data: { companyName: "메인페이지 직무 요청", roleName: requestedRole },
+        data: {
+          companyName: "메인페이지 직무 요청",
+          roleName: requestedRole,
+          phone: phone.trim(),
+        },
       });
       setRoleName("");
+      setPhone("");
+      setContactConsent(false);
       toast.success("직무 요청을 보냈습니다.");
     } catch (error) {
       toast.error(
@@ -143,28 +159,55 @@ function HomePage() {
             <p className="mt-2 text-sm leading-6 text-neutral-500">
               다음 밋업에서 만나고 싶은 직무를 알려주세요.
             </p>
-            <form
-              className="mt-6 flex flex-col gap-3 sm:flex-row"
-              onSubmit={submitRoleRequest}
-            >
+            <form className="mt-6" onSubmit={submitRoleRequest}>
               <label className="sr-only" htmlFor="requested-role-name">
                 알고 싶은 직무
               </label>
-              <input
-                id="requested-role-name"
-                value={roleName}
-                onChange={(event) => setRoleName(event.target.value)}
-                placeholder="예: 프로덕트 매니저, 데이터 분석가"
-                maxLength={120}
-                className="h-11 min-w-0 flex-1 rounded-md border border-neutral-300 bg-white px-3 text-sm outline-none transition-colors placeholder:text-neutral-400 focus:border-neutral-900"
-              />
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="h-11 shrink-0 rounded-md bg-neutral-900 px-5 text-sm font-medium text-white transition-colors hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isSubmitting ? "보내는 중..." : "요청 보내기"}
-              </button>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <input
+                  id="requested-role-name"
+                  value={roleName}
+                  onChange={(event) => setRoleName(event.target.value)}
+                  placeholder="예: 프로덕트 매니저, 데이터 분석가"
+                  maxLength={120}
+                  className="h-11 w-full min-w-0 flex-1 rounded-md border border-neutral-300 bg-white px-3 text-sm outline-none transition-colors placeholder:text-neutral-400 focus:border-neutral-900"
+                />
+                <label className="sr-only" htmlFor="requested-role-phone">
+                  전화번호
+                </label>
+                <input
+                  id="requested-role-phone"
+                  type="tel"
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
+                  placeholder="전화번호"
+                  inputMode="tel"
+                  maxLength={20}
+                  className="h-11 w-full min-w-0 rounded-md border border-neutral-300 bg-white px-3 text-sm outline-none transition-colors placeholder:text-neutral-400 focus:border-neutral-900 sm:w-40"
+                />
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="h-11 shrink-0 rounded-md bg-neutral-900 px-5 text-sm font-medium text-white transition-colors hover:bg-neutral-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isSubmitting ? "보내는 중..." : "요청 보내기"}
+                </button>
+              </div>
+              <label className="mt-3 flex items-start gap-2 text-xs leading-5 text-neutral-500">
+                <input
+                  type="checkbox"
+                  checked={contactConsent}
+                  onChange={(event) => setContactConsent(event.target.checked)}
+                  className="mt-1 h-3.5 w-3.5 rounded border-neutral-300"
+                />
+                <span>
+                  다음 직무 밋업 안내를 위해 전화번호를 수집·이용하는 데
+                  동의합니다.{" "}
+                  <Link to="/privacy" className="underline underline-offset-2">
+                    개인정보처리방침
+                  </Link>
+                </span>
+              </label>
             </form>
           </div>
         </div>

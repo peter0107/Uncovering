@@ -197,6 +197,11 @@ function AdminInquiries() {
               {item.requesterEmail && (
                 <p className="mt-1 text-sm text-neutral-600">요청자: {item.requesterEmail}</p>
               )}
+              {item.requesterPhone && (
+                <p className="mt-1 text-sm text-neutral-600">
+                  연락처: {item.requesterPhone}
+                </p>
+              )}
             </div>
           ))}
         </div>

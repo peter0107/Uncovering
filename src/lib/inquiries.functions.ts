@@ -154,6 +154,7 @@ const coffeeChatBookingSchema = z.object({
 const companyRoleRequestSchema = z.object({
   companyName: z.string().trim().min(1).max(120),
   roleName: z.string().trim().min(1).max(120),
+  phone: phoneField.optional().default(""),
 });
 
 async function notifyRoleRequestDiscord({
@@ -234,6 +235,7 @@ export type CompanyRoleRequest = {
   companyName: string;
   roleName: string;
   requesterEmail: string;
+  requesterPhone: string;
   status: string;
   createdAt: string;
 };
@@ -285,6 +287,7 @@ function mapCompanyRoleRequest(row: CompanyRoleRequestRow): CompanyRoleRequest {
     companyName: row.company_name,
     roleName: row.role_name,
     requesterEmail: row.requester_email ?? "",
+    requesterPhone: row.requester_phone ?? "",
     status: row.status,
     createdAt: formatDateTime(row.created_at),
   };
@@ -404,6 +407,7 @@ export const submitCompanyRoleRequest = createServerFn({ method: "POST" })
       role_name: data.roleName,
       requester_id: requesterId,
       requester_email: requesterEmail,
+      requester_phone: data.phone || null,
     });
 
     if (error) {
