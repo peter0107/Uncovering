@@ -156,6 +156,49 @@ const companyRoleRequestSchema = z.object({
   roleName: z.string().trim().min(1).max(120),
 });
 
+async function notifyRoleRequestDiscord({
+  companyName,
+  roleName,
+}: {
+  companyName: string;
+  roleName: string;
+}) {
+  const webhookUrl = process.env.LANDING_DISCORD_WEBHOOK_URL;
+  if (webhookUrl === undefined || webhookUrl === "") return;
+
+  try {
+    const fields = [
+      { name: "요청 직무", value: roleName, inline: true },
+      { name: "접수 경로", value: companyName, inline: true },
+    ];
+    const response = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        username: "Beginner 밋업",
+        allowed_mentions: { parse: [] },
+        embeds: [
+          {
+            title: "새 직무 밋업 요청",
+            color: 4431066,
+            fields,
+            timestamp: new Date().toISOString(),
+          },
+        ],
+      }),
+    });
+    if (response.ok === false) {
+      console.error(
+        "Discord role request notification failed:",
+        response.status,
+      );
+    }
+  } catch (error) {
+    console.error("Discord role request notification failed:", error);
+  }
+}
+
+
 // ── 반환 타입 ─────────────────────────────────────────────────
 export type BookedSlot = { slotDate: string; slotTime: string };
 
@@ -367,6 +410,11 @@ export const submitCompanyRoleRequest = createServerFn({ method: "POST" })
       console.error("Failed to submit company role request:", error);
       throw new Error("요청을 보내지 못했습니다. 잠시 후 다시 시도해주세요.");
     }
+
+    await notifyRoleRequestDiscord({
+      companyName: data.companyName,
+      roleName: data.roleName,
+    });
 
     return { ok: true as const };
   });
