@@ -9,7 +9,7 @@ const RECRUITING_COFFEE_CHATS = [
   {
     id: "toss-frontend-developer",
     date: "10/9(금) 19:00~21:00",
-    deadlineDate: "2026-09-17",
+    eventDate: "2026-10-09",
     title: "토스 프론트엔드 개발자와 밋업",
     location: "강남역 인근",
     capacity: "4~6명",
@@ -18,8 +18,11 @@ const RECRUITING_COFFEE_CHATS = [
   },
 ] as const;
 
-function getDeadlineLabel(deadlineDate: string) {
-  const deadline = new Date(`${deadlineDate}T23:59:59+09:00`);
+function getDeadlineLabel(eventDate: string) {
+  // 밋업 신청은 행사 전날 23:59:59(KST)에 마감합니다.
+  const deadline = new Date(
+    new Date(`${eventDate}T00:00:00+09:00`).getTime() - 1_000,
+  );
   const remainingDays = Math.ceil(
     (deadline.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
   );
@@ -70,7 +73,7 @@ export function RecruitingCoffeeChats({
                   {chat.title}
                 </h3>
                 <p className="mt-2 text-sm font-medium text-rose-600">
-                  {getDeadlineLabel(chat.deadlineDate)}
+                  {getDeadlineLabel(chat.eventDate)}
                 </p>
                 <div className="mt-5 flex items-center justify-between gap-4 text-sm text-neutral-500">
                   <div className="flex flex-wrap gap-x-4 gap-y-2">

@@ -14,6 +14,14 @@ export function SiteFooter() {
           </a>
         </div>
         <nav className="flex flex-wrap items-center gap-x-5 gap-y-2">
+          <a
+            href="https://open.kakao.com/o/gPZNDNLi"
+            target="_blank"
+            rel="noreferrer"
+            className="transition-colors hover:text-zinc-600"
+          >
+            다른 현직자 모임이 열렸을 때 알림 받아보세요!
+          </a>
           <Link to="/terms" className="transition-colors hover:text-zinc-600">
             이용약관
           </Link>
