@@ -8,7 +8,7 @@ const TALLY_APPLICATION_URLS = {
 const RECRUITING_COFFEE_CHATS = [
   {
     id: "toss-frontend-developer",
-    date: "9/18(금) 19:00~21:00",
+    date: "10/9(금) 19:00~21:00",
     deadlineDate: "2026-09-17",
     title: "토스 프론트엔드 개발자와 밋업",
     location: "강남역 인근",
