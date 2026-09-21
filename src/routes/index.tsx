@@ -116,6 +116,14 @@ function HomePage() {
               <Link to="/biz/coffee-chat" className="reference-hero-action">
                 밋업 둘러보기 <ArrowRight />
               </Link>
+              <a
+                href="https://open.kakao.com/o/gPZNDNLi"
+                target="_blank"
+                rel="noreferrer"
+                className="mt-4 inline-block text-sm text-neutral-500 underline underline-offset-4 transition-colors hover:text-neutral-900"
+              >
+                다른 현직자 모임이 열렸을 때 알림 받아보세요!
+              </a>
             </div>
           </section>
         </main>

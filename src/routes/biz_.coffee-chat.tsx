@@ -21,7 +21,10 @@ function CoffeeChatPage() {
     <div className="min-h-screen bg-white text-neutral-900">
       <CoffeeChatHeader />
       <main>
-        <RecruitingCoffeeChats headingClassName="text-3xl font-bold tracking-tight" />
+        <RecruitingCoffeeChats
+          headingClassName="text-3xl font-bold tracking-tight"
+          showOpenChatAlertLink
+        />
       </main>
     </div>
   );

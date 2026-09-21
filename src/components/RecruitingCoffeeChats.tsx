@@ -34,10 +34,12 @@ function getDeadlineLabel(eventDate: string) {
 
 type RecruitingCoffeeChatsProps = {
   headingClassName?: string;
+  showOpenChatAlertLink?: boolean;
 };
 
 export function RecruitingCoffeeChats({
   headingClassName = "text-xl font-semibold tracking-tight",
+  showOpenChatAlertLink = false,
 }: RecruitingCoffeeChatsProps) {
   return (
     <section
@@ -48,6 +50,16 @@ export function RecruitingCoffeeChats({
         <h2 id="recruiting-coffee-chats-title" className={headingClassName}>
           모집 중인 밋업
         </h2>
+        {showOpenChatAlertLink && (
+          <a
+            href="https://open.kakao.com/o/gPZNDNLi"
+            target="_blank"
+            rel="noreferrer"
+            className="mt-2 inline-block text-sm text-neutral-500 underline underline-offset-4 transition-colors hover:text-neutral-900"
+          >
+            다른 현직자 모임이 열렸을 때 알림 받아보세요!
+          </a>
+        )}
         <div className="mt-7 grid gap-4 sm:grid-cols-2">
           {RECRUITING_COFFEE_CHATS.map((chat) => (
             <article
