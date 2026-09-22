@@ -47,21 +47,12 @@ export function SiteHeader() {
               {AUTHENTICATION_ENABLED && user ? (
                 <AccountMenu />
               ) : AUTHENTICATION_ENABLED ? (
-                <>
-                  <Link
-                    to="/login"
-                    search={{ redirect: "/" }}
-                    className="text-[13px] font-semibold leading-none text-[#4b5563] transition-colors hover:text-[#1659e3]"
-                  >
-                    로그인
-                  </Link>
-                  <Link
-                    to="/start"
-                    className="inline-flex h-9 items-center rounded-[8px] bg-[#1659e3] px-[1.05rem] text-[13px] font-bold leading-none text-white transition-colors hover:bg-[#0f49c5] hover:text-white"
-                  >
-                    시작하기
-                  </Link>
-                </>
+                <Link
+                  to="/start"
+                  className="inline-flex h-9 items-center rounded-[8px] bg-[#1659e3] px-[1.05rem] text-[13px] font-bold leading-none text-white transition-colors hover:bg-[#0f49c5] hover:text-white"
+                >
+                  시작하기
+                </Link>
               ) : (
                 <GuestProfileMenu />
               )}
@@ -70,22 +61,14 @@ export function SiteHeader() {
 
           {!isLoginPage && (
             <div className="flex items-center gap-1 min-[42rem]:hidden">
-              {AUTHENTICATION_ENABLED && user ? (
-                <AccountMenu />
-              ) : (
-                <GuestProfileMenu />
-              )}
+              {AUTHENTICATION_ENABLED && user ? <AccountMenu /> : <GuestProfileMenu />}
               {(AUTHENTICATION_ENABLED || NAV.length > 0) && (
                 <button
                   aria-label="메뉴"
                   onClick={() => setOpen((v) => !v)}
                   className="grid h-9 w-9 place-items-center rounded-[8px] bg-white text-[#1a2340] transition-colors hover:bg-[#e5edfb]"
                 >
-                  {open ? (
-                    <X className="h-5 w-5" />
-                  ) : (
-                    <Menu className="h-5 w-5" />
-                  )}
+                  {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                 </button>
               )}
             </div>
@@ -106,23 +89,13 @@ export function SiteHeader() {
                 </Link>
               ))}
               {AUTHENTICATION_ENABLED && !user && (
-                <>
-                  <Link
-                    to="/login"
-                    search={{ redirect: "/" }}
-                    onClick={() => setOpen(false)}
-                    className="flex min-h-10 items-center rounded-[8px] px-3 text-sm font-semibold text-[#4b5563] transition-colors hover:bg-[#e5edfb]"
-                  >
-                    로그인
-                  </Link>
-                  <Link
-                    to="/start"
-                    onClick={() => setOpen(false)}
-                    className="mt-1 flex min-h-10 items-center justify-center rounded-[8px] bg-[#1659e3] px-3 text-sm font-bold text-white transition-colors hover:bg-[#0f49c5] hover:text-white"
-                  >
-                    시작하기
-                  </Link>
-                </>
+                <Link
+                  to="/start"
+                  onClick={() => setOpen(false)}
+                  className="mt-1 flex min-h-10 items-center justify-center rounded-[8px] bg-[#1659e3] px-3 text-sm font-bold text-white transition-colors hover:bg-[#0f49c5] hover:text-white"
+                >
+                  시작하기
+                </Link>
               )}
             </div>
           </div>
